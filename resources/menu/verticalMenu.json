@@ -1,0 +1,16 @@
+{
+  "menu": [
+    {
+      "url": "/",
+      "name": "Home",
+      "icon": "menu-icon tf-icons bx bx-home-circle",
+      "slug": "Home"
+    },
+    {
+      "url": "/filters",
+      "name": "Filters",
+      "icon": "menu-icon tf-icons bx bx-file",
+      "slug": "Filters"
+    }
+  ]
+}
