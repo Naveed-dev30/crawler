@@ -91,11 +91,15 @@ class ProposalController extends Controller
 
   public function getProposals()
   {
+    $filter = Filter::find(1);
+
+    if (!$filter->crawler_on) {
+      return;
+    }
+
     $now = Carbon::now();
     $yesterday = $now->subDay()->unix();
     $accessAuthToken = 'U79CYvSQB4zLCWTy8JfQdWEMJaeJaq';
-
-    $filter = Filter::find(1);
 
     $params = [
       'from_time' => $yesterday,
@@ -213,6 +217,11 @@ class ProposalController extends Controller
     $url = 'https://api.openai.com/v1/chat/completions';
 
     $filter = Filter::find(1);
+
+    if (!$filter->crawler_on) {
+      return;
+    }
+
     $prompt = $filter->prompt;
 
     $data = [
