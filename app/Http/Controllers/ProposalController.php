@@ -200,7 +200,7 @@ class ProposalController extends Controller
 
   public function generateBid(Proposal $proposal)
   {
-    $bearer = 'Bearer ***REMOVED-OPENAI-KEY***';
+    $bearer = 'Bearer ' . env('OPENAI_API_KEY');
     $url = 'https://api.openai.com/v1/chat/completions';
 
     $filter = Filter::find(1);
