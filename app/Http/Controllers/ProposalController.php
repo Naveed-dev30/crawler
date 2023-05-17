@@ -100,8 +100,8 @@ class ProposalController extends Controller
     $params = [
       'from_time' => $yesterday,
       'limit' => 1,
-      'min_price' => 40,
-      'min_hourly_rate' => 100,
+      'min_price' => $filter->min_fixed_amount,
+      'min_hourly_rate' => $filter->min_hourly_amount,
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
