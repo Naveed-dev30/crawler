@@ -79,33 +79,41 @@ class FilterController extends Controller
     $currencies = $request->formValidationCurrencies;
     $prompt = $request->formValidationPrompt;
     $crawlerOn = $request->formValidationCrawler;
+    $minHourly = $request->formValidationMinHourlyRate;
+    $minFixed = $request->formValidationMinFixedRate;
 
     $filter = Filter::find(1);
 
-    if($prompt){
+    if ($prompt) {
       $filter->prompt = $prompt;
     }
 
-    if($crawlerOn){
+    if ($crawlerOn) {
       $filter->crawler_on = $crawlerOn;
-    }else{
+    } else {
       $filter->crawler_on = false;
     }
 
-
-    if($countries){
+    if ($countries) {
       $filter->countries()->detach();
-      foreach($countries as $country){
-          $filter->countries()->attach($country);
+      foreach ($countries as $country) {
+        $filter->countries()->attach($country);
       }
     }
 
-
-    if($currencies){
+    if ($currencies) {
       $filter->currencies()->detach();
-      foreach($currencies as $currency){
-          $filter->currencies()->attach($currency);
+      foreach ($currencies as $currency) {
+        $filter->currencies()->attach($currency);
       }
+    }
+
+    if ($minFixed) {
+      $filter->min_fixed_amount = $minFixed;
+    }
+
+    if ($minHourly) {
+      $filter->min_hourly_amount = $minHourly;
     }
 
     $filter->save();

@@ -69,6 +69,16 @@
           </div>
 
           <div class="col-md-6">
+            <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>
+            <input type="number" class="form-control" name="formValidationMinHourlyRate" value="{{ $filter->min_hourly_amount }}"  rows="3" ></input>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>
+            <input type="number" class="form-control" name="formValidationMinFixedRate"  rows="3" value="{{ $filter->min_fixed_amount }}" />
+          </div>
+
+          <div class="col-md-6">
             <label class="form-label" for="formValidationPrompt">Prompt</label>
             <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt" rows="3" >{{ $filter->prompt }}</textarea>
           </div>
