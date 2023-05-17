@@ -99,7 +99,7 @@ class ProposalController extends Controller
 
     $params = [
       'from_time' => $yesterday,
-      'limit' => 100,
+      'limit' => 1,
       'min_price' => 40,
       'min_hourly_rate' => 100,
       'sort_field' => 'time_updated',
@@ -149,6 +149,15 @@ class ProposalController extends Controller
           if (!$countryExists) {
             $country->save();
           }
+
+          if (!in_array($currency->currency_name, $filter->currencies->pluck('currency_name')->toArray())) {
+            continue;
+          }
+
+          if (!in_array($country->country, $filter->countries->pluck('country')->toArray())) {
+            continue;
+          }
+
           $isNDA = $project['upgrades']['NDA'];
           $isSealed = $project['upgrades']['sealed'];
 
