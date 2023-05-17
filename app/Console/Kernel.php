@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
         $proposalController = new ProposalController();
         $proposalController->getProposals(); // Replace with your actual method name
       })
-      ->everySeconds(30);
+      ->everyMinute();
   }
 
   /**
