@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Http;
 use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
 
-
 class ProposalController extends Controller
 {
   /**
@@ -90,8 +89,9 @@ class ProposalController extends Controller
     //
   }
 
-  public function getProposals(){
-    $now =  Carbon::now();
+  public function getProposals()
+  {
+    $now = Carbon::now();
     $yesterday = $now->subDay()->unix();
     $accessAuthToken = 'U79CYvSQB4zLCWTy8JfQdWEMJaeJaq';
 
@@ -99,11 +99,9 @@ class ProposalController extends Controller
 
     $params = [
       'from_time' => $yesterday,
-      'limit' => 1,
-      'min_price' => $filter->min_fixed_amount,
-      'max_price' => $filter->max_fixed_amount,
-      'min_hourly_rate' => $filter->min_hourly_amount,
-      'max_hourly_rate' => $filter->max_avg_hourly_rate,
+      'limit' => 100,
+      'min_price' => 40,
+      'min_hourly_rate' => 100,
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
@@ -111,33 +109,34 @@ class ProposalController extends Controller
 
     $query = '';
 
-    foreach($params as $param => $value){
+    foreach ($params as $param => $value) {
       $query .= "{$param}={$value}&";
     }
 
     $query = rtrim($query, '&');
 
-    $url = "https://www.freelancer.com/api/projects/0.1/projects/all?projectSkills=1315?".$query;
+    $url = 'https://www.freelancer.com/api/projects/0.1/projects/all?projectSkills=1315?' . $query;
 
     $response = Http::withHeaders([
-      "Freelancer-OAuth-V1" => $accessAuthToken,
+      'Freelancer-OAuth-V1' => $accessAuthToken,
     ])->get($url);
 
-    if($response->successful()){
-      $jsonResponse =  $response->json();
+    if ($response->successful()) {
+      $jsonResponse = $response->json();
+      // return $jsonResponse;
 
-      if($jsonResponse['status'] === "success"){
+      if ($jsonResponse['status'] === 'success') {
         $result = $jsonResponse['result'];
 
-        $projects = $result["projects"];
+        $projects = $result['projects'];
 
-        foreach($projects as $project){
+        foreach ($projects as $project) {
           $currency = new Currency();
           $currency->currency_name = $project['currency']['code'];
           $currency->curreny_symbol = $project['currency']['sign'];
 
           $currencyExists = Currency::where('currency_name', $currency->currency_name)->exists();
-          if(!$currencyExists){
+          if (!$currencyExists) {
             $currency->save();
           }
 
@@ -145,25 +144,23 @@ class ProposalController extends Controller
           $country->country = $project['currency']['country'];
           $country->language = $project['language'];
 
-          $countryExists = Country::where('country' , $country->country)->exists();
+          $countryExists = Country::where('country', $country->country)->exists();
 
-          if(!$countryExists){
+          if (!$countryExists) {
             $country->save();
           }
           $isNDA = $project['upgrades']['NDA'];
           $isSealed = $project['upgrades']['sealed'];
 
-
-          if($isNDA or $isSealed){
+          if ($isNDA or $isSealed) {
             return;
           }
 
           $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
-          if($proposalExists){
+          if ($proposalExists) {
             return;
           }
-
 
           $proposal = new Proposal();
           /// [id]
@@ -179,7 +176,7 @@ class ProposalController extends Controller
           /// [Min Cost]
           $proposal->min_budget = $project['budget']['minimum'];
           /// [Max Cost]
-          $proposal->max_budget = $project['budget']['maximum'];
+          $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
           /// [Project Owner]
           $proposal->project_owner = $project['owner_id'];
           /// [Language]
@@ -193,48 +190,46 @@ class ProposalController extends Controller
           /// [Country]
           $proposal->country = $country->country;
 
-
           $proposal->save();
 
-        return  $this->generateBid($proposal);
+          $this->generateBid($proposal);
         }
       }
     }
   }
 
-  public function generateBid(Proposal $proposal){
-    $bearer = 'Bearer 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';
+  public function generateBid(Proposal $proposal)
+  {
+    $bearer = 'Bearer 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';
     $url = 'https://api.openai.com/v1/chat/completions';
 
     $filter = Filter::find(1);
     $prompt = $filter->prompt;
 
     $data = [
-      "model" => "gpt-3.5-turbo",
-      "messages" => [
+      'model' => 'gpt-3.5-turbo',
+      'messages' => [
         [
-          "role" => "system",
-          "content" => $prompt,
+          'role' => 'system',
+          'content' => $prompt,
         ],
         [
-          "role" => "user",
-          "content" => " Description ".$proposal->description,
-        ]
+          'role' => 'user',
+          'content' => ' Description ' . $proposal->description,
+        ],
       ],
     ];
 
-    $response = Http::withHeaders(['Authorization' => $bearer])->post(
-      $url, $data
-    );
+    $response = Http::timeout(60)
+      ->withHeaders(['Authorization' => $bearer])
+      ->post($url, $data);
 
     $coverLetter = $response['choices'][0]['message']['content'];
 
     $bid = new Bid();
     $bid->proposal_id = $proposal->id;
-    $bid->price = ($proposal->max_budget) * 0.9;
+    $bid->price = $proposal->max_budget * 0.9;
     $bid->cover_letter = $coverLetter;
     $bid->save();
-
-    return $bid;
   }
 }
