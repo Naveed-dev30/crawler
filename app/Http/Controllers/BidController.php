@@ -89,9 +89,9 @@ class BidController extends Controller
   {
     $status = $request->status;
 
-    if ($status !== 'completed' or $status !== 'failed') {
-      return response()->json(['success' => false, 'message' => 'Invalid Status'], 400);
-    }
+    // if (!($status == 'completed' or $status == 'failed')) {
+    //   return response()->json(['success' => false, 'message' => 'Invalid Status'], 400);
+    // }
 
     $bidId = $request->bidId;
 
