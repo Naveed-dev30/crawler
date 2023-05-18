@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bid;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
-use App\Models\Bid;
+use Illuminate\Support\Facades\Request;
 
 class BidController extends Controller
 {
@@ -82,5 +83,37 @@ class BidController extends Controller
   public function destroy(Bid $bid)
   {
     //
+  }
+
+  public function changeStatus(Request $request)
+  {
+    $status = $request->status;
+
+    if ($status !== 'completed' or $status !== 'failed') {
+      return response()->json(['success' => false, 'message' => 'Invalid Status'], 400);
+    }
+
+    $bidId = $request->bidId;
+
+    $bid = Bid::find($bidId);
+
+    if (!$bid) {
+      return response()->json(['success' => false, 'message' => 'Bid with this ID not found.'], 400);
+    }
+
+    $bid->bid_status = $status;
+
+    $bid->save();
+    return response()->json(['success' => true, 'message' => 'Bid status has been updated successfully.'], 200);
+  }
+
+  public function getBid()
+  {
+    $latestBid = Bid::where('bid_status', 'pending')
+      ->where('created_at', '>=', now()->subDay())
+      ->latest()
+      ->first();
+
+    return $latestBid;
   }
 }
