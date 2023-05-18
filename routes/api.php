@@ -25,4 +25,4 @@ Route::get('filters', [FilterController::class, 'getFilters']);
 Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);
-Route::get('update', [BidController::class, 'changeStatus']);
+Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
