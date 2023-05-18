@@ -114,6 +114,16 @@ class BidController extends Controller
       ->latest()
       ->first();
 
-    return $latestBid;
+    $projectId = $latestBid->proposal->project_id;
+
+    $data = [
+      'id' => $latestBid->id,
+      'bid_status' => $latestBid->bid_status,
+      'price' => $latestBid->price,
+      'cover_letter' => $latestBid->cover_letter,
+      'project_id' => $projectId,
+    ];
+
+    return $data;
   }
 }
