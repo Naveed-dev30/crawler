@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bid;
+use Illuminate\Http\Request;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
-use Illuminate\Support\Facades\Request;
 
 class BidController extends Controller
 {
