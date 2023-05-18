@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\BidController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 
 /*
@@ -15,9 +16,20 @@ use App\Http\Controllers\FilterController;
 |
 */
 
-Route::get('/', [BidController::class,'index']);
-Route::get('/filters', [FilterController::class, 'index']);
-Route::get('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+Route::get('login', function () {
+  return view('content.authentications.auth-login-basic');
+})->name('login');
 
+Route::post('auth', function (Request $request) {
+  // return $request;
+  if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+    return redirect('/');
+  }
+})->name('auth');
 
-Route::resource('bids', BidController::class);
+Route::middleware(['auth'])->group(function () {
+  Route::get('/', [BidController::class, 'index']);
+  Route::get('/filters', [FilterController::class, 'index']);
+  Route::get('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+  Route::resource('bids', BidController::class);
+});

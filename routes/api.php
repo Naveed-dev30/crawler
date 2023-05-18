@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
@@ -26,3 +28,15 @@ Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);
 Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
+
+Route::post('createUser', function () {
+  $user = new User();
+  $password = Hash::make('qwerty123!@#');
+
+  $user->email = 'admin@crawler.com';
+  $user->password = $password;
+  $user->name = 'Crawler Admin';
+
+  $user->save();
+  return $user;
+});
