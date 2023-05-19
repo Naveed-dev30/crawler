@@ -14,6 +14,7 @@
         <th>Price</th>
         <th>Status</th>
         <th>Type</th>
+        <th>Open Project</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -27,6 +28,10 @@
           <td>{{ $bid->price }}$</td>
           <td><span class="badge bg-label-primary me-1">{{ $bid->bid_status }}</span></td>
           <td>{{ $bid->proposal->type }}</td>
+          <td>
+            <a class="dropdown-item" href= "https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}">
+              <i class="bx  me-1"></i> {{$bid->proposal->project_id}}
+          </td>
           <td>
             <a class="dropdown-item" href="{{ route('bids.show', ['bid' => $bid->id]) }}">
               <i class="bx bx-edit-alt me-1"></i>View
