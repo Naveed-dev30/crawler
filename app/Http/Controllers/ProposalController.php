@@ -102,6 +102,7 @@ class ProposalController extends Controller
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
 
     $params = [
+      'query' => 'flutter',
       'from_time' => $yesterday,
       'limit' => 10,
       'min_price' => $filter->min_fixed_amount,
@@ -109,6 +110,7 @@ class ProposalController extends Controller
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
+      'projectSkills' => '1315',
     ];
 
     $query = '';
@@ -117,9 +119,13 @@ class ProposalController extends Controller
       $query .= "{$param}={$value}&";
     }
 
+    foreach ($filter->countries as $country) {
+      $query .= "countries[]={$country->country}&";
+    }
+
     $query = rtrim($query, '&');
 
-    $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?query=flutter&projectSkills=1315';
+    $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
 
     $response = Http::withHeaders([
       'Freelancer-OAuth-V1' => $accessAuthToken,
@@ -127,7 +133,6 @@ class ProposalController extends Controller
 
     if ($response->successful()) {
       $jsonResponse = $response->json();
-      // return $jsonResponse;
 
       if ($jsonResponse['status'] === 'success') {
         $result = $jsonResponse['result'];
@@ -154,13 +159,13 @@ class ProposalController extends Controller
             $country->save();
           }
 
-          if (!in_array($currency->currency_name, $filter->currencies->pluck('currency_name')->toArray())) {
-            continue;
-          }
+          // if (!in_array($currency->currency_name, $filter->currencies->pluck('currency_name')->toArray())) {
+          //   continue;
+          // }
 
-          if (!in_array($country->country, $filter->countries->pluck('country')->toArray())) {
-            continue;
-          }
+          // if (!in_array($country->country, $filter->countries->pluck('country')->toArray())) {
+          //   continue;
+          // }
 
           $isNDA = $project['upgrades']['NDA'];
           $isSealed = $project['upgrades']['sealed'];
@@ -188,6 +193,17 @@ class ProposalController extends Controller
           $proposal->type = $project['type'];
           /// [Min Cost]
           $proposal->min_budget = $project['budget']['minimum'];
+
+          if ($proposal->type == 'fixed') {
+            if ($proposal->min_budget < $filter->min_fixed_amount) {
+              continue;
+            }
+          } else {
+            if ($proposal->min_budget < $filter->min_hourly_amount) {
+              continue;
+            }
+          }
+
           /// [Max Cost]
           $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
           /// [Project Owner]
