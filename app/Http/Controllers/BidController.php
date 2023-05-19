@@ -114,6 +114,15 @@ class BidController extends Controller
       ->latest()
       ->first();
 
+    if (!$latestBid) {
+      return response()->json(
+        [
+          'bid_status' => 'nil',
+        ],
+        200
+      );
+    }
+
     $projectId = $latestBid->proposal->project_id;
 
     $data = [
