@@ -109,6 +109,12 @@ class BidController extends Controller
 
   public function getBid()
   {
+    return response()->json(
+      [
+        'bid_status' => '',
+      ],
+      200
+    );
     $latestBid = Bid::where('bid_status', 'pending')
       ->where('created_at', '>=', now()->subDay())
       ->latest()
