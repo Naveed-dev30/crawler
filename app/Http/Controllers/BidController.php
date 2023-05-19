@@ -16,10 +16,7 @@ class BidController extends Controller
    */
   public function index()
   {
-    $bids = Bid::all()
-      ->sortByDesc('created_at')
-      ->paginate(100)
-      ->get();
+    $bids = Bid::all()->sortByDesc('created_at');
     return view('content.pages.home', ['bids' => $bids]);
   }
 
