@@ -109,7 +109,6 @@ class BidController extends Controller
 
   public function getBid()
   {
-    return;
     $latestBid = Bid::where('bid_status', 'pending')
       ->where('created_at', '>=', now()->subDay())
       ->latest()
