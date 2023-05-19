@@ -117,7 +117,7 @@ class BidController extends Controller
     if (!$latestBid) {
       return response()->json(
         [
-          'bid_status' => 'nil',
+          'bid_status' => '',
         ],
         200
       );
