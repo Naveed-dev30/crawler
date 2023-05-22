@@ -98,7 +98,7 @@ class ProposalController extends Controller
     }
 
     $now = Carbon::now();
-    $yesterday = $now->subDay()->unix();
+    $yesterday = $now->subHours(1)->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
     $params = [
       'query' => 'flutter firebase android ios dart app mobile app',
