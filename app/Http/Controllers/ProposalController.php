@@ -103,7 +103,7 @@ class ProposalController extends Controller
     $params = [
       'query' => 'flutter firebase android ios dart app mobile app ux ui landing page worpress logo graphics web app',
       'from_time' => $yesterday,
-      'limit' => 30,
+      'limit' => 100,
       'min_price' => $filter->min_fixed_amount,
       'min_hourly_rate' => $filter->min_hourly_amount,
       'sort_field' => 'time_updated',
