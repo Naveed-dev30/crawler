@@ -110,7 +110,7 @@ class ProposalController extends Controller
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
-      'projectSkills' => '1315',
+      // 'projectSkills' => '1315',
     ];
 
     $query = '';
