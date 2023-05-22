@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bid;
+use App\Models\Filter;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
@@ -109,8 +110,13 @@ class BidController extends Controller
 
   public function getBid()
   {
+    $filter = Filter::find(1);
+
     $latestBid = Bid::where('bid_status', 'pending')
       ->where('created_at', '>=', now()->subDay())
+      ->whereHas('proposal', function ($query) use ($filter) {
+        $query->whereNotIn('country', $filter->countries->pluck('language')->toArray());
+      })
       ->latest()
       ->first();
 
