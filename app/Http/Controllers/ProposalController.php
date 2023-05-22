@@ -100,9 +100,8 @@ class ProposalController extends Controller
     $now = Carbon::now();
     $yesterday = $now->subDay()->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
-
     $params = [
-      // 'query' => 'flutter',
+      'query' => 'flutter+mobile+app+android+ios+firebase',
       'from_time' => $yesterday,
       'limit' => 10,
       'min_price' => $filter->min_fixed_amount,
@@ -119,10 +118,10 @@ class ProposalController extends Controller
       $query .= "{$param}={$value}&";
     }
 
-    foreach ($filter->countries as $country) {
-      $code = strtolower($country->language);
-      $query .= "countries[]={$code}&";
-    }
+    // foreach ($filter->countries as $country) {
+    //   $code = strtolower($country->language);
+    //   $query .= "countries[]={$code}&";
+    // }
 
     $query = rtrim($query, '&');
 
