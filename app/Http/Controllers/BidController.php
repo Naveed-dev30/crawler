@@ -125,12 +125,7 @@ class BidController extends Controller
       ->first();
 
     if (!$latestBid) {
-      return response()->json(
-        [
-          'bid_status' => '',
-        ],
-        400
-      );
+      return 1 / 0;
     }
 
     $projectId = $latestBid->proposal->project_id;
