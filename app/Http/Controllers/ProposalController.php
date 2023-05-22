@@ -101,7 +101,7 @@ class ProposalController extends Controller
     $yesterday = $now->subDay()->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
     $params = [
-      // 'query' => 'flutter+android+ios+iphone+ipad+mobile+dart+development',
+      'query' => 'flutter firebase android ios dart app mobile app ux ui landing page worpress logo graphics web app',
       'from_time' => $yesterday,
       'limit' => 30,
       'min_price' => $filter->min_fixed_amount,
@@ -109,7 +109,6 @@ class ProposalController extends Controller
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
-      // 'projectSkills' => '1315',
     ];
 
     $query = '';
@@ -125,7 +124,7 @@ class ProposalController extends Controller
 
     $query = rtrim($query, '&');
 
-    $url = 'https://www.freelancer.com/api/projects/0.1/projects/all?' . $query;
+    $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
 
     $response = Http::withHeaders([
       'Freelancer-OAuth-V1' => $accessAuthToken,
@@ -133,6 +132,8 @@ class ProposalController extends Controller
 
     if ($response->successful()) {
       $jsonResponse = $response->json();
+
+      return $jsonResponse;
 
       if ($jsonResponse['status'] === 'success') {
         $result = $jsonResponse['result'];
