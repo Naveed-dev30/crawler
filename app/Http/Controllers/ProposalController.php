@@ -118,10 +118,10 @@ class ProposalController extends Controller
       $query .= "{$param}={$value}&";
     }
 
-    // foreach ($filter->countries as $country) {
-    //   $code = strtolower($country->language);
-    //   $query .= "countries[]={$code}&";
-    // }
+    foreach ($filter->countries as $country) {
+      $code = strtolower($country->language);
+      $query .= "countries[]={$code}&";
+    }
 
     $query = rtrim($query, '&');
 
@@ -163,7 +163,7 @@ class ProposalController extends Controller
           //   continue;
           // }
 
-          // if (!in_array($country->country, $filter->countries->pluck('country')->toArray())) {
+          // if (!in_array($country->country, $filter->countries->pluck('language')->toArray())) {
           //   continue;
           // }
 
