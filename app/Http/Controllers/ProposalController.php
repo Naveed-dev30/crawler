@@ -125,7 +125,7 @@ class ProposalController extends Controller
 
     $query = rtrim($query, '&');
 
-    $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
+    $url = 'https://www.freelancer.com/api/projects/0.1/projects/all?' . $query;
 
     $response = Http::withHeaders([
       'Freelancer-OAuth-V1' => $accessAuthToken,
