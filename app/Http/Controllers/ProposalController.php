@@ -132,8 +132,6 @@ class ProposalController extends Controller
       'Freelancer-OAuth-V1' => $accessAuthToken,
     ])->get($url);
 
-    return $response;
-
     if ($response->successful()) {
       $jsonResponse = $response->json();
 
