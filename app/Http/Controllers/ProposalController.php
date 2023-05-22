@@ -102,7 +102,7 @@ class ProposalController extends Controller
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
 
     $params = [
-      // 'query' => 'flutter',
+      'query' => 'flutter',
       'from_time' => $yesterday,
       'limit' => 10,
       'min_price' => $filter->min_fixed_amount,
