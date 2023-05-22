@@ -119,9 +119,10 @@ class ProposalController extends Controller
       $query .= "{$param}={$value}&";
     }
 
-    // foreach ($filter->countries as $country) {
-    //   $query .= "countries[]={$country->country}&";
-    // }
+    foreach ($filter->countries as $country) {
+      $code = strtolower($country->language);
+      $query .= "countries[]={$code}&";
+    }
 
     $query = rtrim($query, '&');
 
