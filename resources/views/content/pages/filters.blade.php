@@ -59,7 +59,7 @@
 
           <div class="col-md-6">
             <label class="form-label" for="formValidationCurrencies">Currencies</label>
-            <select class="selectpicker w-100" id="formValidationCurrencies" data-style="btn-default" data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationCurrencies[]" multiple>
+            <select class="selectpicker w-100" id="formValidationCurrencies" data-style="btn-default" data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationCurrencies[]" multiple disabled>
               @foreach ($currencies as $currency)
               <option value="{{ $currency->id }}" @if(in_array($currency->id, $filter->currencies()->pluck('currencies.id')->all() )) selected @endif >
                 {{ $currency->currency_name }} - {{ $currency->curreny_symbol }}
