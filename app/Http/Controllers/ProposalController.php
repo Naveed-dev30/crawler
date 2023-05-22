@@ -133,8 +133,6 @@ class ProposalController extends Controller
     if ($response->successful()) {
       $jsonResponse = $response->json();
 
-      return $jsonResponse;
-
       if ($jsonResponse['status'] === 'success') {
         $result = $jsonResponse['result'];
 
