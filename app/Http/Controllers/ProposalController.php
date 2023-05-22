@@ -101,7 +101,7 @@ class ProposalController extends Controller
     $yesterday = $now->subDay()->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
     $params = [
-      'query' => 'flutter+mobile+app+android+ios+firebase',
+      'query' => 'flutter+android+ios',
       'from_time' => $yesterday,
       'limit' => 10,
       'min_price' => $filter->min_fixed_amount,
