@@ -14,6 +14,7 @@
         <th>Price</th>
         <th>Status</th>
         <th>Type</th>
+        <th>Time</th>
         <th>Open Project</th>
         <th>Actions</th>
       </tr>
@@ -28,6 +29,7 @@
           <td>{{ $bid->price }}$</td>
           <td><span class="badge bg-label-primary me-1">{{ $bid->bid_status }}</span></td>
           <td>{{ $bid->proposal->type }}</td>
+          <td>{{ $bid->proposal->created_at->diffForHumans() }}</td>
           <td>
             <a class="dropdown-item" href= "https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}">
               <i class="bx  me-1"></i> {{$bid->proposal->project_id}}
