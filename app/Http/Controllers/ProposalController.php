@@ -172,13 +172,13 @@ class ProposalController extends Controller
           $isSealed = $project['upgrades']['sealed'];
 
           if ($isNDA or $isSealed) {
-            return;
+            continue;
           }
 
           $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
           if ($proposalExists) {
-            return;
+            continue;
           }
 
           $proposal = new Proposal();
