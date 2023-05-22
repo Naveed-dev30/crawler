@@ -145,20 +145,20 @@ class ProposalController extends Controller
           $currency->currency_name = $project['currency']['code'];
           $currency->curreny_symbol = $project['currency']['sign'];
 
-          $currencyExists = Currency::where('currency_name', $currency->currency_name)->exists();
-          if (!$currencyExists) {
-            $currency->save();
-          }
+          // $curre`ncyExists = Currency::where('currency_name', $currency->currency_name)->exists();
+          // if (!$currencyExists) {
+          //   $currency->save();
+          // }`
 
           $country = new Country();
           $country->country = $project['currency']['country'];
           $country->language = $project['language'];
 
-          $countryExists = Country::where('country', $country->country)->exists();
+          // $countryExists = Country::where('country', $country->country)->exists();
 
-          if (!$countryExists) {
-            $country->save();
-          }
+          // if (!$countryExists) {
+          //   $country->save();
+          // }
 
           // if (!in_array($currency->currency_name, $filter->currencies->pluck('currency_name')->toArray())) {
           //   continue;
