@@ -119,7 +119,7 @@ class BidController extends Controller
     $latestBid = Bid::where('bid_status', 'pending')
       ->where('created_at', '>=', now()->subDay())
       ->whereHas('proposal', function ($query) use ($filter) {
-        $query->where('country', $filter->countries->pluck('language')->toArray());
+        $query->whereIn('country', $filter->countries->pluck('language')->toArray());
       })
       ->latest()
       ->first();
