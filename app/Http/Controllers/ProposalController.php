@@ -122,7 +122,7 @@ class ProposalController extends Controller
     ];
 
     if($textQuery){
-      $params['query'] = $query;
+      $params['query'] = $textQuery;
     }
 
     $query = '';
