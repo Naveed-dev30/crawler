@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Filter;
 use App\Models\Country;
+use App\Models\Keyword;
 use App\Models\Currency;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreFilterRequest;
@@ -21,7 +22,8 @@ class FilterController extends Controller
     $filter = Filter::find(1);
     $countries = Country::all();
     $currencies = Currency::all();
-    return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies]);
+    $keywords = Keyword::all();
+    return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords]);
   }
 
   /**
@@ -81,8 +83,36 @@ class FilterController extends Controller
     $crawlerOn = $request->formValidationCrawler;
     $minHourly = $request->formValidationMinHourlyRate;
     $minFixed = $request->formValidationMinFixedRate;
+    $tags = $request->TagifyBasic;
+    $selectedKeywords = $request->formValidationKeywords;
+
+
 
     $filter = Filter::find(1);
+
+    if ($tags) {
+      $existingKeywords = Keyword::pluck('name')->toArray();
+      $tagsJson = json_decode($tags, true);
+      $newKeywords = [];
+  
+      foreach ($tagsJson as $tag) {
+          $newKeywords[] = $tag['value'];
+  
+          // Check if the keyword already exists in the database
+          if (!in_array($tag['value'], $existingKeywords)) {
+              // Create a new Keyword record and save it
+              $keyword = new Keyword();
+              $keyword->name = $tag['value'];
+              $keyword->save();
+          }
+      }
+  
+      // Determine the keywords that need to be deleted
+      $keywordsToDelete = array_diff($existingKeywords, $newKeywords);
+  
+      // Delete the keywords that are no longer present in the list
+      Keyword::whereIn('name', $keywordsToDelete)->delete();
+  }
 
     if ($prompt) {
       $filter->prompt = $prompt;
@@ -98,6 +128,13 @@ class FilterController extends Controller
       $filter->countries()->detach();
       foreach ($countries as $country) {
         $filter->countries()->attach($country);
+      }
+    }
+
+    if ($selectedKeywords) {
+      $filter->keywords()->detach();
+      foreach ($selectedKeywords as $keyword) {
+        $filter->keywords()->attach($keyword);
       }
     }
 
