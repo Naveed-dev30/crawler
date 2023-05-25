@@ -34,7 +34,7 @@
     $tags = '';
 @endphp
 
-@foreach ($filter->Keywords as $keyword)
+@foreach ($keywords as $keyword)
     @php
         $tags = $tags . ',' . $keyword->name;
     @endphp
@@ -122,6 +122,21 @@
                                     value={{ $tags }} />
                             </div>
                         </span>
+                        <span class="col-md-6""></span>
+                        <div class="col-md-6">
+                            <label class="form-label" for="formValidationKeywords">Select</label>
+                            <select class="selectpicker w-100" id="formValidationKeywords" data-style="btn-default"
+                                data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationKeywords[]"
+                                multiple>
+                                @foreach ($keywords as $keyword)
+                                    <option value="{{ $keyword->id }}" @if (in_array(
+                                            $keyword->id,
+                                            $filter->keywords()->pluck('keywords.id')->all())) selected @endif>
+                                        {{ $keyword->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
 
                         <div class="form-check">
