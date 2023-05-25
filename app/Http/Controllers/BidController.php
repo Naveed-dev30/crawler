@@ -140,4 +140,14 @@ class BidController extends Controller
 
     return $data;
   }
+
+  public function updateBidCheck(Request $request){
+    $bid = Bid::find($request->bid_id);
+
+    $bid->check = $request->check;
+
+    $bid->save();
+
+    return redirect('/');
+  }
 }
