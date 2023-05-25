@@ -75,6 +75,7 @@ class FilterController extends Controller
    */
   public function update(Request $request)
   {
+    return $request;
     $countries = $request->formValidationCountries;
     $currencies = $request->formValidationCurrencies;
     $prompt = $request->formValidationPrompt;
