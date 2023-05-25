@@ -100,8 +100,18 @@ class ProposalController extends Controller
     $now = Carbon::now();
     $yesterday = $now->subHours(1)->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
+
+    $textQuery = '';
+
+   $keywords = $filter->keywords()->pluck('name')->toArray();
+
+   if($keywords){
+    foreach($keywords as $keyword){
+      $textQuery = $textQuery . ' ' . $keyword;
+    }
+   }
+
     $params = [
-      // 'query' => 'flutter dart android ios kotlin java iphone firebase ipad ios mobile mobile app development',
       'from_time' => $yesterday,
       'limit' => 100,
       'min_price' => $filter->min_fixed_amount,
@@ -110,6 +120,10 @@ class ProposalController extends Controller
       'full_description' => true,
       'compact' => true,
     ];
+
+    if($textQuery){
+      $params['query'] = $query;
+    }
 
     $query = '';
 
