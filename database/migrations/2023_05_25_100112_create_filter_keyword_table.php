@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bids', function (Blueprint $table) {
-            $table->boolean('is_seen')->default(false);
+        Schema::create('filter_keyword', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('filter_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('keyword_id')->constrained()->cascadeOnDelete();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bids', function (Blueprint $table) {
-            $table->dropColumn('is_seen');
-        });
+        Schema::dropIfExists('filter_keyword');
     }
 };

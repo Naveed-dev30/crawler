@@ -45,6 +45,6 @@ class Filter extends Model
      */
     public function keywords()
     {
-        return $this->hasMany(Keyword::class);
+        return $this->belongsToMany(Keyword::class);
     }
 }

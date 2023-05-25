@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('bids', function (Blueprint $table) {
             $table->string('check')->default('Unreviewed');
+            $table->boolean('is_seen')->default(false);
         });
     }
 
@@ -23,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('bids', function (Blueprint $table) {
             $table->dropColumn('check');
+            $table->dropColumn('is_seen');
         });
     }
 };
