@@ -14,10 +14,10 @@
     
     function eye($bid)
     {
-        if ($bid->check == 'Unreviewed') {
-            return 'fa fa-eye fa-sm';
-        } else {
+        if ($bid->is_seen) {
             return 'fa fa-eye text-success fa-sm';
+        } else {
+            return 'fa fa-eye fa-sm';
         }
     }
     
@@ -64,17 +64,17 @@
                         <td>{{ $bid->proposal->type }}</td>
                         <td>{{ $bid->proposal->created_at->diffForHumans() }}</td>
                         <td>
-                            <a class="dropdown-item"
-                                href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}">
-                                <i class="bx  me-1"></i> {{ $bid->proposal->project_id }}
+                            <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank">
+                                <i class="bx  me-1"></i> {{ $bid->proposal->project_id }} </a>
                         </td>
                         <td>
                             <i class="{{ eye($bid) }} px-2"></i>
                             <i class=" {{ reviewdCheckColorClass($bid) }}"></i>
                         </td>
                         <td>
-                            <a class="dropdown-item" href="{{ route('bids.show', ['bid' => $bid->id]) }}">
-                                <i class="bx bx-edit-alt me-1"></i>View
+                            <a href="{{ route('bids.show', ['bid' => $bid->id]) }}"\>
+
+                                <i class=""></i>View</a>
                         </td>
                     </tr>
                 @endforeach
