@@ -24,6 +24,8 @@ Route::post('auth', function (Request $request) {
   // return $request;
   if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
     return redirect('/');
+  }else{
+    return redirect('/login');
   }
 })->name('auth');
 
@@ -32,4 +34,5 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/filters', [FilterController::class, 'index']);
   Route::get('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
   Route::resource('bids', BidController::class);
+  Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
 });
