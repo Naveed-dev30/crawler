@@ -19,4 +19,26 @@ class Bid extends Model
     {
         return $this->belongsTo(Proposal::class);
     }
+
+    public function scopeLatestThirtyDays($query)
+    {
+        return $query->where('created_at', '>=', now()->subDays(30));
+    }
+
+    public function scopeLatestYear($query)
+{
+    return $query->where('created_at', '>=', now()->subYear());
+}
+
+
+    public function scopeWhereSeen($query)
+    {
+        return $query->where('is_seen', '=', 1);
+    }
+
+    public function scopeGroupByDate($query)
+    {
+        return $query->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->groupBy('date');
+    }
 }

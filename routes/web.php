@@ -31,6 +31,7 @@ Route::post('auth', function (Request $request) {
 
 Route::middleware(['auth'])->group(function () {
   Route::get('/', [BidController::class, 'index']);
+  Route::get('/stats', [BidController::class, 'stats']);
   Route::get('/filters', [FilterController::class, 'index']);
   Route::get('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
   Route::resource('bids', BidController::class);
