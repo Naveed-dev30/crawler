@@ -61,7 +61,8 @@
                 <h5 class="card-header">Set Crawler Filter</h5>
                 <div class="card-body">
 
-                    <form id="formValidationExamples" action={{ route('updateFilters') }} class="row g-3">
+                    <form id="formValidationExamples" method="POST" action={{ route('updateFilters') }} class="row g-3">
+                        @csrf
                         <!-- Personal Info -->
                         <div class="col-12">
                             <h6 class="mt-2 fw-normal">1. Filter Data</h6>

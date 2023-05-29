@@ -273,6 +273,12 @@ class ProposalController extends Controller
 
     $coverLetter = $response['choices'][0]['message']['content'];
 
+    $limit = 1450;
+
+    if (strlen($coverLetter) > $limit) {
+      $coverLetter = substr($coverLetter, 0, $limit) . "...";
+    }
+
     $bid = new Bid();
     $bid->proposal_id = $proposal->id;
     $bid->price = $proposal->max_budget * 0.9;
