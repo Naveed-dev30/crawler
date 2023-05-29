@@ -7,6 +7,12 @@
       "slug": "Home"
     },
     {
+      "url": "/stats",
+      "name": "Statistics",
+      "icon": "menu-icon tf-icons bx bx-stats",
+      "slug": "Statistics"
+    },
+    {
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",

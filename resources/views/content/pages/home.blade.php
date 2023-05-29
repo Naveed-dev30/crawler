@@ -70,7 +70,7 @@
                         <td>{{ $bid->price }}$</td>
                         <td><span class="badge {{ pending($bid) }} me-1">{{ $bid->bid_status }}</span></td>
                         <td>{{ $bid->proposal->type }}</td>
-                        <td>{{ $bid->proposal->created_at->diffForHumans() }}</td>
+                        <td>{{ $bid->proposal->updated_at->format('y-m-d') }}</td>
                         <td>
                             <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank">
                                 <i class="bx  me-1"></i> {{ $bid->proposal->project_id }} </a>

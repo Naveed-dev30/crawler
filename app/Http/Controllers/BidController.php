@@ -7,6 +7,7 @@ use App\Models\Filter;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
+use Carbon\Carbon;
 
 class BidController extends Controller
 {
@@ -19,6 +20,43 @@ class BidController extends Controller
   {
     $bids = Bid::latest()->paginate(100);
     return view('content.pages.home', ['bids' => $bids]);
+  }
+
+  public function stats()
+  {
+   $bidsStats = Bid::latestYear()->whereSeen()->groupByDate()->get();
+   $firstDate = $bidsStats[0]->date;
+
+
+    $calendar = [];
+
+    $currentDate = Carbon::parse($firstDate)->startOfDay();
+    $endDate = Carbon::now();
+
+    while ($currentDate <= $endDate) {
+        $calendar[$currentDate->format('Y-m-d')] = [
+            'date' => $currentDate->format('Y-m-d'),
+            'day' => $currentDate->format('d'),
+            'month' => $currentDate->format('m'),
+            'year' => $currentDate->format('Y'),
+            'count' => 0,
+        ];
+
+        $currentDate->addDay();
+}
+
+
+  foreach($bidsStats as $bidStat){
+    $calendar[$bidStat->date]['count'] = $bidStat->count;
+  }
+
+    $values = [];
+
+    foreach ($calendar as $key => $value) {
+      array_push($values,$value );
+    }
+
+    return view('content.pages.stats',['stats' => $values]);
   }
 
   /**

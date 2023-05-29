@@ -24,6 +24,8 @@
         <span>
             <p class="badge {{ $reviewdCheckbgClass }}">{{ $bid->check }}</p>
         </span>
+        <p>Last Updated: {{ $bid->proposal->updated_at->format('d-M, Y') }}</p>
+
         <h6>Project Min Budget: <span class="fw-light">{{ $bid->proposal->min_budget }}$</span></h6>
 
         <h6>Project Max Budget: <span class="fw-light">{{ $bid->proposal->max_budget }}$</span></h6>
