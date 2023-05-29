@@ -35,4 +35,5 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
   Route::resource('bids', BidController::class);
   Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
+  Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
 });

@@ -143,6 +143,15 @@ class BidController extends Controller
     return $data;
   }
 
+  public function expireBids(){
+    $notCompletedBids = Bid::where('bid_status', '!=', 'completed')->get();
+    foreach($notCompletedBids as $notCompletedBid){
+      $notCompletedBid->bid_status = 'expired';
+      $notCompletedBid->save();
+    }
+    return redirect('/');
+  }
+
   public function updateBidCheck(Request $request){
     $bid = Bid::find($request->bid_id);
 
