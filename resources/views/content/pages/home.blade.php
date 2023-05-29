@@ -89,4 +89,7 @@
             </tbody>
         </table>
     </div>
+    <div class="div mt-4 card px-4 pt-3 Page navigation">
+        {{ $bids->links('vendor.pagination.bootstrap-5') }}
+    </div>
 @endsection
