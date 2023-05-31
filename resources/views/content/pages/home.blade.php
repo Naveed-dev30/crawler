@@ -73,7 +73,7 @@
                         <td>
                             <div class="col">
                                 <div class="row">
-                                    {{ $bid->proposal->created_at->format('y-m-d, H:m') }}
+                                    {{ $bid->proposal->created_at->format('h:i a') }}
                                 </div>
                                 <div class="row text-light">
                                     {{ $bid->proposal->created_at->diffForHumans() }}
