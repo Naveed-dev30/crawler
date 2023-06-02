@@ -73,7 +73,7 @@
                             <label class="form-label" for="formValidationCountries">Countries</label>
                             <select class="selectpicker w-100" id="formValidationCountries" data-style="btn-default"
                                 data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationCountries[]"
-                                multiple>
+                                multiple @if (!$filter->usecountries) disabled @endif>
                                 @foreach ($countries as $country)
                                     <option value="{{ $country->id }}" @if (in_array(
                                             $country->id,
@@ -102,13 +102,15 @@
                         <div class="col-md-6">
                             <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>
                             <input type="number" class="form-control" name="formValidationMinHourlyRate"
-                                value="{{ $filter->min_hourly_amount }}" rows="3"></input>
+                                value="{{ $filter->min_hourly_amount }}" rows="3"
+                                @if (!$filter->useminhour) disabled @endif></input>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>
                             <input type="number" class="form-control" name="formValidationMinFixedRate" rows="3"
-                                value="{{ $filter->min_fixed_amount }}" />
+                                value="{{ $filter->min_fixed_amount }}"
+                                @if (!$filter->useminfix) disabled @endif />
                         </div>
 
                         <div class="col-md-6">
@@ -137,7 +139,17 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <label class="switch switch-success mt-4">
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="formValidationCheckbox"
+                                name="formValidationCrawler" value="1"
+                                @if ($filter->crawler_on) checked @endif />
+                            <label class="form-check-label">Crawler Enabled</label>
+                        </div>
+
+                        <div class="row">
+                            {{-- Use Keywords --}}
+                            <label class="switch switch-success mt-4 col-auto">
                                 <input type="checkbox" class="switch-input" name="usekeywords"
                                     @if ($filter->usekeywords) checked @endif />
                                 <span class="switch-toggle-slider">
@@ -148,14 +160,53 @@
                                         <i class="bx bx-x"></i>
                                     </span>
                                 </span>
-                                <span class="switch-label">Use Keywords</span>
+                                <span class="switch-label">Keywords</span>
                             </label>
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="formValidationCheckbox"
-                                name="formValidationCrawler" value="1"
-                                @if ($filter->crawler_on) checked @endif />
-                            <label class="form-check-label">Crawler Enabled</label>
+
+                            {{-- Use Countries --}}
+                            <label class="switch switch-success mt-4 col-auto">
+                                <input type="checkbox" class="switch-input" name="useCountries"
+                                    @if ($filter->usecountries) checked @endif />
+                                <span class="switch-toggle-slider">
+                                    <span class="switch-on">
+                                        <i class="bx bx-check"></i>
+                                    </span>
+                                    <span class="switch-off">
+                                        <i class="bx bx-x"></i>
+                                    </span>
+                                </span>
+                                <span class="switch-label">Countries</span>
+                            </label>
+
+                            {{-- Use Min Fixed --}}
+                            <label class="switch switch-success mt-4 col-auto">
+                                <input type="checkbox" class="switch-input" name="useminfix"
+                                    @if ($filter->useminfix) checked @endif />
+                                <span class="switch-toggle-slider">
+                                    <span class="switch-on">
+                                        <i class="bx bx-check"></i>
+                                    </span>
+                                    <span class="switch-off">
+                                        <i class="bx bx-x"></i>
+                                    </span>
+                                </span>
+                                <span class="switch-label">Min Fixed Cost</span>
+                            </label>
+
+                            {{-- Use Min Hourly --}}
+                            <label class="switch switch-success mt-4 col-auto">
+                                <input type="checkbox" class="switch-input" name="useminhour"
+                                    @if ($filter->useminhour) checked @endif />
+                                <span class="switch-toggle-slider">
+                                    <span class="switch-on">
+                                        <i class="bx bx-check"></i>
+                                    </span>
+                                    <span class="switch-off">
+                                        <i class="bx bx-x"></i>
+                                    </span>
+                                </span>
+                                <span class="switch-label">Min Hourly Cost</span>
+                            </label>
                         </div>
 
                         <div class="col-12">

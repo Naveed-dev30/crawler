@@ -104,12 +104,18 @@ class ProposalController extends Controller
     $params = [
       'from_time' => $yesterday,
       'limit' => 100,
-      'min_price' => $filter->min_fixed_amount,
-      'min_hourly_rate' => $filter->min_hourly_amount,
       'sort_field' => 'time_updated',
       'full_description' => true,
       'compact' => true,
     ];
+
+    if ($filter->useminfix) {
+      $params['min_price'] = $filter->min_fixed_amount;
+    }
+
+    if ($filter->useminhour) {
+      $params['min_hourly_rate'] = $filter->min_hourly_amount;
+    }
 
     if ($filter->usekeywords) {
       $textQuery = '';
@@ -133,9 +139,11 @@ class ProposalController extends Controller
       $query .= "{$param}={$value}&";
     }
 
-    foreach ($filter->countries as $country) {
-      $code = strtolower($country->language);
-      $query .= "countries[]={$code}&";
+    if ($filter->usecountries) {
+      foreach ($filter->countries as $country) {
+        $code = strtolower($country->language);
+        $query .= "countries[]={$code}&";
+      }
     }
 
     $query = rtrim($query, '&');

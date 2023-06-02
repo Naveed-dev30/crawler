@@ -154,6 +154,9 @@ class FilterController extends Controller
     }
 
     $filter->usekeywords = $request->usekeywords == "on" ? 1 : 0;
+    $filter->usecountries = $request->useCountries == "on" ? 1 : 0;
+    $filter->useminfix = $request->useminfix == "on" ? 1 : 0;
+    $filter->useminhour = $request->useminhour == "on" ? 1 : 0;
 
     $filter->save();
 
