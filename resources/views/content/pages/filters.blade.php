@@ -2,7 +2,7 @@
 
 
 
-@section('title', 'Validation - Forms')
+@section('title', 'Filters')
 
 
 @section('vendor-style')
