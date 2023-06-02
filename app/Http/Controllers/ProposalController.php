@@ -217,13 +217,19 @@ class ProposalController extends Controller
           /// [Min Cost]
           $proposal->min_budget = $project['budget']['minimum'];
 
+
+
           if ($proposal->type == 'fixed') {
-            if ($proposal->min_budget < $filter->min_fixed_amount) {
-              continue;
+            if ($filter->useminfix) {
+              if ($proposal->min_budget < $filter->min_fixed_amount) {
+                continue;
+              }
             }
           } else {
-            if ($proposal->min_budget < $filter->min_hourly_amount) {
-              continue;
+            if ($filter->useminhour) {
+              if ($proposal->min_budget < $filter->min_hourly_amount) {
+                continue;
+              }
             }
           }
 
