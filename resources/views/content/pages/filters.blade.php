@@ -120,7 +120,7 @@
                             <div class="mb-3">
                                 <label for="TagifyBasic" class="form-label">Keywords</label>
                                 <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                    value={{ $tags }} />
+                                    @if (!$filter->usekeywords) disabled @endif value={{ $tags }} />
                             </div>
                         </span>
                         <span class="col-md-6""></span>
@@ -128,7 +128,7 @@
                             <label class="form-label" for="formValidationKeywords">Select</label>
                             <select class="selectpicker w-100" id="formValidationKeywords" data-style="btn-default"
                                 data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationKeywords[]"
-                                multiple>
+                                multiple @if (!$filter->usekeywords) disabled @endif>
                                 @foreach ($keywords as $keyword)
                                     <option value="{{ $keyword->id }}" @if (in_array(
                                             $keyword->id,
@@ -137,9 +137,20 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <label class="switch switch-success mt-4">
+                                <input type="checkbox" class="switch-input" name="usekeywords"
+                                    @if ($filter->usekeywords) checked @endif />
+                                <span class="switch-toggle-slider">
+                                    <span class="switch-on">
+                                        <i class="bx bx-check"></i>
+                                    </span>
+                                    <span class="switch-off">
+                                        <i class="bx bx-x"></i>
+                                    </span>
+                                </span>
+                                <span class="switch-label">Use Keywords</span>
+                            </label>
                         </div>
-
-
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="formValidationCheckbox"
                                 name="formValidationCrawler" value="1"

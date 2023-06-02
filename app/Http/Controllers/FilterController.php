@@ -94,25 +94,25 @@ class FilterController extends Controller
       $existingKeywords = Keyword::pluck('name')->toArray();
       $tagsJson = json_decode($tags, true);
       $newKeywords = [];
-  
+
       foreach ($tagsJson as $tag) {
-          $newKeywords[] = $tag['value'];
-  
-          // Check if the keyword already exists in the database
-          if (!in_array($tag['value'], $existingKeywords)) {
-              // Create a new Keyword record and save it
-              $keyword = new Keyword();
-              $keyword->name = $tag['value'];
-              $keyword->save();
-          }
+        $newKeywords[] = $tag['value'];
+
+        // Check if the keyword already exists in the database
+        if (!in_array($tag['value'], $existingKeywords)) {
+          // Create a new Keyword record and save it
+          $keyword = new Keyword();
+          $keyword->name = $tag['value'];
+          $keyword->save();
+        }
       }
-  
+
       // Determine the keywords that need to be deleted
       $keywordsToDelete = array_diff($existingKeywords, $newKeywords);
-  
+
       // Delete the keywords that are no longer present in the list
       Keyword::whereIn('name', $keywordsToDelete)->delete();
-  }
+    }
 
     if ($prompt) {
       $filter->prompt = $prompt;
@@ -153,9 +153,11 @@ class FilterController extends Controller
       $filter->min_hourly_amount = $minHourly;
     }
 
+    $filter->usekeywords = $request->usekeywords == "on" ? 1 : 0;
+
     $filter->save();
 
-    return redirect('/');
+    return redirect('/filters');
   }
 
   /**
