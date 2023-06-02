@@ -101,16 +101,6 @@ class ProposalController extends Controller
     $yesterday = $now->subHours(1)->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
 
-    $textQuery = '';
-
-   $keywords = $filter->keywords()->pluck('name')->toArray();
-
-   if($keywords){
-    foreach($keywords as $keyword){
-      $textQuery = $textQuery . ' ' . $keyword;
-    }
-   }
-
     $params = [
       'from_time' => $yesterday,
       'limit' => 100,
@@ -121,8 +111,20 @@ class ProposalController extends Controller
       'compact' => true,
     ];
 
-    if($textQuery){
-      $params['query'] = $textQuery;
+    if ($filter->usekeywords) {
+      $textQuery = '';
+
+      $keywords = $filter->keywords()->pluck('name')->toArray();
+
+      if ($keywords) {
+        foreach ($keywords as $keyword) {
+          $textQuery = $textQuery . ' ' . $keyword;
+        }
+      }
+
+      if ($textQuery) {
+        $params['query'] = $textQuery;
+      }
     }
 
     $query = '';
