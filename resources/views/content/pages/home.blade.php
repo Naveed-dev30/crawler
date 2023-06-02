@@ -11,7 +11,7 @@
             return 'fa fa-close text-danger';
         }
     }
-
+    
     function eye($bid)
     {
         if ($bid->is_seen) {
@@ -20,7 +20,7 @@
             return 'fa fa-eye fa-sm';
         }
     }
-
+    
     function pending($bid)
     {
         if ($bid->bid_status == 'completed') {
@@ -31,10 +31,34 @@
             return 'bg-label-danger';
         }
     }
-
+    
 @endphp
 
 @section('content')
+
+    <head>
+        <script>
+            function copyId(id) {
+                // Create a temporary input element
+                var tempInput = document.createElement('input');
+
+                // Set the value of the input element to the ID text
+                tempInput.value = id;
+
+                // Append the input element to the document body
+                document.body.appendChild(tempInput);
+
+                // Select the text in the input element
+                tempInput.select();
+
+                // Copy the selected text to the clipboard
+                document.execCommand('copy');
+
+                // Remove the temporary input element
+                document.body.removeChild(tempInput);
+            }
+        </script>
+    </head>
     <h4 class="py-3 breadcrumb-wrapper mb-4">
         <span class="fw-light">Bids</span>
     </h4>
@@ -51,23 +75,21 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Country</th>
+                    <th>Title</th>
                     <th>Price</th>
                     <th>Status</th>
                     <th>Type</th>
                     <th>Time</th>
-                    <th>Open Project</th>
                     <th>Review</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
 
                 @foreach ($bids as $bid)
                     <tr>
-                        <td>{{ $bid->id }}</td>
-                        <td>{{ $bid->proposal->country }}</td>
-                        <td>{{ $bid->price }}$</td>
+                        <td>{{ $bid->proposal->project_id }}</td>
+                        <td>{{ Illuminate\Support\Str::limit($bid->proposal->title, 30) }}</td>
+                        <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
                         <td><span class="badge {{ pending($bid) }} me-1">{{ $bid->bid_status }}</span></td>
                         <td>{{ $bid->proposal->type }}</td>
                         <td>
@@ -76,23 +98,20 @@
                                     {{ $bid->proposal->created_at->format('h:i a') }}
                                 </div>
                                 <div class="row text-light">
-                                    {{ $bid->proposal->created_at->diffForHumans() }}
+                                    {{ $bid->proposal->created_at->diffForHumans(null, true) }}
                                 </div>
 
                             </div>
                         </td>
                         <td>
-                            <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank">
-                                <i class="bx  me-1"></i> {{ $bid->proposal->project_id }} </a>
-                        </td>
-                        <td>
-                            <i class="{{ eye($bid) }} px-2"></i>
-                            <i class=" {{ reviewdCheckColorClass($bid) }}"></i>
-                        </td>
-                        <td>
                             <a href="{{ route('bids.show', ['bid' => $bid->id]) }}"\>
-
-                                <i class=""></i>View</a>
+                                <i class="{{ eye($bid) }} px-2"></i>
+                            </a>
+                            <i class=" {{ reviewdCheckColorClass($bid) }}"></i>
+                            <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank">
+                                <i class="bx bx-link-external text-primary px-2"></i>
+                            </a>
+                            <i class='bx bx-copy' onclick="copyId({{ $bid->id }})"></i>
                         </td>
                     </tr>
                 @endforeach
