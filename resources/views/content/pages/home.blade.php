@@ -51,6 +51,7 @@
                 // Select the text in the input element
                 tempInput.select();
 
+
                 // Copy the selected text to the clipboard
                 document.execCommand('copy');
 
@@ -59,6 +60,8 @@
             }
         </script>
     </head>
+
+
     <h4 class="py-3 breadcrumb-wrapper mb-4">
         <span class="fw-light">Bids</span>
     </h4>
@@ -66,7 +69,8 @@
     <form action="{{ route('expire_bids') }}" method="POST">
         @csrf
         <div class="container">
-            <button type="Save" name="submitButton" class="btn btn-danger mb-4" style="float:right;">Expire Pending</button>
+            <button type="Save" name="submitButton" class="btn btn-danger mb-4" style="float:right;">Expire
+                Pending</button>
         </div>
     </form>
 
