@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Bid;
 use App\Models\Filter;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -32,41 +33,48 @@ class GenerateBidProcess implements ShouldQueue
    */
   public function handle(): void
   {
-    try {
-      $bearer = 'Bearer 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';
-      $url = 'https://api.openai.com/v1/chat/completions';
 
-      $filter = Filter::find(1);
-      $prompt = $filter->prompt;
+    $bearer = 'Bearer ' . env('OPENAI_API_KEY');
+    $url = 'https://api.openai.com/v1/chat/completions';
 
-      $proposal = $this->proposal;
+    $filter = Filter::find(1);
 
-      $data = [
-        'model' => 'gpt-3.5-turbo',
-        'messages' => [
-          [
-            'role' => 'system',
-            'content' => $prompt,
-          ],
-          [
-            'role' => 'user',
-            'content' => ' Description ' . $proposal->description,
-          ],
-        ],
-      ];
-
-      $response = Http::withHeaders(['Authorization' => $bearer])->post($url, $data);
-
-      $coverLetter = $response['choices'][0]['message']['content'];
-
-      $bid = new Bid();
-      $bid->proposal_id = $proposal->id;
-      $bid->price = $proposal->max_budget * 0.9;
-      $bid->cover_letter = $coverLetter;
-      $bid->save();
+    if (!$filter->crawler_on) {
       return;
-    } catch (RequestException $e) {
-      //
     }
+
+    $prompt = $filter->prompt;
+
+    $data = [
+      'model' => 'gpt-3.5-turbo',
+      'messages' => [
+        [
+          'role' => 'system',
+          'content' => $prompt,
+        ],
+        [
+          'role' => 'user',
+          'content' => ' Description ' . $this->proposal->description,
+        ],
+      ],
+    ];
+
+    $response = Http::timeout(60)
+      ->withHeaders(['Authorization' => $bearer])
+      ->post($url, $data);
+
+    $coverLetter = $response['choices'][0]['message']['content'];
+
+    $limit = 1450;
+
+    if (strlen($coverLetter) > $limit) {
+      $coverLetter = substr($coverLetter, 0, $limit) . "...";
+    }
+
+    $bid = new Bid();
+    $bid->proposal_id = $this->proposal->id;
+    $bid->price = ($this->proposal->max_budget) * 0.9;
+    $bid->cover_letter = $coverLetter;
+    $bid->save();
   }
 }

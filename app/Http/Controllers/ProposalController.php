@@ -11,6 +11,12 @@ use App\Models\Proposal;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
+use App\Jobs\GenerateBidProcess;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
+use Barryvdh\Debugbar\Facades\Debugbar;
+
+
 
 class ProposalController extends Controller
 {
@@ -98,7 +104,7 @@ class ProposalController extends Controller
     }
 
     $now = Carbon::now();
-    $yesterday = $now->subHours(1)->unix();
+    $yesterday = $now->subDays(6);
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
 
     $params = [
@@ -162,33 +168,16 @@ class ProposalController extends Controller
 
         $projects = $result['projects'];
 
+        $jobs = [];
         foreach ($projects as $project) {
           $currency = new Currency();
           $currency->currency_name = $project['currency']['code'];
           $currency->curreny_symbol = $project['currency']['sign'];
 
-          // $curre`ncyExists = Currency::where('currency_name', $currency->currency_name)->exists();
-          // if (!$currencyExists) {
-          //   $currency->save();
-          // }`
-
           $country = new Country();
           $country->country = $project['currency']['country'];
           $country->language = $project['language'];
 
-          // $countryExists = Country::where('country', $country->country)->exists();
-
-          // if (!$countryExists) {
-          //   $country->save();
-          // }
-
-          // if (!in_array($currency->currency_name, $filter->currencies->pluck('currency_name')->toArray())) {
-          //   continue;
-          // }
-
-          // if (!in_array($country->country, $filter->countries->pluck('language')->toArray())) {
-          //   continue;
-          // }
 
           $isNDA = $project['upgrades']['NDA'];
           $isSealed = $project['upgrades']['sealed'];
@@ -250,55 +239,13 @@ class ProposalController extends Controller
 
           $proposal->save();
 
-          $this->generateBid($proposal);
+          array_push($jobs, $proposal);
+        }
+
+        foreach ($jobs as $job) {
+          GenerateBidProcess::dispatch($job);
         }
       }
     }
-  }
-
-  public function generateBid(Proposal $proposal)
-  {
-    $bearer = 'Bearer ' . env('OPENAI_API_KEY');
-    $url = 'https://api.openai.com/v1/chat/completions';
-
-    $filter = Filter::find(1);
-
-    if (!$filter->crawler_on) {
-      return;
-    }
-
-    $prompt = $filter->prompt;
-
-    $data = [
-      'model' => 'gpt-3.5-turbo',
-      'messages' => [
-        [
-          'role' => 'system',
-          'content' => $prompt,
-        ],
-        [
-          'role' => 'user',
-          'content' => ' Description ' . $proposal->description,
-        ],
-      ],
-    ];
-
-    $response = Http::timeout(60)
-      ->withHeaders(['Authorization' => $bearer])
-      ->post($url, $data);
-
-    $coverLetter = $response['choices'][0]['message']['content'];
-
-    $limit = 1450;
-
-    if (strlen($coverLetter) > $limit) {
-      $coverLetter = substr($coverLetter, 0, $limit) . "...";
-    }
-
-    $bid = new Bid();
-    $bid->proposal_id = $proposal->id;
-    $bid->price = $proposal->max_budget * 0.9;
-    $bid->cover_letter = $coverLetter;
-    $bid->save();
   }
 }
