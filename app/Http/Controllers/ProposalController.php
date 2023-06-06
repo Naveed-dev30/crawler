@@ -104,7 +104,7 @@ class ProposalController extends Controller
     }
 
     $now = Carbon::now();
-    $yesterday = $now->subDays(6);
+    $yesterday = $now->subDays(6)->unix();
     $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
 
     $params = [
@@ -206,8 +206,6 @@ class ProposalController extends Controller
           /// [Min Cost]
           $proposal->min_budget = $project['budget']['minimum'];
 
-
-
           if ($proposal->type == 'fixed') {
             if ($filter->useminfix) {
               if ($proposal->min_budget < $filter->min_fixed_amount) {
@@ -239,13 +237,56 @@ class ProposalController extends Controller
 
           $proposal->save();
 
-          array_push($jobs, $proposal);
-        }
-
-        foreach ($jobs as $job) {
-          GenerateBidProcess::dispatch($job);
+          $this->handle($proposal);
         }
       }
     }
+  }
+
+  public function handle($proposal)
+  {
+
+    $bearer = 'Bearer ' . env('OPENAI_API_KEY');
+    $url = 'https://api.openai.com/v1/chat/completions';
+
+    $filter = Filter::find(1);
+
+    if (!$filter->crawler_on) {
+      return;
+    }
+
+    $prompt = $filter->prompt;
+
+    $data = [
+      'model' => 'gpt-3.5-turbo',
+      'messages' => [
+        [
+          'role' => 'system',
+          'content' => $prompt,
+        ],
+        [
+          'role' => 'user',
+          'content' => ' Description ' . $proposal->description,
+        ],
+      ],
+    ];
+
+    $response = Http::timeout(60)
+      ->withHeaders(['Authorization' => $bearer])
+      ->post($url, $data);
+
+    $coverLetter = $response['choices'][0]['message']['content'];
+
+    $limit = 1450;
+
+    if (strlen($coverLetter) > $limit) {
+      $coverLetter = substr($coverLetter, 0, $limit) . "...";
+    }
+
+    $bid = new Bid();
+    $bid->proposal_id = $proposal->id;
+    $bid->price = ($proposal->max_budget) * 0.9;
+    $bid->cover_letter = $coverLetter;
+    $bid->save();
   }
 }
