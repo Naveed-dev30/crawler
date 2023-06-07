@@ -4,19 +4,19 @@
       "url": "/",
       "name": "Home",
       "icon": "menu-icon tf-icons bx bx-home-circle",
-      "slug": "Home"
+      "slug": "home"
     },
     {
       "url": "/stats",
       "name": "Statistics",
       "icon": "menu-icon tf-icons bx bx-stats",
-      "slug": "Statistics"
+      "slug": "statistics"
     },
     {
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",
-      "slug": "Filters"
+      "slug": "filters"
     }
   ]
 }
