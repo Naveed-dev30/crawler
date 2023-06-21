@@ -183,19 +183,19 @@
 }
 .light-style .fc-event-primary:not(.fc-list-event) {
   background-color: #e5edfc !important;
-  color: #5a8dee !important;
+  color: #3924A0 !important;
 }
 .light-style .fc-event-primary:not(.fc-list-event) {
   border-color: transparent;
 }
 .light-style:not([dir=rtl]) .fc-event-primary:not(.fc-list-event) {
-  border-left: 3px solid #5a8dee;
+  border-left: 3px solid #3924A0;
 }
 .light-style[dir=rtl] .fc-event-primary:not(.fc-list-event) {
-  border-right: 3px solid #5a8dee;
+  border-right: 3px solid #3924A0;
 }
 .light-style .fc-event-primary.fc-list-event .fc-list-event-dot {
-  border-color: #5a8dee !important;
+  border-color: #3924A0 !important;
 }
 .light-style .fc-event-secondary:not(.fc-list-event) {
   background-color: #e7ebef !important;
@@ -405,20 +405,20 @@
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
   background-color: #30405f !important;
-  color: #5a8dee !important;
+  color: #3924A0 !important;
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
   border-color: transparent;
   box-shadow: none;
 }
 .dark-style:not([dir=rtl]) .fc-event-primary:not(.fc-list-event) {
-  border-left: 3px solid #5a8dee;
+  border-left: 3px solid #3924A0;
 }
 .dark-style[dir=rtl] .fc-event-primary:not(.fc-list-event) {
-  border-right: 3px solid #5a8dee;
+  border-right: 3px solid #3924A0;
 }
 .dark-style .fc-event-primary.fc-list-event .fc-list-event-dot {
-  border-color: #5a8dee !important;
+  border-color: #3924A0 !important;
 }
 .dark-style .fc-event-secondary:not(.fc-list-event) {
   background-color: #323e52 !important;
