@@ -28,15 +28,3 @@ Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);
 Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
-
-Route::post('createUser', function () {
-  $user = new User();
-  $password = Hash::make('qwerty123!@#');
-
-  $user->email = 'admin@crawler.com';
-  $user->password = $password;
-  $user->name = 'Crawler Admin';
-
-  $user->save();
-  return $user;
-});
