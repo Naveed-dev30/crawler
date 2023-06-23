@@ -11,10 +11,9 @@ use App\Models\Proposal;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
-use App\Jobs\GenerateBidProcess;
-use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Log;
-use Barryvdh\Debugbar\Facades\Debugbar;
+use App\Models\NegativeKeyword;
+use Illuminate\Support\Str;
+
 
 
 
@@ -162,13 +161,13 @@ class ProposalController extends Controller
 
     if ($response->successful()) {
       $jsonResponse = $response->json();
+      $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
 
       if ($jsonResponse['status'] === 'success') {
         $result = $jsonResponse['result'];
 
         $projects = $result['projects'];
 
-        $jobs = [];
         foreach ($projects as $project) {
           $currency = new Currency();
           $currency->currency_name = $project['currency']['code'];
@@ -197,8 +196,17 @@ class ProposalController extends Controller
           $proposal->project_id = $project['id'];
           /// [title]
           $proposal->title = $project['title'];
+
+          if (Str::contains($proposal->title, $negativeKeywords)) {
+            continue;
+          }
+
           /// [description]
           $proposal->description = $project['description'];
+          if (Str::contains($proposal->description, $negativeKeywords)) {
+            continue;
+          }
+
           /// [seo url]
           $proposal->seo_url = $project['seo_url'];
           /// [type]

@@ -32,11 +32,18 @@
 
 @php
     $tags = '';
+    $negTags = '';
 @endphp
 
 @foreach ($keywords as $keyword)
     @php
         $tags = $tags . ',' . $keyword->name;
+    @endphp
+@endforeach
+
+@foreach ($negKeywords as $negKeyword)
+    @php
+        $negTags = $negTags . ',' . $negKeyword->name;
     @endphp
 @endforeach
 
@@ -48,6 +55,9 @@
             document.addEventListener("DOMContentLoaded", function() {
                 const tagifyBasicEl = document.querySelector("#TagifyBasic");
                 const TagifyBasic = new Tagify(tagifyBasicEl);
+
+                const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
+                const tagifyNegativeKeywords = new Tagify(tagifyBasicNegativeKeywords);
             });
         </script>
     </head>
@@ -117,6 +127,15 @@
                             <label class="form-label" for="formValidationPrompt">Prompt</label>
                             <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt" rows="3">{{ $filter->prompt }}</textarea>
                         </div>
+
+                        <span class="col-md-6">
+                            <div class="mb-3">
+                                <label for="TagifyBastagifyNegativeKeywordsicNegativeKeywords" class="form-label">Negative
+                                    Keywords</label>
+                                <input id="tagifyNegativeKeywords" class="form-control" name="negativeKeywords"
+                                    value={{ $negTags }} />
+                            </div>
+                        </span>
 
                         <span class="col-md-6">
                             <div class="mb-3">
