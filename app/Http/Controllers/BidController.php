@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
 use Carbon\Carbon;
+use DateTime;
 
 class BidController extends Controller
 {
@@ -24,8 +25,13 @@ class BidController extends Controller
 
   public function stats()
   {
-   $bidsStats = Bid::latestYear()->whereSeen()->groupByDate()->get();
-   $firstDate = $bidsStats[0]->date;
+    $bidsStats = Bid::latestYear()->whereSeen()->groupByDate()->get();
+
+    $firstDate = new DateTime();
+
+    if ($bidsStats->toArray()) {
+      $firstDate = $bidsStats[0]->date;
+    }
 
 
     $calendar = [];
@@ -34,29 +40,29 @@ class BidController extends Controller
     $endDate = Carbon::now();
 
     while ($currentDate <= $endDate) {
-        $calendar[$currentDate->format('Y-m-d')] = [
-            'date' => $currentDate->format('Y-m-d'),
-            'day' => $currentDate->format('d'),
-            'month' => $currentDate->format('m'),
-            'year' => $currentDate->format('Y'),
-            'count' => 0,
-        ];
+      $calendar[$currentDate->format('Y-m-d')] = [
+        'date' => $currentDate->format('Y-m-d'),
+        'day' => $currentDate->format('d'),
+        'month' => $currentDate->format('m'),
+        'year' => $currentDate->format('Y'),
+        'count' => 0,
+      ];
 
-        $currentDate->addDay();
-}
+      $currentDate->addDay();
+    }
 
 
-  foreach($bidsStats as $bidStat){
-    $calendar[$bidStat->date]['count'] = $bidStat->count;
-  }
+    foreach ($bidsStats as $bidStat) {
+      $calendar[$bidStat->date]['count'] = $bidStat->count;
+    }
 
     $values = [];
 
     foreach ($calendar as $key => $value) {
-      array_push($values,$value );
+      array_push($values, $value);
     }
 
-    return view('content.pages.stats',['stats' => $values]);
+    return view('content.pages.stats', ['stats' => $values]);
   }
 
   /**
@@ -154,13 +160,8 @@ class BidController extends Controller
 
   public function getBid()
   {
-    $filter = Filter::find(1);
-
     $latestBid = Bid::where('bid_status', 'pending')
       ->where('created_at', '>=', now()->subDay())
-      // ->whereHas('proposal', function ($query) use ($filter) {
-      //   $query->whereIn('country', $filter->countries->pluck('language')->toArray());
-      // })
       ->latest()
       ->first();
 
@@ -181,16 +182,18 @@ class BidController extends Controller
     return $data;
   }
 
-  public function expireBids(){
+  public function expireBids()
+  {
     $notCompletedBids = Bid::where('bid_status', '!=', 'completed')->get();
-    foreach($notCompletedBids as $notCompletedBid){
+    foreach ($notCompletedBids as $notCompletedBid) {
       $notCompletedBid->bid_status = 'expired';
       $notCompletedBid->save();
     }
     return redirect('/');
   }
 
-  public function updateBidCheck(Request $request){
+  public function updateBidCheck(Request $request)
+  {
     $bid = Bid::find($request->bid_id);
 
     $bid->check = $request->check;

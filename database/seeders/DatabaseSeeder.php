@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
    */
   public function run(): void
   {
+    $this->call(FilterSeeder::class);
+
     $user = new User();
     $password = Hash::make('qwerty123!@#');
 
