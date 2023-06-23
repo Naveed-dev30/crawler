@@ -9,6 +9,7 @@ use App\Models\Currency;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreFilterRequest;
 use App\Http\Requests\UpdateFilterRequest;
+use App\Models\NegativeKeyword;
 
 class FilterController extends Controller
 {
@@ -23,7 +24,8 @@ class FilterController extends Controller
     $countries = Country::all();
     $currencies = Currency::all();
     $keywords = Keyword::all();
-    return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords]);
+    $negKeywords = NegativeKeyword::all();
+    return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords]);
   }
 
   /**
@@ -84,6 +86,7 @@ class FilterController extends Controller
     $minHourly = $request->formValidationMinHourlyRate;
     $minFixed = $request->formValidationMinFixedRate;
     $tags = $request->TagifyBasic;
+    $negTags = $request->negativeKeywords;
     $selectedKeywords = $request->formValidationKeywords;
 
 
@@ -112,6 +115,31 @@ class FilterController extends Controller
 
       // Delete the keywords that are no longer present in the list
       Keyword::whereIn('name', $keywordsToDelete)->delete();
+    }
+
+    /// [Neg Tags]
+    if ($negTags) {
+      $existingNegKeywords = NegativeKeyword::pluck('name')->toArray();
+      $negTagsJson = json_decode($negTags, true);
+      $newNegKeywords = [];
+
+      foreach ($negTagsJson as $negTag) {
+        $newNegKeywords[] = $negTag['value'];
+
+        // Check if the keyword already exists in the database
+        if (!in_array($negTag['value'], $existingNegKeywords)) {
+          // Create a new Keyword record and save it
+          $negKeyword = new NegativeKeyword();
+          $negKeyword->name = $negTag['value'];
+          $negKeyword->save();
+        }
+      }
+
+      // Determine the keywords that need to be deleted
+      $negKeywordsToDelete = array_diff($existingNegKeywords, $newNegKeywords);
+
+      // Delete the keywords that are no longer present in the list
+      NegativeKeyword::whereIn('name', $negKeywordsToDelete)->delete();
     }
 
     if ($prompt) {
