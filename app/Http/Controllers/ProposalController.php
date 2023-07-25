@@ -107,7 +107,7 @@ class ProposalController extends Controller
 
         $params = [
             'from_time' => $yesterday,
-            'limit' => 100,
+            'limit' => 10,
             'sort_field' => 'time_updated',
             'full_description' => true,
             'compact' => true,
@@ -297,9 +297,38 @@ class ProposalController extends Controller
         $bid->save();
 
         try {
-            BidNowJob::dispatch($bid);
+            $bid->bid_status = "STARTED";
+            $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
+
+            $data = [
+                "project_id" => $bid->proposal->project_id,
+                "bidder_id" => 14053397,
+                "amount" => $bid->price,
+                "period" => 5,
+                "milestone_percentage" => 30,
+                "description" => $bid->cover_letter,
+            ];
+
+            $headers = [
+                "content-type" => "application/json",
+                "freelancer-oauth-v1" => env('FL_ACCESS'),
+            ];
+
+            $response = Http::timeout(120)
+                ->withHeaders($headers)
+                ->post($url, $data);
+
+            if ($response->status() == 200) {
+                $this->bid->bid_status = "Completed";
+            } else {
+                $this->bid->bid_status = "Failed";
+            }
+
+
+            $this->bid->save();
         } catch (\Exception $e) {
-            //
+            $this->bid->bid_status = "Failed";
+            $this->bid->save();
         }
     }
 }
