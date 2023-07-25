@@ -103,7 +103,7 @@ class ProposalController extends Controller
         }
 
         $now = Carbon::now();
-        $yesterday = $now->subDays(6)->unix();
+        $yesterday = $now->subDays(1)->unix();
         $accessAuthToken = env('FL_ACCESS');
 
         $params = [
@@ -313,6 +313,45 @@ class ProposalController extends Controller
 
         $bid->save();
 
-        BidNowJob::dispatch($bid);
+        $bid->get();
+        $bid->bid_status = "Handle";
+        $bid->save();
+        // Generate the bid parameters
+        $data = [
+            "project_id" => $bid->proposal->project_id,
+            "bidder_id" => 14053397, // Replace with the ID of the bidder (your user ID or freelancer ID).
+            "amount" => $bid->price,
+            "period" => 5,
+            "milestone_percentage" => 30,
+            "description" => $bid->cover_letter,
+        ];
+
+        // Set the headers for the request
+        $headers = [
+            "content-type" => "application/json",
+            "freelancer-oauth-v1" => env('FL_ACCESS'),
+        ];
+
+        try {
+            $bid->bid_status = "Started";
+
+            // Make the HTTP POST request to place the bid
+            $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
+            $response = Http::timeout(120)
+                ->withHeaders($headers)
+                ->post($url, $data);
+
+            // Check the response status
+            if ($response->status() == 200) {
+                $bid->bid_status = "completed";
+            } else {
+                $bid->bid_status = "Failed";
+            }
+            $bid->save();
+        } catch (\Exception $e) {
+            // Handle any exceptions and mark the bid as failed
+            $bid->bid_status = "Failed";
+            $bid->save();
+        }
     }
 }
