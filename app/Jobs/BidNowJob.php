@@ -59,10 +59,14 @@ class BidNowJob implements ShouldQueue
             }
 
             $this->bid->save();
+
+            dd($response);
         } catch (\Exception $e) {
             // Handle any exceptions and mark the bid as failed
             $this->bid->bid_status = "Failed";
             $this->bid->save();
+            dd($e);
+
         }
 
     }
