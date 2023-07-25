@@ -15,7 +15,6 @@ use App\Http\Requests\UpdateProposalRequest;
 use App\Models\NegativeKeyword;
 use Illuminate\Support\Str;
 
-
 class ProposalController extends Controller
 {
     /**
@@ -122,213 +121,120 @@ class ProposalController extends Controller
         }
 
         if ($filter->usekeywords) {
-            $textQuery = '';
-
-            $keywords = $filter->keywords()->pluck('name')->toArray();
-
+            $keywords = $filter->keywords->pluck('name')->implode(' ');
             if ($keywords) {
-                foreach ($keywords as $keyword) {
-                    $textQuery = $textQuery . ' ' . $keyword;
-                }
+                $params['query'] = $keywords;
             }
-
-            if ($textQuery) {
-                $params['query'] = $textQuery;
-            }
-        }
-
-        $query = '';
-
-        foreach ($params as $param => $value) {
-            $query .= "{$param}={$value}&";
         }
 
         if ($filter->usecountries) {
-            foreach ($filter->countries as $country) {
-                $code = strtolower($country->language);
-                $query .= "countries[]={$code}&";
-            }
+            $countryCodes = $filter->countries->pluck('language')->map(function ($code) {
+                return strtolower($code);
+            })->toArray();
+            $params['countries'] = $countryCodes;
         }
 
-        $query = rtrim($query, '&');
-
-        $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
+        $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . http_build_query($params);
 
         $response = Http::withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-        if ($response->successful()) {
-            $jsonResponse = $response->json();
-            $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
+        if (!$response->successful()) {
+            return;
+        }
 
-            if ($jsonResponse['status'] === 'success') {
-                $result = $jsonResponse['result'];
+        $jsonResponse = $response->json();
+        if ($jsonResponse['status'] !== 'success') {
+            return;
+        }
 
-                $projects = $result['projects'];
+        $projects = $jsonResponse['result']['projects'];
+        $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
 
-                foreach ($projects as $project) {
-                    $currency = new Currency();
-                    $currency->currency_name = $project['currency']['code'];
-                    $currency->curreny_symbol = $project['currency']['sign'];
-
-                    $country = new Country();
-                    $country->country = $project['currency']['country'];
-                    $country->language = $project['language'];
-
-
-                    $isNDA = $project['upgrades']['NDA'];
-                    $isSealed = $project['upgrades']['sealed'];
-
-                    if ($isNDA or $isSealed) {
-                        continue;
-                    }
-
-                    $proposalExists = Proposal::where('project_id', $project['id'])->exists();
-
-                    if ($proposalExists) {
-                        continue;
-                    }
-
-                    $proposal = new Proposal();
-                    /// [id]
-                    $proposal->project_id = $project['id'];
-                    /// [title]
-                    $proposal->title = $project['title'];
-
-                    if (Str::contains($proposal->title, $negativeKeywords)) {
-                        continue;
-                    }
-
-                    /// [description]
-                    $proposal->description = $project['description'];
-                    if (Str::contains($proposal->description, $negativeKeywords)) {
-                        continue;
-                    }
-
-                    /// [seo url]
-                    $proposal->seo_url = $project['seo_url'];
-                    /// [type]
-                    $proposal->type = $project['type'];
-                    /// [Min Cost]
-                    $proposal->min_budget = $project['budget']['minimum'];
-
-                    if ($proposal->type == 'fixed') {
-                        if ($filter->useminfix) {
-                            if ($proposal->min_budget < $filter->min_fixed_amount) {
-                                continue;
-                            }
-                        }
-                    } else {
-                        if ($filter->useminhour) {
-                            if ($proposal->min_budget < $filter->min_hourly_amount) {
-                                continue;
-                            }
-                        }
-                    }
-
-                    /// [Max Cost]
-                    $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
-                    /// [Project Owner]
-                    $proposal->project_owner = $project['owner_id'];
-                    /// [Language]
-                    $proposal->language = $project['language'];
-                    ///[Currency Symbol]
-                    $proposal->currency_symbol = $currency->curreny_symbol;
-                    /// [currency_name]
-                    $proposal->currency_name = $currency->currency_name;
-                    /// [Added Time]
-                    $proposal->project_added_time = $project['time_submitted'];
-                    /// [Country]
-                    $proposal->country = $country->country;
-
-                    $proposal->save();
-
-                    $this->handle($proposal);
-                }
+        foreach ($projects as $project) {
+            if ($this->isProjectValid($project, $negativeKeywords, $filter)) {
+                $this->createProposalAndBid($project, $negativeKeywords);
             }
         }
     }
 
-    public function handle($proposal)
+    protected function isProjectValid($project, $negativeKeywords, $filter)
     {
+        $isNDA = $project['upgrades']['NDA'];
+        $isSealed = $project['upgrades']['sealed'];
 
-        $bearer = 'Bearer ' . env('OPENAI_API_KEY');
-        $url = 'https://api.openai.com/v1/chat/completions';
+        if ($isNDA || $isSealed) {
+            return false;
+        }
 
-        $filter = Filter::find(1);
+        $title = $project['title'];
+        $description = $project['description'];
 
-        if (!$filter->crawler_on) {
+        return !(Str::contains($title, $negativeKeywords) || Str::contains($description, $negativeKeywords))
+            && $this->isBudgetValid($project, $filter);
+    }
+
+    protected function isBudgetValid($project, $filter)
+    {
+        $type = $project['type'];
+        $minBudget = $project['budget']['minimum'];
+
+        if ($type === 'fixed' && $filter->useminfix) {
+            return $minBudget >= $filter->min_fixed_amount;
+        }
+
+        if ($type === 'hourly' && $filter->useminhour) {
+            return $minBudget >= $filter->min_hourly_amount;
+        }
+
+        return true;
+    }
+
+    protected function createProposalAndBid($project, $negativeKeywords)
+    {
+        $proposalExists = Proposal::where('project_id', $project['id'])->exists();
+        if ($proposalExists) {
             return;
         }
 
-        $prompt = $filter->prompt;
+        $currency = new Currency([
+            'currency_name' => $project['currency']['code'],
+            'curreny_symbol' => $project['currency']['sign'],
+        ]);
 
-        $data = [
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => $prompt,
-                ],
-                [
-                    'role' => 'user',
-                    'content' => ' Description ' . $proposal->description,
-                ],
-            ],
-        ];
+        $country = new Country([
+            'country' => $project['currency']['country'],
+            'language' => $project['language'],
+        ]);
 
-        $response = Http::timeout(120)
-            ->withHeaders(['Authorization' => $bearer])
-            ->post($url, $data);
+        $proposal = new Proposal([
+            'project_id' => $project['id'],
+            'title' => $project['title'],
+            'description' => $project['description'],
+            'seo_url' => $project['seo_url'],
+            'type' => $project['type'],
+            'min_budget' => $project['budget']['minimum'],
+            'max_budget' => $project['budget']['maximum'] ?? $project['budget']['minimum'],
+            'project_owner' => $project['owner_id'],
+            'language' => $project['language'],
+            'currency_symbol' => $currency->curreny_symbol,
+            'currency_name' => $currency->currency_name,
+            'project_added_time' => $project['time_submitted'],
+            'country' => $country->country,
+        ]);
 
-        $coverLetter = $response['choices'][0]['message']['content'];
-
-        $limit = 1450;
-
-        if (strlen($coverLetter) > $limit) {
-            $coverLetter = substr($coverLetter, 0, $limit) . "...";
+        if (!$proposal->isValid($negativeKeywords)) {
+            return;
         }
 
-        $bid = new Bid();
-        $bid->proposal_id = $proposal->id;
-        $bid->price = ($proposal->max_budget) * 0.9;
-        $bid->cover_letter = $coverLetter;
-        $bid->save();
+        $proposal->save();
 
-        try {
-            $bid->bid_status = "STARTED";
-            $bid->save();
-            $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
+        $this->dispatchBidNowJob($proposal);
+    }
 
-            $data = [
-                "project_id" => $bid->proposal->project_id,
-                "bidder_id" => 14053397,
-                "amount" => $bid->price,
-                "period" => 5,
-                "milestone_percentage" => 30,
-                "description" => $bid->cover_letter,
-            ];
-
-
-            $response = Http::timeout(120)
-                ->withHeaders([
-                    "content-type" => "application/json",
-                    "freelancer-oauth-v1" => env('FL_ACCESS'),
-                ])
-                ->post($url, $data);
-
-            if ($response->status() == 200) {
-                $bid->bid_status = "Completed";
-            } else {
-                $bid->bid_status = "Failed";
-            }
-
-
-            $bid->save();
-        } catch (\Exception $e) {
-            $bid->bid_status = "Failed";
-            $bid->save();
-        }
+    protected function dispatchBidNowJob($proposal)
+    {
+        BidNowJob::dispatch($proposal);
     }
 }
