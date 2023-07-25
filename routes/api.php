@@ -28,3 +28,5 @@ Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);
 Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
+
+
