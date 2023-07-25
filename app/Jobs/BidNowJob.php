@@ -26,6 +26,7 @@ class BidNowJob implements ShouldQueue
     {
 
         try {
+            $this->bid->bid_status = "STARTED";
             $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
 
             $data = [
@@ -37,7 +38,10 @@ class BidNowJob implements ShouldQueue
                 "description" => $this->bid->cover_letter,
             ];
 
-            $headers = [];
+            $headers = [
+                "content-type" => "application/json",
+                "freelancer-oauth-v1" => env('FL_ACCESS'),
+            ];
 
             $response = Http::timeout(120)
                 ->withHeaders($headers)
