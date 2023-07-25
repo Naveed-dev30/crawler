@@ -182,7 +182,7 @@
   background: #f2f2f6;
 }
 .light-style .fc-event-primary:not(.fc-list-event) {
-  background-color: #e5edfc !important;
+  background-color: #dfdcf0 !important;
   color: #3924A0 !important;
 }
 .light-style .fc-event-primary:not(.fc-list-event) {
@@ -404,7 +404,7 @@
   background: #1c222f;
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
-  background-color: #30405f !important;
+  background-color: #2b2f53 !important;
   color: #3924A0 !important;
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
