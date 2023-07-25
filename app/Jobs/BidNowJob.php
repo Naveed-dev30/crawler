@@ -23,7 +23,6 @@ class BidNowJob implements ShouldQueue
 
     public function handle()
     {
-
         $this->bid->bid_status = "Handle";
         // Generate the bid parameters
         $data = [
@@ -57,7 +56,6 @@ class BidNowJob implements ShouldQueue
                 $this->bid->bid_status = "Failed";
             }
 
-            // Save the bid status
             $this->bid->save();
         } catch (\Exception $e) {
             // Handle any exceptions and mark the bid as failed

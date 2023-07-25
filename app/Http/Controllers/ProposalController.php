@@ -15,6 +15,7 @@ use App\Http\Requests\UpdateProposalRequest;
 use App\Models\NegativeKeyword;
 use Illuminate\Support\Str;
 
+
 class ProposalController extends Controller
 {
     /**
@@ -94,7 +95,9 @@ class ProposalController extends Controller
 
     public function getProposals()
     {
+
         $filter = Filter::find(1);
+
 
         if (!$filter->crawler_on) {
             return;
@@ -106,7 +109,7 @@ class ProposalController extends Controller
 
         $params = [
             'from_time' => $yesterday,
-            'limit' => 10,
+            'limit' => 1,
             'sort_field' => 'time_updated',
             'full_description' => true,
             'compact' => true,
@@ -121,120 +124,202 @@ class ProposalController extends Controller
         }
 
         if ($filter->usekeywords) {
-            $keywords = $filter->keywords->pluck('name')->implode(' ');
+            $textQuery = '';
+
+            $keywords = $filter->keywords()->pluck('name')->toArray();
+
             if ($keywords) {
-                $params['query'] = $keywords;
+                foreach ($keywords as $keyword) {
+                    $textQuery = $textQuery . ' ' . $keyword;
+                }
+            }
+
+            if ($textQuery) {
+                $params['query'] = $textQuery;
             }
         }
 
-        if ($filter->usecountries) {
-            $countryCodes = $filter->countries->pluck('language')->map(function ($code) {
-                return strtolower($code);
-            })->toArray();
-            $params['countries'] = $countryCodes;
+
+        $query = '';
+
+        foreach ($params as $param => $value) {
+            $query .= "{$param}={$value}&";
         }
 
-        $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . http_build_query($params);
+        if ($filter->usecountries) {
+            foreach ($filter->countries as $country) {
+                $code = strtolower($country->language);
+                $query .= "countries[]={$code}&";
+            }
+        }
+
+        $query = rtrim($query, '&');
+
+        $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
 
         $response = Http::withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-        if (!$response->successful()) {
-            return;
-        }
 
-        $jsonResponse = $response->json();
-        if ($jsonResponse['status'] !== 'success') {
-            return;
-        }
+        if ($response->successful()) {
 
-        $projects = $jsonResponse['result']['projects'];
-        $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
+            $jsonResponse = $response->json();
 
-        foreach ($projects as $project) {
-            if ($this->isProjectValid($project, $negativeKeywords, $filter)) {
-                $this->createProposalAndBid($project, $negativeKeywords);
+            $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
+
+
+            if ($jsonResponse['status'] === 'success') {
+
+                $result = $jsonResponse['result'];
+
+
+                $projects = $result['projects'];
+
+
+                foreach ($projects as $project) {
+                    $currency = new Currency();
+                    $currency->currency_name = $project['currency']['code'];
+                    $currency->curreny_symbol = $project['currency']['sign'];
+
+                    $country = new Country();
+                    $country->country = $project['currency']['country'];
+                    $country->language = $project['language'];
+
+
+                    $isNDA = $project['upgrades']['NDA'];
+                    $isSealed = $project['upgrades']['sealed'];
+
+
+                    if ($isNDA or $isSealed) {
+                        continue;
+                    }
+
+                    $proposalExists = Proposal::where('project_id', $project['id'])->exists();
+
+                    if ($proposalExists) {
+                        continue;
+                    }
+
+                    $proposal = new Proposal();
+                    /// [id]
+                    $proposal->project_id = $project['id'];
+                    /// [title]
+                    $proposal->title = $project['title'];
+
+                    if (Str::contains($proposal->title, $negativeKeywords)) {
+
+                        continue;
+                    }
+
+                    /// [description]
+                    $proposal->description = $project['description'];
+                    if (Str::contains($proposal->description, $negativeKeywords)) {
+
+                        continue;
+                    }
+
+                    /// [seo url]
+                    $proposal->seo_url = $project['seo_url'];
+                    /// [type]
+                    $proposal->type = $project['type'];
+                    /// [Min Cost]
+                    $proposal->min_budget = $project['budget']['minimum'];
+
+                    if ($proposal->type == 'fixed') {
+                        if ($filter->useminfix) {
+                            if ($proposal->min_budget < $filter->min_fixed_amount) {
+
+                                continue;
+                            }
+                        }
+                    } else {
+                        if ($filter->useminhour) {
+                            if ($proposal->min_budget < $filter->min_hourly_amount) {
+
+                                continue;
+                            }
+                        }
+                    }
+
+                    /// [Max Cost]
+                    $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
+                    /// [Project Owner]
+                    $proposal->project_owner = $project['owner_id'];
+                    /// [Language]
+                    $proposal->language = $project['language'];
+                    ///[Currency Symbol]
+                    $proposal->currency_symbol = $currency->curreny_symbol;
+                    /// [currency_name]
+                    $proposal->currency_name = $currency->currency_name;
+                    /// [Added Time]
+                    $proposal->project_added_time = $project['time_submitted'];
+                    /// [Country]
+                    $proposal->country = $country->country;
+
+                    $proposal->save();
+
+                    $this->handle($proposal);
+                }
             }
         }
     }
 
-    protected function isProjectValid($project, $negativeKeywords, $filter)
+    public function handle($proposal)
     {
-        $isNDA = $project['upgrades']['NDA'];
-        $isSealed = $project['upgrades']['sealed'];
 
-        if ($isNDA || $isSealed) {
-            return false;
-        }
+        $bearer = 'Bearer ' . env('OPENAI_API_KEY');
+        $url = 'https://api.openai.com/v1/chat/completions';
 
-        $title = $project['title'];
-        $description = $project['description'];
 
-        return !(Str::contains($title, $negativeKeywords) || Str::contains($description, $negativeKeywords))
-            && $this->isBudgetValid($project, $filter);
-    }
+        $filter = Filter::find(1);
 
-    protected function isBudgetValid($project, $filter)
-    {
-        $type = $project['type'];
-        $minBudget = $project['budget']['minimum'];
-
-        if ($type === 'fixed' && $filter->useminfix) {
-            return $minBudget >= $filter->min_fixed_amount;
-        }
-
-        if ($type === 'hourly' && $filter->useminhour) {
-            return $minBudget >= $filter->min_hourly_amount;
-        }
-
-        return true;
-    }
-
-    protected function createProposalAndBid($project, $negativeKeywords)
-    {
-        $proposalExists = Proposal::where('project_id', $project['id'])->exists();
-        if ($proposalExists) {
+        if (!$filter->crawler_on) {
             return;
         }
 
-        $currency = new Currency([
-            'currency_name' => $project['currency']['code'],
-            'curreny_symbol' => $project['currency']['sign'],
-        ]);
+        $prompt = $filter->prompt;
 
-        $country = new Country([
-            'country' => $project['currency']['country'],
-            'language' => $project['language'],
-        ]);
+        $data = [
+            'model' => 'gpt-3.5-turbo',
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => $prompt,
+                ],
+                [
+                    'role' => 'user',
+                    'content' => ' Description ' . $proposal->description,
+                ],
+            ],
+        ];
 
-        $proposal = new Proposal([
-            'project_id' => $project['id'],
-            'title' => $project['title'],
-            'description' => $project['description'],
-            'seo_url' => $project['seo_url'],
-            'type' => $project['type'],
-            'min_budget' => $project['budget']['minimum'],
-            'max_budget' => $project['budget']['maximum'] ?? $project['budget']['minimum'],
-            'project_owner' => $project['owner_id'],
-            'language' => $project['language'],
-            'currency_symbol' => $currency->curreny_symbol,
-            'currency_name' => $currency->currency_name,
-            'project_added_time' => $project['time_submitted'],
-            'country' => $country->country,
-        ]);
+        $response = Http::timeout(120)
+            ->withHeaders(['Authorization' => $bearer])
+            ->post($url, $data);
 
-//        if (!$proposal->isValid($negativeKeywords)) {
-//            return;
-//        }
+        $coverLetter = $response['choices'][0]['message']['content'];
 
-        $proposal->save();
+        $limit = 1450;
 
-        $this->dispatchBidNowJob($proposal);
-    }
+        if (strlen($coverLetter) > $limit) {
+            $coverLetter = substr($coverLetter, 0, $limit) . "...";
+        }
 
-    protected function dispatchBidNowJob($proposal)
-    {
-        BidNowJob::dispatch($proposal);
+
+        $bid = new Bid();
+        $bid->proposal_id = $proposal->id;
+        $bid->price = ($proposal->max_budget) * 0.9;
+        $bid->cover_letter = $coverLetter;
+
+        $bid->save();
+
+        $bid->get();
+
+
+        $bid->bid_status = "STARTED";
+        $bid->save();
+
+        BidNowJob::dispatch($bid);
     }
 }
