@@ -96,7 +96,7 @@ class ProposalController extends Controller
     public function getProposals()
     {
 
-        $filter = Filter::find(1);
+        $filter = Filter::find(10);
 
 
         if (!$filter->crawler_on) {
