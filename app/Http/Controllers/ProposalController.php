@@ -319,7 +319,7 @@ class ProposalController extends Controller
         // Generate the bid parameters
         $data = [
             "project_id" => $bid->proposal->project_id,
-            "bidder_id" => 14053397, // Replace with the ID of the bidder (your user ID or freelancer ID).
+            "bidder_id" => env("FL_USER_ID"), // Replace with the ID of the bidder (your user ID or freelancer ID).
             "amount" => $bid->price,
             "period" => 5,
             "milestone_percentage" => 30,
