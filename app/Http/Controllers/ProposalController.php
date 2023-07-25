@@ -224,9 +224,9 @@ class ProposalController extends Controller
             'country' => $country->country,
         ]);
 
-        if (!$proposal->isValid($negativeKeywords)) {
-            return;
-        }
+//        if (!$proposal->isValid($negativeKeywords)) {
+//            return;
+//        }
 
         $proposal->save();
 
