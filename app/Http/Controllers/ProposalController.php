@@ -103,7 +103,7 @@ class ProposalController extends Controller
 
         $now = Carbon::now();
         $yesterday = $now->subDays(6)->unix();
-        $accessAuthToken = 'uvsN2826QWbr1gVlRWrhaQJf5oX16o';
+        $accessAuthToken = env('FL_ACCESS');
 
         $params = [
             'from_time' => $yesterday,
