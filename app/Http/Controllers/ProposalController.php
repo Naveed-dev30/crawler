@@ -298,6 +298,7 @@ class ProposalController extends Controller
 
         try {
             $bid->bid_status = "STARTED";
+            $bid->save();
             $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
 
             $data = [
@@ -309,26 +310,25 @@ class ProposalController extends Controller
                 "description" => $bid->cover_letter,
             ];
 
-            $headers = [
-                "content-type" => "application/json",
-                "freelancer-oauth-v1" => env('FL_ACCESS'),
-            ];
 
             $response = Http::timeout(120)
-                ->withHeaders($headers)
+                ->withHeaders([
+                    "content-type" => "application/json",
+                    "freelancer-oauth-v1" => env('FL_ACCESS'),
+                ])
                 ->post($url, $data);
 
             if ($response->status() == 200) {
-                $this->bid->bid_status = "Completed";
+                $bid->bid_status = "Completed";
             } else {
-                $this->bid->bid_status = "Failed";
+                $bid->bid_status = "Failed";
             }
 
 
-            $this->bid->save();
+            $bid->save();
         } catch (\Exception $e) {
-            $this->bid->bid_status = "Failed";
-            $this->bid->save();
+            $bid->bid_status = "Failed";
+            $bid->save();
         }
     }
 }
