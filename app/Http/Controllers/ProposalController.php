@@ -96,8 +96,7 @@ class ProposalController extends Controller
     public function getProposals()
     {
 
-        $filter = Filter::find(10);
-
+        $filter = Filter::find(1);
 
         if (!$filter->crawler_on) {
             return;
@@ -109,7 +108,7 @@ class ProposalController extends Controller
 
         $params = [
             'from_time' => $yesterday,
-            'limit' => 1,
+            'limit' => 10,
             'sort_field' => 'time_updated',
             'full_description' => true,
             'compact' => true,
@@ -312,12 +311,6 @@ class ProposalController extends Controller
         $bid->price = ($proposal->max_budget) * 0.9;
         $bid->cover_letter = $coverLetter;
 
-        $bid->save();
-
-        $bid->get();
-
-
-        $bid->bid_status = "STARTED";
         $bid->save();
 
         BidNowJob::dispatch($bid);

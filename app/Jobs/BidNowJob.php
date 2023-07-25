@@ -23,7 +23,9 @@ class BidNowJob implements ShouldQueue
 
     public function handle()
     {
+        $this->bid->get();
         $this->bid->bid_status = "Handle";
+        $this->bid->save();
         // Generate the bid parameters
         $data = [
             "project_id" => $this->bid->proposal->project_id,
@@ -62,5 +64,7 @@ class BidNowJob implements ShouldQueue
             $this->bid->bid_status = "Failed";
             $this->bid->save();
         }
+
     }
+
 }
