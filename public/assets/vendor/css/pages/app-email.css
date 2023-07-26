@@ -38,7 +38,7 @@
   }
 }
 .app-email .app-email-sidebar .email-filters .email-filter-folders li.active {
-  border-color: #3924A0;
+  border-color: rgba(90, 141, 238, 0.1607843137);
 }
 .app-email .app-email-sidebar .email-filters li {
   padding: 0.35rem 1.5rem;
