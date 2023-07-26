@@ -34,6 +34,9 @@
 
 
         <h6>Bid Status: <span class="fw-light">{{ $bid->bid_status }}</span></h6>
+        @if($bid->bid_status =='Failed')
+            <span class="fw-light">{{ $bid->error_message }}</span>
+        @endif
 
         <h6>Type: <span class="fw-light">{{ $bid->proposal->type }}</span></h6>
 
@@ -43,7 +46,6 @@
 
         <h6>Title: </h6>
         <span class="fw-light">{{ $bid->proposal->title }}</span>
-
 
 
         <h6 class="mt-4">Project Description: </h6>
