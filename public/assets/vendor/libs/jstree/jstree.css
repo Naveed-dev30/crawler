@@ -2820,7 +2820,7 @@
   color: #fdac41;
 }
 .light-style .jstree .jstree-container-ul .jstree-icon.fa-file {
-  color: #3924A0;
+  color: rgba(90, 141, 238, 0.1607843137);
 }
 .light-style .jstree .jstree-container-ul .jstree-anchor {
   color: #677788;
@@ -2865,7 +2865,7 @@
   color: #fdac41;
 }
 .dark-style .jstree .jstree-container-ul .jstree-icon.fa-file {
-  color: #3924A0;
+  color: rgba(90, 141, 238, 0.1607843137);
 }
 .dark-style .jstree .jstree-container-ul .jstree-anchor {
   color: #a1b0cb;
