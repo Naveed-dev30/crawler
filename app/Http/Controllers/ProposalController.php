@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\BidNowJob;
+use App\Jobs\OpenAIJob;
 use App\Models\Bid;
 use App\Models\Country;
 use Carbon\Carbon;
@@ -257,62 +258,11 @@ class ProposalController extends Controller
                     $proposal->country = $country->country;
 
                     $proposal->save();
+                    $proposal->get();
 
-                    $this->handle($proposal);
+                    OpenAIJob::dispatch($proposal);
                 }
             }
         }
-    }
-
-    public function handle($proposal)
-    {
-
-        $bearer = 'Bearer ' . env('OPENAI_API_KEY');
-        $url = 'https://api.openai.com/v1/chat/completions';
-
-
-        $filter = Filter::find(1);
-
-        if (!$filter->crawler_on) {
-            return;
-        }
-
-        $prompt = $filter->prompt;
-
-        $data = [
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => $prompt,
-                ],
-                [
-                    'role' => 'user',
-                    'content' => ' Description ' . $proposal->description,
-                ],
-            ],
-        ];
-
-        $response = Http::timeout(120)
-            ->withHeaders(['Authorization' => $bearer])
-            ->post($url, $data);
-
-        $coverLetter = $response['choices'][0]['message']['content'];
-
-        $limit = 1450;
-
-        if (strlen($coverLetter) > $limit) {
-            $coverLetter = substr($coverLetter, 0, $limit) . "...";
-        }
-
-
-        $bid = new Bid();
-        $bid->proposal_id = $proposal->id;
-        $bid->price = ($proposal->max_budget) * 0.9;
-        $bid->cover_letter = $coverLetter;
-        $bid->save();
-        $bid->get();
-
-        BidNowJob::dispatch($bid)->delay(now()->addSeconds(30));
     }
 }
