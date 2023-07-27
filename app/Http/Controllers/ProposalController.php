@@ -103,13 +103,12 @@ class ProposalController extends Controller
             return;
         }
 
-        $now = Carbon::now();
         $yesterday = Carbon::now()->subHours(1);
         $accessAuthToken = env('FL_ACCESS');
 
         $params = [
             'from_time' => $yesterday,
-            'limit' => 10,
+            'limit' => 200,
             'sort_field' => 'time_updated',
             'full_description' => true,
             'compact' => true,
