@@ -66,7 +66,7 @@ class OpenAIJob implements ShouldQueue
 
         $bid = new Bid();
         $bid->proposal_id = $this->proposal->id;
-        $bid->price = ($this->proposal->min_budget ?? 20) * 1.1;
+        $bid->price = $this->proposal->max_budget * 0.9;
         $bid->cover_letter = $coverLetter;
         $bid->save();
         $bid->get();
