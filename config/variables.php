@@ -3,7 +3,7 @@
 return [
   "creatorName" => "FlutterArc",
   "creatorUrl" => "https://flutterarc.com",
-  "templateName" => "Staging",
+  "templateName" => env("APP_NAME"),
   "templateSuffix" => "App",
   "templateVersion" => "1.0.0",
   "templateFree" => false,
