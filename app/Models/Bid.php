@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Models\Proposal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
 
 class Bid extends Model
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
+
 
     /**
      * Get the proposal that owns the Bid
@@ -26,9 +28,9 @@ class Bid extends Model
     }
 
     public function scopeLatestYear($query)
-{
-    return $query->where('created_at', '>=', now()->subYear());
-}
+    {
+        return $query->where('created_at', '>=', now()->subYear());
+    }
 
 
     public function scopeWhereSeen($query)
@@ -40,5 +42,10 @@ class Bid extends Model
     {
         return $query->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date');
+    }
+
+    public function routeNotificationForSlack()
+    {
+        return env('LOG_SLACK_WEBHOOK_URL');
     }
 }
