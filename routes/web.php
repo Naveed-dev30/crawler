@@ -39,3 +39,8 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
   Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
 });
+
+
+Route::get('/notify',function (){
+   \App\Models\Bid::find(1)->notify("HY THIS IS NOTIFY FROM LARAVEL");
+});
