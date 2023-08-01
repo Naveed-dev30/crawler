@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Bid;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ContextBlock;
@@ -12,14 +13,14 @@ class BidFailed extends Notification
 {
     use Queueable;
 
-    protected $message;
+    protected $bid;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct($message)
+    public function __construct(Bid $bid)
     {
-        $this->message = $message;
+        $this->bid = $bid;
     }
 
 
@@ -39,19 +40,27 @@ class BidFailed extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         return (new SlackMessage)
-            ->text('One of your invoices has been paid!')
-            ->headerBlock('Invoice Paid')
+            ->text(':sad: one of your bid failed just now.')
+            ->headerBlock('Bid Failed')
             ->contextBlock(function (ContextBlock $block) {
-                $block->text('Customer #1234');
+                $block->text('Bid #'.$this->bid->id);
             })
             ->sectionBlock(function (SectionBlock $block) {
-                $block->text('An invoice has been paid.');
-                $block->field("*Invoice No:*\n1000")->markdown();
-                $block->field("*Invoice Recipient:*\ntaylor@laravel.com")->markdown();
+                $block->text('Following bid got failed');
+                $block->field("*Bid no:*\n".$this->bid->id)->markdown();
+                $block->field("*Error message:*\n".$this->bid->error_message)->markdown();
+                $block->field("*Our proposed price:*\n".$this->bid->price)->markdown();
+                $block->field("*Project Type:*\n".$this->bid->proposal->type)->markdown();
+                $block->field("*Project Min Budget:*\n".$this->bid->proposal->min_budget)->markdown();
+                $block->field("*Project Max Budget:*\n".$this->bid->proposal->max_budget)->markdown();
             })
             ->dividerBlock()
-            ->sectionBlock(function (SectionBlock $block) {
-                $block->text('Congratulations!');
+            ->sectionBlock(function (SectionBlock $block){
+                $block->field("*Project Description:*\n".$this->bid->proposal->description)->markdown();
+            })
+            ->dividerBlock()
+            ->sectionBlock(function (SectionBlock $block){
+                $block->field("*Our Proposal:*\n".$this->bid->proposal->description)->markdown();
             });
     }
 
