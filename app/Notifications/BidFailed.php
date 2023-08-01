@@ -60,7 +60,7 @@ class BidFailed extends Notification
             })
             ->dividerBlock()
             ->sectionBlock(function (SectionBlock $block){
-                $block->field("*Our Proposal:*\n".$this->bid->proposal->description)->markdown();
+                $block->field("*Our Proposal:*\n".$this->bid->cover_letter)->markdown();
             });
     }
 
