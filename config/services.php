@@ -33,7 +33,7 @@ return [
 
     'slack' => [
         'notifications' => [
-            'bot_user_oauth_token' => 'xoxb-4985090844148-5694250671952-mkM5r8LXpGPqVFiam9N56MOt',
+            'bot_user_oauth_token' => env('SLACK_OAUTH_TOKEN'),
             'channel' => 'stack',
         ],
     ]
