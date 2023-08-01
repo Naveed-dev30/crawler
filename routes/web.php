@@ -42,5 +42,5 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::get('/notify',function (){
-   \App\Models\Bid::find(1)->notify("HY THIS IS NOTIFY FROM LARAVEL");
+   \App\Models\Bid::first()->notify("HY THIS IS NOTIFY FROM LARAVEL");
 });
