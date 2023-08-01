@@ -40,7 +40,7 @@ class BidFailed extends Notification
      */
     public function toSlack(object $notifiable)
     {
-        \Log::critical('asdasdasdasd');
+
     }
 
     /**
