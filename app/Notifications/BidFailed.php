@@ -43,25 +43,25 @@ class BidFailed extends Notification
             ->text(':sad: one of your bid failed just now.')
             ->headerBlock('Bid Failed')
             ->contextBlock(function (ContextBlock $block) {
-                $block->text('Bid #'.$this->bid->id);
+                $block->text('Bid #' . $this->bid->id);
             })
             ->sectionBlock(function (SectionBlock $block) {
                 $block->text('Following bid got failed');
-                $block->field("*Bid no:*\n".$this->bid->id)->markdown();
-                $block->field("*Error message:*\n".$this->bid->error_message)->markdown();
-                $block->field("*Our proposed price:*\n".$this->bid->price)->markdown();
-                $block->field("*Project Type:*\n".$this->bid->proposal->type)->markdown();
-                $block->field("*Project Min Budget:*\n".$this->bid->proposal->min_budget)->markdown();
-                $block->field("*Project Max Budget:*\n".$this->bid->proposal->max_budget)->markdown();
+                $block->field("*Bid no:*\n" . $this->bid->id)->markdown();
+                $block->field("*Error message:*\n" . $this->bid->error_message)->markdown();
+//                $block->field("*Our proposed price:*\n".$this->bid->price)->markdown();
+//                $block->field("*Project Type:*\n".$this->bid->proposal->type)->markdown();
+//                $block->field("*Project Min Budget:*\n".$this->bid->proposal->min_budget)->markdown();
+//                $block->field("*Project Max Budget:*\n".$this->bid->proposal->max_budget)->markdown();
             })
-            ->dividerBlock()
-            ->sectionBlock(function (SectionBlock $block){
-                $block->field("*Project Description:*\n".$this->bid->proposal->description)->markdown();
-            })
-            ->dividerBlock()
-            ->sectionBlock(function (SectionBlock $block){
-                $block->field("*Our Proposal:*\n".$this->bid->cover_letter)->markdown();
-            });
+            ->dividerBlock();
+//            ->sectionBlock(function (SectionBlock $block){
+//                $block->field("*Project Description:*\n".$this->bid->proposal->description)->markdown();
+//            })
+//            ->dividerBlock()
+//            ->sectionBlock(function (SectionBlock $block){
+//                $block->field("*Our Proposal:*\n".$this->bid->cover_letter)->markdown();
+//            });
     }
 
     /**
