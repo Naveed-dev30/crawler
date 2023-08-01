@@ -42,5 +42,5 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::get('/notify', function () {
-    Log::critical("adasdsad");
+    Log::debug("adasdsad");
 });
