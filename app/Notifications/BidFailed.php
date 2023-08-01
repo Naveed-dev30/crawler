@@ -3,12 +3,8 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Slack\SlackMessage;
-use Monolog\Handler\Slack\SlackRecord;
-use Monolog\Handler\SlackHandler;
 
 class BidFailed extends Notification
 {
@@ -38,9 +34,11 @@ class BidFailed extends Notification
     /**
      * Get the mail representation of the notification.
      */
-    public function toSlack(object $notifiable)
+    public function toSlack(object $notifiable): SlackMessage
     {
-
+        return (new SlackMessage)
+            ->to('stack')
+            ->text('adasdasdasdasd');
     }
 
     /**
