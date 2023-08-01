@@ -44,8 +44,5 @@ class Bid extends Model
             ->groupBy('date');
     }
 
-    public function routeNotificationForSlack()
-    {
-        return env('LOG_SLACK_WEBHOOK_URL');
-    }
+
 }
