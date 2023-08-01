@@ -33,7 +33,7 @@ return [
 
     'slack' => [
         'notifications' => [
-            'bot_user_oauth_token' => 'xapp-1-A05KA0855E3-5656451563783-6041868641f1a2f59fef97e1803bdb05365845dcb6eaefbcb525bc3dc8da325f',
+            'bot_user_oauth_token' => 'xoxb-4985090844148-5694250671952-T52twBbW3qwmtHGpP40l6Sml',
             'channel' => 'stack',
         ],
     ]
