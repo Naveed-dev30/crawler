@@ -24,6 +24,7 @@ class BidFailed extends Notification
         $this->message = $message;
     }
 
+
     /**
      * Get the notification's delivery channels.
      *
@@ -40,7 +41,6 @@ class BidFailed extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         return (new SlackMessage)
-            ->to('stack')
             ->text('ASdasadasnd asjn dnas djkasd askjd');
     }
 
