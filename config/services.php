@@ -34,7 +34,7 @@ return [
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_OAUTH_TOKEN'),
-            'channel' => 'stack',
+            'channel' => '#stack',
         ],
     ]
 ];
