@@ -44,11 +44,5 @@ class Bid extends Model
             ->groupBy('date');
     }
 
-    public function routeNotificationForSlack()
-    {
-        return [
-            'token' => 'xoxp-slack-token',
-            'channel' => 'stack'
-        ];
-    }
+
 }

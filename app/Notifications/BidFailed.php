@@ -41,6 +41,7 @@ class BidFailed extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         return (new SlackMessage)
+            ->to('stack')
             ->text('ASdasadasnd asjn dnas djkasd askjd');
     }
 
