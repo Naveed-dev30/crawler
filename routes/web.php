@@ -18,29 +18,30 @@ use Illuminate\Support\Facades\Auth;
 */
 
 Route::get('login', function () {
-    return view('content.authentications.auth-login-basic');
+  return view('content.authentications.auth-login-basic');
 })->name('login');
 
 Route::post('auth', function (Request $request) {
-    // return $request;
-    if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-        return redirect('/');
-    } else {
-        return redirect('/login');
-    }
+  // return $request;
+  if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+    return redirect('/');
+  } else {
+    return redirect('/login');
+  }
 })->name('auth');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/', [BidController::class, 'index'])->name('home');
-    Route::get('/stats', [BidController::class, 'stats'])->name('statistics');
-    Route::get('/filters', [FilterController::class, 'index'])->name('filters');
-    Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
-    Route::resource('bids', BidController::class);
-    Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
-    Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
+  Route::get('/', [BidController::class, 'index'])->name('home');
+  Route::get('/stats', [BidController::class, 'stats'])->name('statistics');
+  Route::get('/filters', [FilterController::class, 'index'])->name('filters');
+  Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+  Route::resource('bids', BidController::class);
+  Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
+  Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
 });
 
 
-Route::get('/notify', function () {
-    Log::debug("adasdsad");
+Route::get('/notify',function (){
+   $bid = \App\Models\Bid::first();
+   $bid->notify(new \App\Notifications\BidFailed("asdnadasdkas"));
 });
