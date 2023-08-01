@@ -38,11 +38,9 @@ class BidFailed extends Notification
     /**
      * Get the mail representation of the notification.
      */
-    public function toSlack(object $notifiable): SlackMessage
+    public function toSlack(object $notifiable)
     {
-        return (new SlackMessage)
-            ->to('stack')
-            ->text('ASdasadasnd asjn dnas djkasd askjd');
+        \Log::critical('asdasdasdasd');
     }
 
     /**
