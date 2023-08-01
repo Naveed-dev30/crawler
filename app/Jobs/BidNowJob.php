@@ -58,8 +58,7 @@ class BidNowJob implements ShouldQueue
                 $this->bid->bid_status = "Failed";
                 $body = json_decode($response->body());
                 $this->bid->error_message = $body->message;
-                $this->bid->notify(new BidFailed($this->bid->error_message));
-                \Notification::send($this->bid, new BidFailed($this->bid));
+                $this->bid->notify(new BidFailed($this->bid));
             }
             $this->bid->save();
         } catch (\Exception $e) {
@@ -67,7 +66,7 @@ class BidNowJob implements ShouldQueue
             $this->bid->bid_status = "Failed";
             $this->bid->error_message = "Something went wrong";
             $this->bid->save();
-            \Notification::send($this->bid, new BidFailed($this->bid));
+            $this->bid->notify(new BidFailed($this->bid));
         }
     }
 }
