@@ -40,7 +40,7 @@ class BidFailed extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         return (new SlackMessage)
-            ->text(':sad: one of your bid failed just now.')
+            ->text($this->bid->error_message)
             ->headerBlock('Bid Failed')
             ->contextBlock(function (ContextBlock $block) {
                 $block->text('Bid #' . $this->bid->id);
