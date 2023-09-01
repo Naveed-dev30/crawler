@@ -3,8 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Bid;
-use App\Models\Filter;
-use App\Models\Proposal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,30 +10,30 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 
-class OpenAIJob implements ShouldQueue
+class FineTuneBidJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $proposal;
+    protected Bid $bid;
 
-    public function __construct(Proposal $proposal)
+    /**
+     * Create a new job instance.
+     */
+    public function __construct(Bid $bid)
     {
-        $this->proposal = $proposal;
+        $this->bid = $bid;
     }
 
+    /**
+     * Execute the job.
+     */
     public function handle(): void
     {
         $bearer = 'Bearer ' . env('OPENAI_API_KEY');
         $url = 'https://api.openai.com/v1/chat/completions';
 
 
-        $filter = Filter::find(1);
-
-        if (!$filter->crawler_on) {
-            return;
-        }
-
-        $prompt = $filter->prompt;
+        $prompt = $this->bid->cover_letter;
 
         $data = [
             'model' => 'gpt-3.5-turbo',
@@ -46,7 +44,7 @@ class OpenAIJob implements ShouldQueue
                 ],
                 [
                     'role' => 'user',
-                    'content' => ' Description ' . $this->proposal->description,
+                    'content' => 'Copy write above content and concise it.',
                 ],
             ],
         ];
@@ -57,13 +55,9 @@ class OpenAIJob implements ShouldQueue
 
         $coverLetter = $response['choices'][0]['message']['content'];
 
-        $bid = new Bid();
-        $bid->proposal_id = $this->proposal->id;
-        $bid->price = $this->proposal->max_budget * 0.9;
-        $bid->cover_letter = $coverLetter;
-        $bid->save();
-        $bid->get();
+        $this->bid->cover_letter = $coverLetter;
+        $this->bid->save();
 
-        FineTuneBidJob::dispatch($bid);
+        BidNowJob::dispatch($this->bid)->delay(now()->addSeconds(30));
     }
 }
