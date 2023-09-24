@@ -58,7 +58,9 @@ class BidNowJob implements ShouldQueue
                 $this->bid->bid_status = "Failed";
                 $body = json_decode($response->body());
                 $this->bid->error_message = $body->message;
-                $this->bid->notify(new BidFailed($this->bid));
+                if($body->message != 'You must have the required skills to bid on this project.'){
+                    $this->bid->notify(new BidFailed($this->bid));
+                }
             }
             $this->bid->save();
         } catch (\Exception $e) {
