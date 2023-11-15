@@ -53,6 +53,8 @@ class FineTuneBidJob implements ShouldQueue
             ->withHeaders(['Authorization' => $bearer])
             ->post($url, $data);
 
+        \Log::critical($response);
+
         $coverLetter = $response['choices'][0]['message']['content'];
 
         $this->bid->cover_letter = $coverLetter;
