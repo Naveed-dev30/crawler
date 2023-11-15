@@ -29,7 +29,7 @@ class BidNowJob implements ShouldQueue
         // Generate the bid parameters
         $data = [
             "project_id" => $this->bid->proposal->project_id,
-            "bidder_id" => (float)env('FL_USER_ID'), // Replace with the ID of the bidder (your user ID or freelancer ID).
+            "bidder_id" => (float) config('variables.flUserId'), // Replace with the ID of the bidder (your user ID or freelancer ID).
             "amount" => $this->bid->price,
             "period" => 5,
             "milestone_percentage" => 30,
@@ -39,7 +39,7 @@ class BidNowJob implements ShouldQueue
         // Set the headers for the request
         $headers = [
             "content-type" => "application/json",
-            "freelancer-oauth-v1" => env("FL_ACCESS"),
+            "freelancer-oauth-v1" => config('variables.flKey'),
         ];
 
         try {
