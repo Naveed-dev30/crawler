@@ -25,7 +25,7 @@ class OpenAIJob implements ShouldQueue
 
     public function handle(): void
     {
-        $bearer = 'Bearer ' . env('OPENAI_API_KEY');
+        $bearer = 'Bearer ' . config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
 
