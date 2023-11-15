@@ -281,9 +281,12 @@ class ProposalController extends Controller
                 return false;
             }
 
-            return $jsonResponse["result"]["agent_sessions"]["agent_id"] === 954;
+            foreach ($jsonResponse["result"]["agent_sessions"] as $sessionResult) {
+                if ($sessionResult["agent_id"] === 954) {
+                    return true;
+                }
+            }
         }
-
         return false;
     }
 }
