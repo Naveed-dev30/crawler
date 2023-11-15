@@ -277,7 +277,7 @@ class ProposalController extends Controller
 
         if ($response->ok()) {
             $jsonResponse = $response->json();
-            if ($jsonResponse["result"] == null or $jsonResponse["result"]["agent_sessions"] == null or $jsonResponse["result"]["agent_sessions"]["agent_id"] == null) {
+            if ($jsonResponse["result"] == null or $jsonResponse["result"]["agent_sessions"] == null) {
                 return false;
             }
 
