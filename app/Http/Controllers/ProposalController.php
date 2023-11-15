@@ -177,6 +177,10 @@ class ProposalController extends Controller
 
 
                 foreach ($projects as $project) {
+                    if ($this->shouldNotProceed($project)) {
+                        continue;
+                    }
+
                     $currency = new Currency();
                     $currency->currency_name = $project['currency']['code'];
                     $currency->curreny_symbol = $project['currency']['sign'];
@@ -263,5 +267,19 @@ class ProposalController extends Controller
                 }
             }
         }
+    }
+
+    public function shouldNotProceed($project): bool
+    {
+        $response = Http::withHeaders([
+            "freelancer-auth-v2" => "7032685;b3mJw8I8w8zk3scCNDcWNZP8Qa//CCbr00HBRcQRTEE=",
+        ])->get("https://www.freelancer.com/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
+
+        if ($response->ok()) {
+            $jsonResponse = $response->json();
+            return $jsonResponse["result"]["agent_sessions"]["agent_id"] === 954;
+        }
+
+        return false;
     }
 }
