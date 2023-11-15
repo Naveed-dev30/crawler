@@ -104,7 +104,7 @@ class ProposalController extends Controller
         }
 
         $yesterday = Carbon::now()->subHours(1);
-        $accessAuthToken = env('FL_ACCESS');
+        $accessAuthToken = config('variables.flKey');
 
         $params = [
             'from_time' => $yesterday,
