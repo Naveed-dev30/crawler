@@ -96,7 +96,7 @@ class ProposalController extends Controller
 
     public function getProposals()
     {
-
+        \Log::info("==================================Get Proposals Started=================================");
         $filter = Filter::find(1);
 
         if (!$filter->crawler_on) {
@@ -160,6 +160,8 @@ class ProposalController extends Controller
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
+        \Log::info("Get Bids Response: {$response->body()}");
+
 
         if ($response->successful()) {
 
@@ -169,15 +171,16 @@ class ProposalController extends Controller
 
 
             if ($jsonResponse['status'] === 'success') {
+                \Log::info("Json Response Success");
 
                 $result = $jsonResponse['result'];
 
 
                 $projects = $result['projects'];
 
-
                 foreach ($projects as $project) {
                     if ($this->shouldNotProceed($project)) {
+                        \Log::info("Cannot Proceed: $project");
                         continue;
                     }
 
@@ -195,12 +198,14 @@ class ProposalController extends Controller
 
 
                     if ($isNDA or $isSealed) {
+                        \Log::info("Cannot Proceed because NDA or Seeled: $project");
                         continue;
                     }
 
                     $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
                     if ($proposalExists) {
+                        \Log::info("Cannot Proceed because Proposal Already Exists: $project");
                         continue;
                     }
 
@@ -211,14 +216,14 @@ class ProposalController extends Controller
                     $proposal->title = $project['title'];
 
                     if (Str::contains($proposal->title, $negativeKeywords)) {
-
+                        \Log::info("Cannot Proceed because Negative Keywords Exists in Title: $project");
                         continue;
                     }
 
                     /// [description]
                     $proposal->description = $project['description'];
                     if (Str::contains($proposal->description, $negativeKeywords)) {
-
+                        \Log::info("Cannot Proceed because Negative Keywords Exists in Description: $project");
                         continue;
                     }
 
@@ -232,14 +237,14 @@ class ProposalController extends Controller
                     if ($proposal->type == 'fixed') {
                         if ($filter->useminfix) {
                             if ($proposal->min_budget < $filter->min_fixed_amount) {
-
+                                \Log::info("Cannot Proceed because min budget is less the min fixed amount: $project");
                                 continue;
                             }
                         }
                     } else {
                         if ($filter->useminhour) {
                             if ($proposal->min_budget < $filter->min_hourly_amount) {
-
+                                \Log::info("Cannot Proceed because min budget is less the min hourly amount: $project");
                                 continue;
                             }
                         }
@@ -267,6 +272,9 @@ class ProposalController extends Controller
                 }
             }
         }
+
+        \Log::info("==================================Get Proposals Ended=================================");
+
     }
 
     public function shouldNotProceed($project): bool
