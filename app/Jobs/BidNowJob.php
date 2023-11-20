@@ -22,6 +22,11 @@ class BidNowJob implements ShouldQueue
         $this->bid = $bid;
     }
 
+    public function __destruct()
+    {
+        // TODO: Implement __destruct() method.
+    }
+
     public function handle()
     {
         $this->bid->bid_status = "Handle";
@@ -29,12 +34,13 @@ class BidNowJob implements ShouldQueue
         // Generate the bid parameters
         $data = [
             "project_id" => $this->bid->proposal->project_id,
-            "bidder_id" => (float) config('variables.flUserId'), // Replace with the ID of the bidder (your user ID or freelancer ID).
+            "bidder_id" => (float)config('variables.flUserId'), // Replace with the ID of the bidder (your user ID or freelancer ID).
             "amount" => $this->bid->price,
             "period" => 5,
             "milestone_percentage" => 30,
             "description" => $this->bid->cover_letter,
         ];
+
 
         // Set the headers for the request
         $headers = [
@@ -58,7 +64,7 @@ class BidNowJob implements ShouldQueue
                 $this->bid->bid_status = "Failed";
                 $body = json_decode($response->body());
                 $this->bid->error_message = $body->message;
-                if($body->message != 'You must have the required skills to bid on this project.'){
+                if ($body->message != 'You must have the required skills to bid on this project.') {
                     $this->bid->notify(new BidFailed($this->bid));
                 }
             }
