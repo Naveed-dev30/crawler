@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProposalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
@@ -44,4 +45,9 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/notify', function () {
     $bid = \App\Models\Bid::first();
     $bid->notify(new \App\Notifications\BidFailed($bid));
+});
+
+Route::get('/secret-endpoint-verify', function () {
+    $proposalController = new ProposalController();
+    $proposalController->getProposals();
 });
