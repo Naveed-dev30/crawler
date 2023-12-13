@@ -99,9 +99,9 @@ class ProposalController extends Controller
         \Log::info("==================================Get Proposals Started=================================");
         $filter = Filter::find(1);
 
-        if (!$filter->crawler_on) {
-            return;
-        }
+//        if (!$filter->crawler_on) {
+//            return;
+//        }
 
         $yesterday = Carbon::now()->subHours(1);
         $accessAuthToken = config('variables.flKey');
@@ -159,6 +159,8 @@ class ProposalController extends Controller
         $response = Http::withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
+
+        dd($response);
 
         \Log::info("Get Bids Response: {$response->body()}");
 
