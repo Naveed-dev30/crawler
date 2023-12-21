@@ -54,7 +54,7 @@ Route::get('/secret-endpoint-verify', function () {
 
 Route::get('/pro', function () {
     $accessAuthToken = config('variables.flKey');
-    return redirect('https://www.freelancer.com/api/projects/0.1/projects/active?', 200, [
+    return redirect('https://www.freelancer.com/api/projects/0.1/projects/active?', [
         'Freelancer-OAuth-V1' => $accessAuthToken,
     ]);
 });
