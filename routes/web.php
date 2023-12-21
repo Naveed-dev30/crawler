@@ -51,3 +51,10 @@ Route::get('/secret-endpoint-verify', function () {
     $proposalController = new ProposalController();
     $proposalController->getProposals();
 });
+
+Route::get('/pro', function () {
+    $accessAuthToken = config('variables.flKey');
+    return redirect('https://www.freelancer.com/api/projects/0.1/projects/active?', 200, [
+        'Freelancer-OAuth-V1' => $accessAuthToken,
+    ]);
+});
