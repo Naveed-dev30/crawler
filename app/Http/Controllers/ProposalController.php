@@ -160,8 +160,6 @@ class ProposalController extends Controller
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-        dd($response);
-
         \Log::info("Get Bids Response: {$response->body()}");
 
 
