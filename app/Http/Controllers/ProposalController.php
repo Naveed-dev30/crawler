@@ -160,12 +160,10 @@ class ProposalController extends Controller
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-        if ($response->status() == 302) {
-            // This means the response is a redirect
-            $redirectUrl = $response->header('location');
-            // Handle the redirect as needed
-            return redirect($redirectUrl);
-        }
+
+        $redirectUrl = $response->header('location');
+        // Handle the redirect as needed
+        return redirect($redirectUrl);
 
         \Log::info("Get Bids Response: {$response->body()}");
 
