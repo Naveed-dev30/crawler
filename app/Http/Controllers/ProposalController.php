@@ -160,11 +160,6 @@ class ProposalController extends Controller
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-
-        $redirectUrl = $response->header('location');
-        // Handle the redirect as needed
-        return redirect($redirectUrl);
-
         \Log::info("Get Bids Response: {$response->body()}");
 
 
