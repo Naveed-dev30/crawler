@@ -27,6 +27,15 @@
 
 @section('page-script')
     <script src="{{ asset('assets/js/form-validation.js') }}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tagifyBasicEl = document.querySelector("#TagifyBasic");
+            new Tagify(tagifyBasicEl);
+
+            const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
+            new Tagify(tagifyBasicNegativeKeywords);
+        });
+    </script>
 @endsection
 
 @php
@@ -47,18 +56,6 @@
 @endforeach
 
 @section('content')
-
-    <head>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const tagifyBasicEl = document.querySelector("#TagifyBasic");
-                 new Tagify(tagifyBasicEl);
-
-                const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
-                new Tagify(tagifyBasicNegativeKeywords);
-            });
-        </script>
-    </head>
     <h4 class="py-3 breadcrumb-wrapper mb-4">
         <span class="fw-light">Filters</span>
     </h4>
