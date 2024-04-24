@@ -51,11 +51,11 @@
     <head>
         <script>
             document.addEventListener("DOMContentLoaded", function () {
-                // const tagifyBasicEl = document.querySelector("#TagifyBasic");
-                // const TagifyBasic = new Tagify(tagifyBasicEl);
-                //
-                // const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
-                // const tagifyNegativeKeywords = new Tagify(tagifyBasicNegativeKeywords);
+                const tagifyBasicEl = document.querySelector("#TagifyBasic");
+                 new Tagify(tagifyBasicEl);
+
+                const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
+                new Tagify(tagifyBasicNegativeKeywords);
             });
         </script>
     </head>
