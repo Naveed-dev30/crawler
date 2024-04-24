@@ -78,66 +78,66 @@
                         <hr class="mt-0"/>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationCountries">Countries</label>
-                        <select class="selectpicker w-100" id="formValidationCountries" data-style="btn-default"
-                                data-icon-base="bx" data-tick-icon="bx-check text-white"
-                                name="formValidationCountries[]"
-                                multiple @if (!$filter->usecountries) disabled @endif>
-                            @foreach ($countries as $country)
-                                <option value="{{ $country->id }}" @if (in_array(
-                                            $country->id,
-                                            $filter->countries()->pluck('countries.id')->all())) selected @endif>
-                                    {{ $country->country }} - {{ $country->language }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+{{--                    <div class="col-md-6">--}}
+{{--                        <label class="form-label" for="formValidationCountries">Countries</label>--}}
+{{--                        <select class="selectpicker w-100" id="formValidationCountries" data-style="btn-default"--}}
+{{--                                data-icon-base="bx" data-tick-icon="bx-check text-white"--}}
+{{--                                name="formValidationCountries[]"--}}
+{{--                                multiple @if (!$filter->usecountries) disabled @endif>--}}
+{{--                            @foreach ($countries as $country)--}}
+{{--                                <option value="{{ $country->id }}" @if (in_array(--}}
+{{--                                            $country->id,--}}
+{{--                                            $filter->countries()->pluck('countries.id')->all())) selected @endif>--}}
+{{--                                    {{ $country->country }} - {{ $country->language }}--}}
+{{--                                </option>--}}
+{{--                            @endforeach--}}
+{{--                        </select>--}}
+{{--                    </div>--}}
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationCurrencies">Currencies</label>
-                        <select class="selectpicker w-100" id="formValidationCurrencies" data-style="btn-default"
-                                data-icon-base="bx" data-tick-icon="bx-check text-white"
-                                name="formValidationCurrencies[]"
-                                multiple disabled>
-                            @foreach ($currencies as $currency)
-                                <option value="{{ $currency->id }}" @if (in_array(
-                                            $currency->id,
-                                            $filter->currencies()->pluck('currencies.id')->all())) selected @endif>
-                                    {{ $currency->currency_name }} - {{ $currency->curreny_symbol }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+{{--                    <div class="col-md-6">--}}
+{{--                        <label class="form-label" for="formValidationCurrencies">Currencies</label>--}}
+{{--                        <select class="selectpicker w-100" id="formValidationCurrencies" data-style="btn-default"--}}
+{{--                                data-icon-base="bx" data-tick-icon="bx-check text-white"--}}
+{{--                                name="formValidationCurrencies[]"--}}
+{{--                                multiple disabled>--}}
+{{--                            @foreach ($currencies as $currency)--}}
+{{--                                <option value="{{ $currency->id }}" @if (in_array(--}}
+{{--                                            $currency->id,--}}
+{{--                                            $filter->currencies()->pluck('currencies.id')->all())) selected @endif>--}}
+{{--                                    {{ $currency->currency_name }} - {{ $currency->curreny_symbol }}--}}
+{{--                                </option>--}}
+{{--                            @endforeach--}}
+{{--                        </select>--}}
+{{--                    </div>--}}
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>
-                        <input type="number" class="form-control" name="formValidationMinHourlyRate"
-                               value="{{ $filter->min_hourly_amount }}" rows="3"
-                               @if (!$filter->useminhour) disabled @endif></input>
-                    </div>
+{{--                    <div class="col-md-6">--}}
+{{--                        <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>--}}
+{{--                        <input type="number" class="form-control" name="formValidationMinHourlyRate"--}}
+{{--                               value="{{ $filter->min_hourly_amount }}" rows="3"--}}
+{{--                               @if (!$filter->useminhour) disabled @endif></input>--}}
+{{--                    </div>--}}
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>
-                        <input type="number" class="form-control" name="formValidationMinFixedRate" rows="3"
-                               value="{{ $filter->min_fixed_amount }}"
-                               @if (!$filter->useminfix) disabled @endif />
-                    </div>
+{{--                    <div class="col-md-6">--}}
+{{--                        <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>--}}
+{{--                        <input type="number" class="form-control" name="formValidationMinFixedRate" rows="3"--}}
+{{--                               value="{{ $filter->min_fixed_amount }}"--}}
+{{--                               @if (!$filter->useminfix) disabled @endif />--}}
+{{--                    </div>--}}
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationPrompt">Prompt</label>
-                        <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt"
-                                  rows="3">{{ $filter->prompt }}</textarea>
-                    </div>
+{{--                    <div class="col-md-6">--}}
+{{--                        <label class="form-label" for="formValidationPrompt">Prompt</label>--}}
+{{--                        <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt"--}}
+{{--                                  rows="3">{{ $filter->prompt }}</textarea>--}}
+{{--                    </div>--}}
 
-                    <span class="col-md-6">
-                            <div class="mb-3">
-                                <label for="TagifyBastagifyNegativeKeywordsicNegativeKeywords" class="form-label">Negative
-                                    Keywords</label>
-                                <input id="tagifyNegativeKeywords" class="form-control" name="negativeKeywords"
-                                       value={{ $negTags }} />
-                            </div>
-                        </span>
+{{--                    <span class="col-md-6">--}}
+{{--                            <div class="mb-3">--}}
+{{--                                <label for="TagifyBastagifyNegativeKeywordsicNegativeKeywords" class="form-label">Negative--}}
+{{--                                    Keywords</label>--}}
+{{--                                <input id="tagifyNegativeKeywords" class="form-control" name="negativeKeywords"--}}
+{{--                                       value={{ $negTags }} />--}}
+{{--                            </div>--}}
+{{--                        </span>--}}
 
                     <span class="col-md-6">
                             <div class="mb-3">
