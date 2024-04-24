@@ -140,7 +140,11 @@
                             <div class="mb-3">
                                 <label for="TagifyBasic" class="form-label">Keywords</label>
                                 <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                       @if (!$filter->usekeywords) disabled @endif value={{ $tags }} />
+                                       @if (!$filter->usekeywords) disabled @endif value={{ $keywords->map(function ($e){
+    return $e->name;
+})->reduce(function ($prev,$next){
+    return "$prev,$next";
+}) }} />
                             </div>
                         </span>
                     <span class="col-md-6"></span>
