@@ -102,7 +102,6 @@ class FilterController extends Controller
 
             $filter = Filter::find(1);
             if ($tags) {
-                dd($tags);
                 $existingKeywords = Keyword::pluck('name')->toArray();
                 $tagsJson = json_decode($tags, true);
                 $newKeywords = [];
