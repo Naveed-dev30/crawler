@@ -34,7 +34,7 @@ class FilterController extends Controller
             $tagsValue = "$tagsValue,$keyword->name";
         }
 
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => 'a,b']);
+        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => ',a,b']);
     }
 
     /**
