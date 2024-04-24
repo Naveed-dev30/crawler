@@ -139,7 +139,7 @@
                     <span class="col-md-6">
                             <div class="mb-3">
                                 <label for="TagifyBasic" class="form-label">Keywords</label>
-                                <input id="TagifyBasic" class="form-control" name="TagifyBasic"
+                                <input  class="form-control" name="TagifyBasic"
                                        @if (!$filter->usekeywords) disabled @endif value={{ $tagsValue }} />
                             </div>
                         </span>
