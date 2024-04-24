@@ -29,8 +29,8 @@
     <script src="{{ asset('assets/js/form-validation.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const tagifyBasicEl = document.querySelector("#TagifyBasic");
-            new Tagify(tagifyBasicEl);
+            // const tagifyBasicEl = document.querySelector("#TagifyBasic");
+            // new Tagify(tagifyBasicEl);
 
             const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
             new Tagify(tagifyBasicNegativeKeywords);
