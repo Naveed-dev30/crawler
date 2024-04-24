@@ -83,7 +83,6 @@ class FilterController extends Controller
     public function update(Request $request)
     {
         try {
-            return redirect('/');
             $countries = $request->formValidationCountries;
             $currencies = $request->formValidationCurrencies;
             $prompt = $request->formValidationPrompt;
