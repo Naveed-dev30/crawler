@@ -83,6 +83,8 @@ class FilterController extends Controller
     public function update(Request $request)
     {
         try {
+            dd($request);
+
             $countries = $request->formValidationCountries;
             $currencies = $request->formValidationCurrencies;
             $prompt = $request->formValidationPrompt;
@@ -95,7 +97,6 @@ class FilterController extends Controller
 
 
             $filter = Filter::find(1);
-
             if ($tags) {
                 dd($tags);
                 $existingKeywords = Keyword::pluck('name')->toArray();
