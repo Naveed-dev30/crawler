@@ -140,7 +140,7 @@
                             <div class="mb-3">
                                 <label for="TagifyBasic" class="form-label">Keywords</label>
                                 <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                       @if (!$filter->usekeywords) disabled @endif value={{ $tagsValue }} />
+                                       @if (!$filter->usekeywords) disabled @endif value=",flutter,firebase,Iphone,android,ios,app,mobile,dart,website,landing,wordpress,css,html,mysql,web,woocommerce,laravel,backend,frontend,java,development,kotlin,Ecommerce,e-commerce,application,developer,saas,ChatGPT,hybrid,marketing,software,custom,create,content,writer,crm,cms,maintenance,product,products,multiplatform,payment,gateway,integrations,blockchain,ui/ux,ui,ux,rive,restaurant,piza,shop,elementor,logo,branding,brand,php,Gutenberg,Yoast SEO,Contact Form 7,Jetpack,Akismet,WP Super Cache,W3 Total Cache,WP Rocket,UpdraftPlus,Wordfence Security,All in One SEO Pack,Smush,MonsterInsights,WPForms,Redirection,LearnPress,Broken Link Checker,Mailchimp,Mailchimp for WooCommerce,Really Simple SSL,Jet Engine Custom Post Types,Custom Fields and Meta Boxes,Mobile App Development,Mobile Application Development" />
                             </div>
                         </span>
                     <span class="col-md-6"></span>
