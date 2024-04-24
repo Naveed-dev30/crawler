@@ -34,7 +34,7 @@ class FilterController extends Controller
             $tagsValue = "$tagsValue,$keyword->name";
         }
 
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => ',a,b']);
+        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => ',flutter,firebase,Iphone,android,ios,app,mobile,dart,website,landing,wordpress,css,html,mysql,web,woocommerce,laravel,backend,frontend,java,development,kotlin,Ecommerce,e-commerce,application,developer,saas,ChatGPT,hybrid,marketing,software,custom,create,content,writer,crm,cms,maintenance,product,products,multiplatform,payment,gateway,integrations,blockchain,ui/ux,ui,ux,rive,restaurant,piza,shop,elementor,logo,branding,brand,php,Gutenberg,Yoast']);
     }
 
     /**
