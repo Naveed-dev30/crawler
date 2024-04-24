@@ -28,7 +28,13 @@ class FilterController extends Controller
         $currencies = Currency::all();
         $keywords = Keyword::all();
         $negKeywords = NegativeKeyword::all();
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords]);
+        $tagsValue = "";
+
+        foreach ($keywords as $keyword) {
+            $tagsValue = "$tagsValue,{$keyword->name}";
+        }
+
+        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => $tagsValue]);
     }
 
     /**
