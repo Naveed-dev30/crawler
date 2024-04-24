@@ -138,9 +138,9 @@
 
                     <span class="col-md-6">
                             <div class="mb-3">
-                                <label for="TagifyBasic" class="form-label">Keywords</label>
-                                <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                       @if (!$filter->usekeywords) disabled @endif value=""/>
+                                <label for="TagifyBasic1" class="form-label">Keywords</label>
+                                <input id="TagifyBasic1" class="form-control" name="TagifyBasic" type="text"
+                                       @if (!$filter->usekeywords) disabled @endif value="a,b,c"/>
                             </div>
                         </span>
                     <span class="col-md-6"></span>
