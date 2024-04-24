@@ -31,10 +31,10 @@ class FilterController extends Controller
         $tagsValue = "";
 
         foreach ($keywords as $keyword) {
-            $tagsValue = "$tagsValue,{$keyword->name}";
+            $tagsValue = "$tagsValue,$keyword->name";
         }
 
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => $tagsValue]);
+        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => 'a,b']);
     }
 
     /**
