@@ -89,8 +89,6 @@ class FilterController extends Controller
     public function update(Request $request)
     {
         try {
-            dd($request);
-
             $countries = $request->formValidationCountries;
             $currencies = $request->formValidationCurrencies;
             $prompt = $request->formValidationPrompt;
