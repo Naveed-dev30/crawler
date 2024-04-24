@@ -52,7 +52,7 @@
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 const tagifyBasicEl = document.querySelector("#TagifyBasic");
-                new Tagify(tagifyBasicEl);
+                 new Tagify(tagifyBasicEl);
 
                 const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
                 new Tagify(tagifyBasicNegativeKeywords);
@@ -143,7 +143,7 @@
                             <div class="mb-3">
                                 <label for="TagifyBasic" class="form-label">Keywords</label>
                                 <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                       @if (!$filter->usekeywords) disabled @endif value={{ 'flutter,IOS' }} />
+                                       @if (!$filter->usekeywords) disabled @endif value={{ $tags }} />
                             </div>
                         </span>
                     <span class="col-md-6"></span>
