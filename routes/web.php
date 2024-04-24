@@ -1,11 +1,13 @@
 <?php
 
-use App\Http\Controllers\ProposalController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
+use App\Http\Controllers\ProposalController;
+use App\Models\Bid;
+use App\Notifications\BidFailed;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,8 +45,8 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::get('/notify', function () {
-    $bid = \App\Models\Bid::first();
-    $bid->notify(new \App\Notifications\BidFailed($bid));
+    $bid = Bid::first();
+    $bid->notify(new BidFailed($bid));
 });
 
 Route::get('/secret-endpoint-verify', function () {
