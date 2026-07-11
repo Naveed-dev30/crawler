@@ -1,55 +1,93 @@
-version: '3'
+# Docker Compose for the "crawler" Laravel 10 app.
+# App image is built from the existing Laravel Sail runtime in ./docker/8.2 (PHP 8.2).
 services:
-    laravel.test:
-        build:
-            context: ./docker/8.2
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: sail-8.2/app
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
-        ports:
-            - '${APP_PORT:-80}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-        volumes:
-            - '.:/var/www/html'
-        networks:
-            - sail
-        depends_on:
-            - mysql
-    mysql:
-        image: 'mysql/mysql-server:8.0'
-        ports:
-            - '${FORWARD_DB_PORT:-3306}:3306'
-        environment:
-            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-            MYSQL_ROOT_HOST: '%'
-            MYSQL_DATABASE: '${DB_DATABASE}'
-            MYSQL_USER: '${DB_USERNAME}'
-            MYSQL_PASSWORD: '${DB_PASSWORD}'
-            MYSQL_ALLOW_EMPTY_PASSWORD: 1
-        volumes:
-            - 'sail-mysql:/var/lib/mysql'
-            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
-        networks:
-            - sail
-        healthcheck:
-            test:
-                - CMD
-                - mysqladmin
-                - ping
-                - '-p${DB_PASSWORD}'
-            retries: 3
-            timeout: 5s
+  laravel.test:
+    build:
+      # Small build context (just the Dockerfile + php.ini/supervisord) — keeps the
+      # 84MB db.sql out of the image build.
+      context: ./docker/8.2
+      dockerfile: Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP:-1000}'
+    image: crawler-app
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-8000}:80'
+    environment:
+      WWWUSER: '${WWWUSER:-1000}'
+      LARAVEL_SAIL: 1
+    volumes:
+      - '.:/var/www/html'
+    # First boot: install PHP deps if vendor/ is missing, then serve on :80.
+    # (vendor/ is git-ignored, so it won't exist on a fresh clone.)
+    command:
+      - bash
+      - -c
+      - |
+        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist --optimize-autoloader; fi
+        php artisan serve --host=0.0.0.0 --port=80
+    networks:
+      - crawler
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mysql:
+    image: 'mysql:8.0'
+    restart: unless-stopped
+    ports:
+      - '${FORWARD_DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE:-crawler}'
+      MYSQL_USER: '${DB_USERNAME:-sail}'
+      MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+    volumes:
+      - 'crawler-mysql:/var/lib/mysql'
+      # Auto-imports the dump into ${DB_DATABASE} on FIRST init (empty volume only).
+      # The dump has no CREATE DATABASE/USE, so the mysql entrypoint loads it into
+      # MYSQL_DATABASE. To re-import, run: docker compose down -v.
+      - './db.sql:/docker-entrypoint-initdb.d/db.sql:ro'
+    networks:
+      - crawler
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD:-password}']
+      retries: 5
+      timeout: 5s
+      start_period: 60s
+
+  redis:
+    image: 'redis:alpine'
+    restart: unless-stopped
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - 'crawler-redis:/data'
+    networks:
+      - crawler
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      retries: 3
+      timeout: 5s
+
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    restart: unless-stopped
+    ports:
+      - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+      - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+    networks:
+      - crawler
+
 networks:
-    sail:
-        driver: bridge
+  crawler:
+    driver: bridge
+
 volumes:
-    sail-mysql:
-        driver: local
+  crawler-mysql:
+    driver: local
+  crawler-redis:
+    driver: local
