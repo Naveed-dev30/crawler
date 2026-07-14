@@ -23,3 +23,23 @@
 
 <!-- Page Styles -->
 @yield('page-style')
+
+<!-- Alladin: global spacing + title overrides -->
+<style>
+  /* Trim the empty navbar so pages start higher */
+  #layout-navbar.layout-navbar {
+    min-height: auto;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* Less top padding on page content across all pages */
+  .content-wrapper .container-p-y {
+    padding-top: 1rem !important;
+  }
+  /* Consistent page heading */
+  .page-title {
+    font-weight: 600;
+    font-size: 1.35rem;
+    margin: 0 0 1rem 0;
+  }
+</style>
