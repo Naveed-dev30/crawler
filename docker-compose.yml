@@ -25,6 +25,11 @@ services:
       - -c
       - |
         if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist --optimize-autoloader; fi
+        # Normalize ownership so the sail (uid 1000) process can always write logs/cache.
+        # Self-heals root-owned files that would otherwise crash logging (see logging.php).
+        chown -R sail:sail storage bootstrap/cache || true
+        # Laravel scheduler (drives ProposalController::getProposals every minute)
+        while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done &
         php artisan serve --host=0.0.0.0 --port=80
     networks:
       - crawler
@@ -38,7 +43,9 @@ services:
     image: 'mysql:8.0'
     restart: unless-stopped
     ports:
-      - '${FORWARD_DB_PORT:-3306}:3306'
+      # Loopback-only: MySQL must NOT be reachable from the public internet.
+      # The app connects over the internal 'crawler' Docker network, not this port.
+      - '127.0.0.1:${FORWARD_DB_PORT:-3306}:3306'
     environment:
       MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
       MYSQL_ROOT_HOST: '%'
