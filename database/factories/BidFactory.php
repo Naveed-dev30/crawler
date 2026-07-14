@@ -17,7 +17,11 @@ class BidFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'proposal_id' => \App\Models\Proposal::factory(),
+            'bid_status' => 'pending',
+            'price' => $this->faker->numberBetween(50, 5000),
+            'cover_letter' => $this->faker->paragraph(),
+            'admin_feedback' => null,
         ];
     }
 }

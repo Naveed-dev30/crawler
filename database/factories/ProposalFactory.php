@@ -17,7 +17,12 @@ class ProposalFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'project_id' => $this->faker->numberBetween(1000, 9999),
+            'title' => $this->faker->sentence(4),
+            'description' => $this->faker->paragraph(),
+            'min_budget' => 100,
+            'max_budget' => 500,
+            'type' => 'fixed',
         ];
     }
 }
