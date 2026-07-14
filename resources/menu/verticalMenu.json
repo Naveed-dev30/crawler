@@ -7,6 +7,12 @@
       "slug": "home"
     },
     {
+      "url": "/relevance",
+      "name": "Relevance",
+      "icon": "menu-icon tf-icons bx bx-check-shield",
+      "slug": "relevance"
+    },
+    {
       "url": "/stats",
       "name": "Statistics",
       "icon": "menu-icon tf-icons bx bx-stats",
