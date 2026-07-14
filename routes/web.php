@@ -34,6 +34,13 @@ Route::post('auth', function (Request $request) {
 })->name('auth');
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('logout', function (Request $request) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('login');
+    })->name('logout');
+
     Route::get('/', [BidController::class, 'index'])->name('home');
     Route::get('/stats', [BidController::class, 'stats'])->name('statistics');
     // Settings area — admin only

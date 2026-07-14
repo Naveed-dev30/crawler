@@ -78,4 +78,43 @@
     color: #b4bdc6;
     background-color: transparent;
   }
+  /* Sidebar user card + logout, pinned to bottom */
+  #layout-menu {
+    display: flex;
+    flex-direction: column;
+  }
+  #layout-menu .menu-inner {
+    flex: 1 1 auto;
+  }
+  .menu-user {
+    border-top: 0;
+  }
+  .menu-user-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5486d 0%, #e91e63 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .menu-user-name {
+    font-size: 0.85rem;
+    line-height: 1.15;
+  }
+  .menu-user-email {
+    font-size: 0.72rem;
+  }
+  .menu-logout-btn {
+    color: #8592a3;
+    border: 0;
+    transition: all 0.15s ease-in-out;
+  }
+  .menu-logout-btn:hover {
+    color: #e91e63;
+    background-color: rgba(233, 30, 99, 0.1);
+  }
 </style>
