@@ -41,6 +41,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('bids', BidController::class);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
+    Route::get('/relevance', [BidController::class, 'relevance'])->name('relevance');
+    Route::get('/relevance/load', [BidController::class, 'loadRelevance'])->name('relevance.load');
+    Route::post('/relevance/feedback', [BidController::class, 'storeFeedback'])->name('relevance.feedback');
 });
 
 
