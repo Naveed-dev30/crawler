@@ -22,7 +22,8 @@
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",
-      "slug": "filters"
+      "slug": "filters",
+      "access": "admin"
     }
   ]
 }

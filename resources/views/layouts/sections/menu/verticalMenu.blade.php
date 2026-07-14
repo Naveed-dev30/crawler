@@ -32,6 +32,9 @@ $configData = Helper::appClasses();
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
 
+    {{-- hide admin-only (settings) items from non-admin users --}}
+    @continue(isset($menu->access) && $menu->access === 'admin' && ! optional(auth()->user())->isAdmin())
+
     {{-- adding active and open class if child is active --}}
 
     {{-- menu headers --}}
