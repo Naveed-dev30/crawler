@@ -17,13 +17,27 @@ class DatabaseSeeder extends Seeder
   {
     $this->call(FilterSeeder::class);
 
-    $user = new User();
     $password = Hash::make('qwerty123!@#');
 
-    $user->email = 'admin@crawler.com';
-    $user->password = $password;
-    $user->name = 'Staging Crawler Admin';
+    // Admin — full access incl. settings (Filters).
+    // firstOrCreate: leaves an existing admin (password/name) untouched, creates only if missing.
+    User::firstOrCreate(
+      ['email' => 'admin@crawler.com'],
+      [
+        'name' => 'Staging Crawler Admin',
+        'password' => $password,
+        'role' => 'admin',
+      ]
+    );
 
-    $user->save();
+    // Team — no settings (Filters) access.
+    User::firstOrCreate(
+      ['email' => 'team@crawler.com'],
+      [
+        'name' => 'Team User',
+        'password' => $password,
+        'role' => 'team',
+      ]
+    );
   }
 }

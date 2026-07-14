@@ -15,6 +15,11 @@ class FilterSeeder extends Seeder
      */
     public function run()
     {
+          // Idempotent: keep existing filter data untouched on prod re-seeds.
+          if (Filter::exists()) {
+              return;
+          }
+
           $filter =  new Filter();
           $filter->crawler_on = false;
           $filter->min_fixed_amount = 0;

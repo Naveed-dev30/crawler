@@ -36,8 +36,11 @@ Route::post('auth', function (Request $request) {
 Route::middleware(['auth'])->group(function () {
     Route::get('/', [BidController::class, 'index'])->name('home');
     Route::get('/stats', [BidController::class, 'stats'])->name('statistics');
-    Route::get('/filters', [FilterController::class, 'index'])->name('filters');
-    Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+    // Settings area — admin only
+    Route::middleware('admin')->group(function () {
+        Route::get('/filters', [FilterController::class, 'index'])->name('filters');
+        Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+    });
     Route::resource('bids', BidController::class);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
