@@ -55,7 +55,9 @@ return [
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],
-            'ignore_exceptions' => false,
+            // A failed log write (e.g. a non-writable laravel.log) must never abort
+            // the scheduled bidding pipeline — swallow logging exceptions instead.
+            'ignore_exceptions' => true,
         ],
 
 

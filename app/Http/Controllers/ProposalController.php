@@ -156,7 +156,7 @@ class ProposalController extends Controller
 
         $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(30)->withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
@@ -179,6 +179,7 @@ class ProposalController extends Controller
                 $projects = $result['projects'];
 
                 foreach ($projects as $project) {
+                    try {
                     if ($this->shouldNotProceed($project)) {
                         \Log::info("Cannot Proceed");
                         continue;
@@ -252,8 +253,8 @@ class ProposalController extends Controller
 
                     /// [Max Cost]
                     $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
-                    /// [Project Owner]
-                    $proposal->project_owner = $project['owner_id'];
+                    /// [Project Owner] (absent from compact API responses; column is nullable and unused downstream)
+                    $proposal->project_owner = $project['owner_id'] ?? null;
                     /// [Language]
                     $proposal->language = $project['language'];
                     ///[Currency Symbol]
@@ -269,6 +270,10 @@ class ProposalController extends Controller
                     $proposal->get();
 
                     OpenAIJob::dispatch($proposal);
+                    } catch (\Throwable $e) {
+                        \Log::warning("Skipping project " . ($project['id'] ?? '?') . ": " . $e->getMessage());
+                        continue;
+                    }
                 }
             }
         }
@@ -279,7 +284,7 @@ class ProposalController extends Controller
 
     public function shouldNotProceed($project): bool
     {
-        $response = Http::withHeaders([
+        $response = Http::timeout(30)->withHeaders([
             "freelancer-auth-v2" => "7032685;b3mJw8I8w8zk3scCNDcWNZP8Qa//CCbr00HBRcQRTEE=",
         ])->get("https://www.freelancer.com/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
 
