@@ -1,5 +1,7 @@
 @extends('layouts.layoutMaster')
 
+@section('title', 'Bids')
+
 @php
     function reviewdCheckColorClass($bid)
     {
@@ -62,19 +64,15 @@
     </head>
 
 
-    <h4 class="py-3 breadcrumb-wrapper mb-4">
-        <span class="fw-light">Bids</span>
-    </h4>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h4 class="page-title">Bids</h4>
+        <form action="{{ route('expire_bids') }}" method="POST" class="mb-0">
+            @csrf
+            <button type="submit" name="submitButton" class="btn btn-danger">Expire Pending</button>
+        </form>
+    </div>
 
-    <form action="{{ route('expire_bids') }}" method="POST">
-        @csrf
-        <div class="container">
-            <button type="Save" name="submitButton" class="btn btn-danger mb-4" style="float:right;">Expire
-                Pending</button>
-        </div>
-    </form>
-
-    <div class="card container">
+    <div class="card">
         <table class="table">
             <thead>
                 <tr>

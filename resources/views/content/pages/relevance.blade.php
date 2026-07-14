@@ -3,7 +3,7 @@
 @section('title', 'Relevance')
 
 @section('content')
-    <h4 class="fw-bold py-3 mb-4">Relevance</h4>
+    <h4 class="page-title">Relevance</h4>
 
     <div id="relevance-list">
         @foreach ($bids as $bid)
