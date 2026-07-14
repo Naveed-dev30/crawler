@@ -117,4 +117,12 @@
     color: #e91e63;
     background-color: rgba(233, 30, 99, 0.1);
   }
+  /* Golden brand wordmark (sidebar + login) */
+  .app-brand-text {
+    background: linear-gradient(135deg, #e8c877 0%, #c9992b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #c9992b;
+  }
 </style>
