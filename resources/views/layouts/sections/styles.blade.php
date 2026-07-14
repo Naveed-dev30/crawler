@@ -42,4 +42,40 @@
     font-size: 1.35rem;
     margin: 0 0 1rem 0;
   }
+  /* Prettier pagination — spaced rounded pills */
+  .pagination {
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .pagination .page-item .page-link,
+  .pagination .page-item span.page-link {
+    min-width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e4e6ea;
+    color: #566a7f;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+  }
+  .pagination .page-item .page-link:hover {
+    background-color: #f5f5f9;
+    border-color: #d9dee3;
+    color: #435971;
+  }
+  .pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #f5486d 0%, #e91e63 100%) !important;
+    border-color: #e91e63 !important;
+    color: #fff !important;
+    box-shadow: 0 0.25rem 0.5rem rgba(233, 30, 99, 0.4) !important;
+  }
+  .pagination .page-item.disabled .page-link {
+    border-color: #eceef1;
+    color: #b4bdc6;
+    background-color: transparent;
+  }
 </style>

@@ -19,7 +19,7 @@ class BidController extends Controller
    */
   public function index()
   {
-    $bids = Bid::latest()->paginate(100);
+    $bids = Bid::latest()->paginate(100)->onEachSide(1);
     return view('content.pages.home', ['bids' => $bids]);
   }
 
