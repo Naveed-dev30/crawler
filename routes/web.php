@@ -42,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
         return redirect()->route('login');
     })->name('logout');
 
-    Route::get('/', [BidController::class, 'index'])->name('home');
+    Route::get('/', [StatisticsController::class, 'index'])->name('home');
     Route::get('/stats', [StatisticsController::class, 'index'])->name('statistics');
     Route::get('/stats/bids', [StatisticsController::class, 'bids'])->name('stats.bids');
     Route::get('/stats/value', [StatisticsController::class, 'value'])->name('stats.value');
@@ -53,7 +53,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
         Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
     });
-    Route::resource('bids', BidController::class);
+    Route::get('/bids', [BidController::class, 'index'])->name('bids');
+    Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
     Route::get('/relevance', [BidController::class, 'relevance'])->name('relevance');
