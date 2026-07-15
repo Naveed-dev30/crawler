@@ -11,8 +11,8 @@
         </form>
     </div>
 
-    {{-- Filter bar --}}
-    <div class="card mb-3"><div class="card-body">
+    {{-- Filter bar (sticky on scroll) --}}
+    <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;"><div class="card-body">
         <div class="row g-2 align-items-end">
             <div class="col-6 col-md-2">
                 <label class="form-label mb-1">From</label>
@@ -47,15 +47,39 @@
 
     {{-- Cards --}}
     <div class="row g-3 mb-3">
-        <div class="col-md-4"><div class="card"><div class="card-body">
-            <span class="text-muted">Total</span><h3 id="card-total">—</h3>
-        </div></div></div>
-        <div class="col-md-4"><div class="card"><div class="card-body">
-            <span class="text-muted">Placed</span><h3 id="card-placed" class="text-primary">—</h3>
-        </div></div></div>
-        <div class="col-md-4"><div class="card"><div class="card-body">
-            <span class="text-muted">Failed</span><h3 id="card-failed" class="text-danger">—</h3>
-        </div></div></div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Total</span>
+                        <h2 class="mb-0 fw-bold" id="card-total">—</h2>
+                    </div>
+                    <span class="badge bg-label-secondary rounded p-2 lh-1"><i class="bx bx-layer bx-sm"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Placed</span>
+                        <h2 class="mb-0 fw-bold" id="card-placed" style="color:#696cff">—</h2>
+                    </div>
+                    <span class="badge rounded p-2 lh-1" style="color:#696cff;background:rgba(105,108,255,.12)"><i class="bx bx-check-circle bx-sm"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Failed</span>
+                        <h2 class="mb-0 fw-bold text-danger" id="card-failed">—</h2>
+                    </div>
+                    <span class="badge bg-label-danger rounded p-2 lh-1"><i class="bx bx-x-circle bx-sm"></i></span>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Tabs + table --}}
@@ -81,6 +105,25 @@
             background-color: rgba(255, 62, 29, .12);
             border-bottom-color: #ff3e1d;
         }
+        .bids-table thead th {
+            text-transform: uppercase;
+            font-size: .72rem;
+            letter-spacing: .5px;
+            color: #a1acb8;
+        }
+        .bids-table td { padding-top: .6rem; padding-bottom: .6rem; }
+        .bids-table tbody tr { transition: background-color .12s ease; }
+        .bids-table tbody tr:hover { background-color: rgba(105, 108, 255, .05); }
+        .tooltip-light .tooltip-inner {
+            background-color: #fff;
+            color: #384551;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+            font-weight: 500;
+        }
+        .tooltip-light.bs-tooltip-top .tooltip-arrow::before { border-top-color: #fff; }
+        .tooltip-light.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #fff; }
+        .tooltip-light.bs-tooltip-start .tooltip-arrow::before { border-left-color: #fff; }
+        .tooltip-light.bs-tooltip-end .tooltip-arrow::before { border-right-color: #fff; }
     </style>
     <div class="card">
         <div class="card-header">
@@ -90,7 +133,7 @@
             </ul>
         </div>
         <div class="table-responsive">
-            <table class="table mb-0">
+            <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
                     <tr>
                         <th>ID</th><th>Title</th><th>Price</th><th>Status</th><th>Type</th><th>Time</th><th>Review</th>
@@ -107,7 +150,7 @@
     {{-- Reused left slide-over: no backdrop so other rows stay clickable; scrollable body --}}
     <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas"
          data-bs-backdrop="false" data-bs-scroll="true"
-         style="width: 44rem; max-width: 95vw;">
+         style="width: 52rem; max-width: 95vw;">
         <div id="bidOffcanvasContent" class="h-100 d-flex flex-column"></div>
     </div>
 @endsection
@@ -151,6 +194,13 @@
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
+                initTooltips();
+            }
+
+            function initTooltips() {
+                el('bids-tbody').querySelectorAll('[data-bs-toggle="tooltip"]').forEach(node => {
+                    bootstrap.Tooltip.getOrCreateInstance(node);
+                });
             }
 
             function reload() { currentPage = 1; loadData(); }
@@ -216,8 +266,12 @@
                 }
                 const dot = document.querySelector('[data-check-dot="' + id + '"]');
                 if (dot) {
-                    dot.className = (check === 'Correct' ? 'fa fa-check text-success' : 'fa fa-close text-danger') + ' ms-1';
+                    dot.className = (check === 'Correct' ? 'fa fa-check text-success' : 'fa fa-close text-danger');
                     dot.setAttribute('data-check-dot', id);
+                    const label = check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect';
+                    dot.setAttribute('title', label);
+                    const tip = bootstrap.Tooltip.getOrCreateInstance(dot);
+                    tip.setContent({ '.tooltip-inner': label });
                 }
             });
 
