@@ -3,6 +3,7 @@
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\StatisticsController;
 use App\Models\Bid;
 use App\Notifications\BidFailed;
 use Illuminate\Http\Request;
@@ -42,7 +43,11 @@ Route::middleware(['auth'])->group(function () {
     })->name('logout');
 
     Route::get('/', [BidController::class, 'index'])->name('home');
-    Route::get('/stats', [BidController::class, 'stats'])->name('statistics');
+    Route::get('/stats', [StatisticsController::class, 'index'])->name('statistics');
+    Route::get('/stats/bids', [StatisticsController::class, 'bids'])->name('stats.bids');
+    Route::get('/stats/value', [StatisticsController::class, 'value'])->name('stats.value');
+    Route::get('/stats/last24h', [StatisticsController::class, 'last24h'])->name('stats.last24h');
+    Route::get('/stats/countries', [StatisticsController::class, 'countries'])->name('stats.countries');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');

@@ -23,6 +23,10 @@ class ProposalFactory extends Factory
             'min_budget' => 100,
             'max_budget' => 500,
             'type' => 'fixed',
+            'country' => $this->faker->country(),
+            'currency_name' => 'USD',
+            'exchange_rate' => 1,
+            'skills' => [],
         ];
     }
 }
