@@ -56,9 +56,7 @@
 @endforeach
 
 @section('content')
-    <h4 class="py-3 breadcrumb-wrapper mb-4">
-        <span class="fw-light">Filters</span>
-    </h4>
+    <h4 class="page-title">Filters</h4>
     <div class="row">
         <!-- FormValidation -->
         <div class="col-12">

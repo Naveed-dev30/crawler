@@ -32,6 +32,9 @@ $configData = Helper::appClasses();
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
 
+    {{-- hide admin-only (settings) items from non-admin users --}}
+    @continue(isset($menu->access) && $menu->access === 'admin' && ! optional(auth()->user())->isAdmin())
+
     {{-- adding active and open class if child is active --}}
 
     {{-- menu headers --}}
@@ -84,5 +87,27 @@ $configData = Helper::appClasses();
     @endif
     @endforeach
   </ul>
+
+  {{-- User card + logout, pinned to bottom --}}
+  @auth
+  <div class="menu-user mt-auto">
+    <div class="menu-divider mb-2"></div>
+    <div class="d-flex align-items-center px-3 py-2">
+      <div class="menu-user-avatar flex-shrink-0">
+        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+      </div>
+      <div class="flex-grow-1 ms-2 overflow-hidden">
+        <div class="menu-user-name text-truncate fw-semibold">{{ auth()->user()->name }}</div>
+        <small class="menu-user-email text-muted text-truncate d-block">{{ auth()->user()->email }}</small>
+      </div>
+      <form action="{{ route('logout') }}" method="POST" class="flex-shrink-0 mb-0 ms-1">
+        @csrf
+        <button type="submit" class="btn btn-icon btn-sm menu-logout-btn" title="Log out" aria-label="Log out">
+          <i class="bx bx-power-off"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  @endauth
 
 </aside>

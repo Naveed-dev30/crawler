@@ -11,14 +11,14 @@
     }
 @endphp
 
+@section('title', 'Bid #' . $bid->id)
+
 @section('content')
-    <div class="mb-4">
+    <div class="mb-3">
         <i onclick="window.history.back()" style="cursor: pointer;" class="bx bx-left-arrow-circle bx-md"></i>
     </div>
 
-    <h4 class="py-3 breadcrumb-wrapper mb-4">
-        <span class="fw-light">Bid/{{ $bid->id }}</span>
-    </h4>
+    <h4 class="page-title">Bid/{{ $bid->id }}</h4>
 
     <div class="card p-4">
         <span>
