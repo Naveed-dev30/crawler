@@ -134,9 +134,7 @@
 @endsection
 
 @section('content')
-    <h4 class="py-3 breadcrumb-wrapper mb-4">
-        <span class="text-muted fw-light">Stats </span>
-    </h4>
+    <h4 class="page-title">Stats</h4>
 
     <div class="row gy-4">
 
