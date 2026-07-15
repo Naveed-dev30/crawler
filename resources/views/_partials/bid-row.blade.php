@@ -1,7 +1,7 @@
 @php
     $statusClass = $bid->bid_status === 'completed'
         ? 'bg-label-success'
-        : ($bid->bid_status === 'pending' ? 'bg-label-primary' : 'bg-label-danger');
+        : ($bid->bid_status === 'pending' ? 'bg-label-warning' : 'bg-label-danger');
     $checkIcon = $bid->check === 'Correct'
         ? 'fa fa-check text-success'
         : ($bid->check === 'Incorrect' ? 'fa fa-close text-danger' : 'fa fa-warning text-warning');
