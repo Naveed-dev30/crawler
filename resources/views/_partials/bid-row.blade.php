@@ -24,7 +24,7 @@
     <td>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-sm btn-label-primary bid-view-btn" data-bid-id="{{ $bid->id }}">
-                <i class="{{ $bid->is_seen ? 'fa fa-eye text-success' : 'fa fa-eye' }} me-1"></i> View
+                <i class="fa fa-eye me-1"></i> View
             </button>
             <i class="{{ $checkIcon }}" data-check-dot="{{ $bid->id }}" style="cursor: help;"
                data-bs-toggle="tooltip" data-bs-custom-class="tooltip-light" title="{{ $checkLabel }}"></i>

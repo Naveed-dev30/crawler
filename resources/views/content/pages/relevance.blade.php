@@ -5,17 +5,7 @@
 @section('content')
     <h4 class="page-title">Relevance</h4>
 
-    <style>
-        .relevance-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1.5rem;
-            align-items: stretch;
-        }
-        @media (max-width: 991.98px) { .relevance-grid { grid-template-columns: 1fr; } }
-    </style>
-
-    <div id="relevance-list" class="relevance-grid">
+    <div id="relevance-list">
         @foreach ($bids as $bid)
             @include('_partials.relevance-card', ['bid' => $bid])
         @endforeach

@@ -241,9 +241,6 @@
                 const res = await fetch('/bids/' + id + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 if (!res.ok) return;
                 el('bidOffcanvasContent').innerHTML = await res.text();
-                // mark the row's eye as seen
-                const icon = btn.querySelector('i');
-                if (icon) { icon.classList.add('text-success'); }
                 bootstrap.Offcanvas.getOrCreateInstance(el('bidOffcanvas')).show();
             });
 
