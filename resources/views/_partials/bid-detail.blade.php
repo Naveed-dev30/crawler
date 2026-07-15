@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <p class="mt-3 mb-1">Last Updated: {{ $bid->proposal->updated_at->format('d-M, Y') }}</p>
+    <p class="mt-3 mb-1">Last Updated: {{ $bid->proposal->updated_at->copy()->timezone('Asia/Karachi')->format('d-M, Y h:i a') }}</p>
     <h6>Project Min Budget: <span class="fw-light">{{ $bid->proposal->min_budget }}$</span></h6>
     <h6>Project Max Budget: <span class="fw-light">{{ $bid->proposal->max_budget }}$</span></h6>
     <h6>Project Quoted: <span class="fw-light">{{ $bid->price }}</span></h6>
