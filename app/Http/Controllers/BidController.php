@@ -189,7 +189,7 @@ class BidController extends Controller
       $notCompletedBid->bid_status = 'expired';
       $notCompletedBid->save();
     }
-    return redirect('/');
+    return redirect('/bids');
   }
 
   public function updateBidCheck(Request $request)
@@ -200,7 +200,7 @@ class BidController extends Controller
 
     $bid->save();
 
-    return redirect('/');
+    return redirect('/bids');
   }
 
   private function needsFeedbackQuery()
