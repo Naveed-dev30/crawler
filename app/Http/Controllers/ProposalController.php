@@ -265,6 +265,10 @@ class ProposalController extends Controller
                     $proposal->project_added_time = $project['time_submitted'];
                     /// [Country]
                     $proposal->country = $country->country;
+                    /// [Exchange rate → USD]
+                    $proposal->exchange_rate = $project['currency']['exchange_rate'] ?? 1;
+                    /// [Skills]
+                    $proposal->skills = collect($project['jobs'] ?? [])->pluck('name')->values()->all();
 
                     $proposal->save();
                     $proposal->get();
