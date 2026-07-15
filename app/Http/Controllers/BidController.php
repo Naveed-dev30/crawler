@@ -19,8 +19,86 @@ class BidController extends Controller
    */
   public function index()
   {
-    $bids = Bid::latest()->paginate(100)->onEachSide(1);
-    return view('content.pages.home', ['bids' => $bids]);
+    return view('content.pages.home');
+  }
+
+  private function filteredBidQuery(Request $request)
+  {
+    $query = Bid::query()
+      ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
+      ->select('bids.*');
+
+    if ($request->filled('from')) {
+      $query->where('bids.created_at', '>=', Carbon::parse($request->query('from'))->startOfDay());
+    }
+    if ($request->filled('to')) {
+      $query->where('bids.created_at', '<=', Carbon::parse($request->query('to'))->endOfDay());
+    }
+    if (is_numeric($request->query('min'))) {
+      $query->where('bids.price', '>=', (float) $request->query('min'));
+    }
+    if (is_numeric($request->query('max'))) {
+      $query->where('bids.price', '<=', (float) $request->query('max'));
+    }
+    if (in_array($request->query('type'), ['fixed', 'hourly'], true)) {
+      $query->where('proposals.type', $request->query('type'));
+    }
+    if ($request->filled('q')) {
+      $q = $request->query('q');
+      $query->where(function ($sub) use ($q) {
+        $sub->where('proposals.title', 'like', "%{$q}%")
+          ->orWhere('proposals.project_id', 'like', "%{$q}%");
+      });
+    }
+
+    return $query;
+  }
+
+  public function data(Request $request)
+  {
+    $placed = ['pending', 'completed'];
+    $failed = ['failed', 'expired'];
+
+    $base = $this->filteredBidQuery($request);
+
+    $cards = [
+      'total'  => (clone $base)->count(),
+      'placed' => (clone $base)->whereIn('bids.bid_status', $placed)->count(),
+      'failed' => (clone $base)->whereIn('bids.bid_status', $failed)->count(),
+    ];
+
+    $tab = $request->query('tab') === 'failed' ? 'failed' : 'placed';
+    $statuses = $tab === 'failed' ? $failed : $placed;
+
+    $bids = (clone $base)
+      ->whereIn('bids.bid_status', $statuses)
+      ->with('proposal')
+      ->latest('bids.created_at')
+      ->paginate(100)
+      ->withQueryString();
+
+    $rowsHtml = '';
+    foreach ($bids as $bid) {
+      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid])->render();
+    }
+    if ($bids->isEmpty()) {
+      $rowsHtml = '<tr><td colspan="7" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
+    }
+
+    return response()->json([
+      'cards' => $cards,
+      'rowsHtml' => $rowsHtml,
+      'paginationHtml' => $bids->links('vendor.pagination.bootstrap-5')->render(),
+    ]);
+  }
+
+  public function detail(Bid $bid)
+  {
+    $bid->is_seen = true;
+    $bid->save();
+    $bid->load('proposal');
+
+    return view('_partials.bid-detail', ['bid' => $bid])->render();
   }
 
   public function stats()
@@ -196,11 +274,14 @@ class BidController extends Controller
   {
     $bid = Bid::find($request->bid_id);
 
-    $bid->check = $request->check;
+    if (!$bid) {
+      return response()->json(['success' => false, 'message' => 'Bid not found.'], 404);
+    }
 
+    $bid->check = $request->check;
     $bid->save();
 
-    return redirect('/bids');
+    return response()->json(['success' => true, 'check' => $bid->check]);
   }
 
   private function needsFeedbackQuery()
