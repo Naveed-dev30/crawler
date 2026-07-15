@@ -8,7 +8,13 @@
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
 </div>
 <div class="offcanvas-body" data-bid-id="{{ $bid->id }}">
-    <span class="badge {{ $checkBadge }}" data-check-badge>{{ $bid->check }}</span>
+    <div class="d-flex justify-content-between align-items-center gap-2">
+        <span class="badge {{ $checkBadge }}" data-check-badge>{{ $bid->check }}</span>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-success bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
+            <button type="button" class="btn btn-sm btn-outline-danger bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+        </div>
+    </div>
 
     <p class="mt-3 mb-1">Last Updated: {{ $bid->proposal->updated_at->format('d-M, Y') }}</p>
     <h6>Project Min Budget: <span class="fw-light">{{ $bid->proposal->min_budget }}$</span></h6>
@@ -30,13 +36,9 @@
     <h6>Coverletter</h6>
     <span class="fw-light">{{ $bid->cover_letter }}</span>
 
-    <div class="mt-4 d-flex flex-column gap-2">
-        <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank" class="btn btn-primary">
+    <div class="mt-4">
+        <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank" class="btn btn-primary w-100">
             View on Freelancer
         </a>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-success bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
-            <button type="button" class="btn btn-outline-danger bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
-        </div>
     </div>
 </div>

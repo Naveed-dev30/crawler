@@ -59,8 +59,31 @@
     </div>
 
     {{-- Tabs + table --}}
+    <style>
+        #bids-tabs .nav-link {
+            color: #6c757d;
+            font-weight: 500;
+            border: 0;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            padding: .5rem 1.25rem;
+        }
+        #bids-tabs .nav-link:hover { color: #5a5f66; }
+        #bids-tabs .nav-link.active {
+            color: #696cff;
+            font-weight: 700;
+            background-color: rgba(105, 108, 255, .12);
+            border-bottom-color: #696cff;
+            border-radius: .375rem .375rem 0 0;
+        }
+        #bids-tabs .nav-link[data-tab="failed"].active {
+            color: #ff3e1d;
+            background-color: rgba(255, 62, 29, .12);
+            border-bottom-color: #ff3e1d;
+        }
+    </style>
     <div class="card">
-        <div class="card-header pb-0">
+        <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
                 <li class="nav-item"><button class="nav-link active" data-tab="placed" type="button">Placed Bids</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed Bids</button></li>
@@ -81,9 +104,11 @@
     </div>
     <div class="mt-4 card px-4 pt-3" id="bids-pagination"></div>
 
-    {{-- Reused left slide-over --}}
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas" style="width: 32rem; max-width: 90vw;">
-        <div id="bidOffcanvasContent"></div>
+    {{-- Reused left slide-over: no backdrop so other rows stay clickable; scrollable body --}}
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas"
+         data-bs-backdrop="false" data-bs-scroll="true"
+         style="width: 44rem; max-width: 95vw;">
+        <div id="bidOffcanvasContent" class="h-100 d-flex flex-column"></div>
     </div>
 @endsection
 
@@ -125,14 +150,16 @@
                 el('card-failed').textContent = data.cards.failed;
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
+                el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
             }
 
             function reload() { currentPage = 1; loadData(); }
 
-            // Filters
-            ['f-from', 'f-to', 'f-min', 'f-max', 'f-type'].forEach(id => el(id).addEventListener('change', reload));
-            let searchTimer;
-            el('f-search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(reload, 400); });
+            // Filters: dates + type apply on change; amounts + search apply as you type (debounced)
+            ['f-from', 'f-to', 'f-type'].forEach(id => el(id).addEventListener('change', reload));
+            let filterTimer;
+            const debouncedReload = () => { clearTimeout(filterTimer); filterTimer = setTimeout(reload, 400); };
+            ['f-min', 'f-max', 'f-search'].forEach(id => el(id).addEventListener('input', debouncedReload));
             el('f-search').addEventListener('focus', () => searchFocused = true);
             el('f-search').addEventListener('blur', () => searchFocused = false);
 
