@@ -17,7 +17,7 @@
     <td>{{ $bid->proposal->type }}</td>
     <td>
         <div class="col">
-            <div class="row">{{ $bid->created_at->format('h:i a') }}</div>
+            <div class="row">{{ $bid->created_at->copy()->timezone('Asia/Karachi')->format('h:i a') }}</div>
             <div class="row text-light">{{ $bid->created_at->diffForHumans(null, true) }}</div>
         </div>
     </td>
