@@ -36,12 +36,18 @@
                 <button type="button" class="btn btn-outline-primary" data-granularity="monthly">Monthly</button>
             </div>
         </div>
-        <h6 class="text-muted">Fixed</h6>
-        <div id="chart-fixed"></div>
-        <h6 class="text-muted mt-3">Hourly</h6>
-        <div id="chart-hourly"></div>
-        <h6 class="text-muted mt-3">All Bids</h6>
+        <h6 class="text-muted">All Bids</h6>
         <div id="chart-all"></div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h6 class="text-muted">Fixed</h6>
+                <div id="chart-fixed"></div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted">Hourly</h6>
+                <div id="chart-hourly"></div>
+            </div>
+        </div>
     </div></div>
 
     <!-- Project value chart -->
