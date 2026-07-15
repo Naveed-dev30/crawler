@@ -94,8 +94,8 @@
 
             function outcomeSeries(rows) {
                 return [
-                    { name: 'Qualified', data: rows.map(r => r.qualified) },
-                    { name: 'Successful', data: rows.map(r => r.successful) },
+                    { name: 'Awarded', data: rows.map(r => r.awarded) },
+                    { name: 'Placed', data: rows.map(r => r.placed) },
                     { name: 'Failed', data: rows.map(r => r.failed) },
                 ];
             }

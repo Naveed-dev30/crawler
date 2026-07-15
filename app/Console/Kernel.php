@@ -19,6 +19,12 @@ class Kernel extends ConsoleKernel
         $proposalController->getProposals(); // Replace with your actual method name
       })
       ->everyMinute();
+
+    $schedule
+      ->call(function () {
+        (new \App\Services\BidAwardChecker())->run();
+      })
+      ->everyThirtyMinutes();
   }
 
   /**

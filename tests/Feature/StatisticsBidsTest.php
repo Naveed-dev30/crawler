@@ -30,11 +30,17 @@ class StatisticsBidsTest extends TestCase
         $fixed = Proposal::factory()->create(['type' => 'fixed']);
         $hourly = Proposal::factory()->create(['type' => 'hourly']);
 
-        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'pending', 'created_at' => '2026-07-10 09:00:00']);
-        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'completed', 'created_at' => '2026-07-10 10:00:00']);
+        // awarded (completed + awarded)
+        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'completed', 'awarded' => true, 'created_at' => '2026-07-10 09:00:00']);
+        // placed (completed, not awarded)
+        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'completed', 'awarded' => false, 'created_at' => '2026-07-10 10:00:00']);
+        // failed + expired
         Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'failed', 'created_at' => '2026-07-10 11:00:00']);
         Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'expired', 'created_at' => '2026-07-10 12:00:00']);
-        Bid::factory()->create(['proposal_id' => $hourly->id, 'bid_status' => 'pending', 'created_at' => '2026-07-10 09:30:00']);
+        // pending -> not shown
+        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'pending', 'created_at' => '2026-07-10 08:00:00']);
+        // hourly awarded
+        Bid::factory()->create(['proposal_id' => $hourly->id, 'bid_status' => 'completed', 'awarded' => true, 'created_at' => '2026-07-10 09:30:00']);
     }
 
     public function test_requires_auth(): void
@@ -42,7 +48,7 @@ class StatisticsBidsTest extends TestCase
         $this->getJson('/stats/bids')->assertUnauthorized();
     }
 
-    public function test_fixed_type_groups_status_categories_daily(): void
+    public function test_fixed_type_awarded_placed_failed_daily(): void
     {
         $this->seedBids();
 
@@ -51,12 +57,12 @@ class StatisticsBidsTest extends TestCase
             ->assertOk();
 
         $day = collect($res->json())->firstWhere('bucket', '2026-07-10');
-        $this->assertEquals(1, $day['qualified']);   // pending
-        $this->assertEquals(1, $day['successful']);  // completed
-        $this->assertEquals(2, $day['failed']);      // failed + expired
+        $this->assertEquals(1, $day['awarded']); // completed+awarded
+        $this->assertEquals(1, $day['placed']);  // completed, not awarded
+        $this->assertEquals(2, $day['failed']);  // failed + expired
     }
 
-    public function test_type_all_includes_hourly(): void
+    public function test_type_all_includes_hourly_awarded(): void
     {
         $this->seedBids();
 
@@ -65,7 +71,7 @@ class StatisticsBidsTest extends TestCase
             ->assertOk();
 
         $day = collect($res->json())->firstWhere('bucket', '2026-07-10');
-        $this->assertEquals(2, $day['qualified']); // fixed pending + hourly pending
+        $this->assertEquals(2, $day['awarded']); // fixed awarded + hourly awarded
     }
 
     public function test_zero_filled_buckets_present(): void
@@ -76,8 +82,8 @@ class StatisticsBidsTest extends TestCase
             ->getJson('/stats/bids?type=fixed&granularity=daily&from=2026-07-10&to=2026-07-12')
             ->assertOk();
 
-        $this->assertCount(3, $res->json()); // 3 days
+        $this->assertCount(3, $res->json());
         $empty = collect($res->json())->firstWhere('bucket', '2026-07-11');
-        $this->assertEquals(0, $empty['qualified']);
+        $this->assertEquals(0, $empty['awarded']);
     }
 }

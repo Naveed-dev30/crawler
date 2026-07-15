@@ -25,7 +25,7 @@ class StatisticsController extends Controller
         $query = Bid::query()
             ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
             ->whereBetween('bids.created_at', [$from, $to])
-            ->select('bids.created_at as created_at', 'bids.bid_status as bid_status');
+            ->select('bids.created_at as created_at', 'bids.bid_status as bid_status', 'bids.awarded as awarded');
 
         if ($type !== 'all') {
             $query->where('proposals.type', $type);
@@ -33,7 +33,7 @@ class StatisticsController extends Controller
 
         $data = [];
         foreach ($this->bucketSequence($from, $to, $granularity) as $key) {
-            $data[$key] = ['bucket' => $key, 'qualified' => 0, 'successful' => 0, 'failed' => 0];
+            $data[$key] = ['bucket' => $key, 'awarded' => 0, 'placed' => 0, 'failed' => 0];
         }
 
         foreach ($query->get() as $row) {
@@ -41,23 +41,16 @@ class StatisticsController extends Controller
             if (!isset($data[$key])) {
                 continue;
             }
-            $category = $this->statusCategory($row->bid_status);
-            if ($category) {
-                $data[$key][$category]++;
+            if ($row->awarded) {
+                $data[$key]['awarded']++;
+            } elseif ($row->bid_status === 'completed') {
+                $data[$key]['placed']++;
+            } elseif (in_array($row->bid_status, ['failed', 'expired'], true)) {
+                $data[$key]['failed']++;
             }
         }
 
         return response()->json(array_values($data));
-    }
-
-    private function statusCategory(string $status): ?string
-    {
-        return match ($status) {
-            'pending' => 'qualified',
-            'completed' => 'successful',
-            'failed', 'expired' => 'failed',
-            default => null,
-        };
     }
 
     private function resolveGranularity(Request $request): string
@@ -174,8 +167,9 @@ class StatisticsController extends Controller
             }
             $posted += $usd;
 
-            if ($proposal->bid && $proposal->bid->bid_status === 'completed') {
-                $awarded += $usd;
+            if ($proposal->bid && $proposal->bid->awarded) {
+                $native = $proposal->bid->awarded_price ?? $proposal->bid->price;
+                $awarded += $native * ($proposal->exchange_rate ?? 1);
                 foreach (($proposal->skills ?? []) as $skill) {
                     $skills[$skill] = ($skills[$skill] ?? 0) + 1;
                 }
