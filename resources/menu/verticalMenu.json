@@ -7,16 +7,16 @@
       "slug": "home"
     },
     {
+      "url": "/bids",
+      "name": "Bids",
+      "icon": "menu-icon tf-icons bx bx-briefcase",
+      "slug": "bids"
+    },
+    {
       "url": "/relevance",
       "name": "Relevance",
       "icon": "menu-icon tf-icons bx bx-check-shield",
       "slug": "relevance"
-    },
-    {
-      "url": "/stats",
-      "name": "Statistics",
-      "icon": "menu-icon tf-icons bx bx-stats",
-      "slug": "statistics"
     },
     {
       "url": "/filters",

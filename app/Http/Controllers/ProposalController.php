@@ -203,6 +203,13 @@ class ProposalController extends Controller
                         continue;
                     }
 
+                    // Defense-in-depth: even if the API returns it, never bid on a
+                    // project whose country is not in the selected whitelist.
+                    if (!$this->countryAllowed($filter, $project['currency']['country'] ?? null)) {
+                        \Log::info("Cannot Proceed because country '" . ($project['currency']['country'] ?? '?') . "' not in allowed filter list");
+                        continue;
+                    }
+
                     $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
                     if ($proposalExists) {
@@ -265,6 +272,10 @@ class ProposalController extends Controller
                     $proposal->project_added_time = $project['time_submitted'];
                     /// [Country]
                     $proposal->country = $country->country;
+                    /// [Exchange rate → USD]
+                    $proposal->exchange_rate = $project['currency']['exchange_rate'] ?? 1;
+                    /// [Skills]
+                    $proposal->skills = collect($project['jobs'] ?? [])->pluck('name')->values()->all();
 
                     $proposal->save();
                     $proposal->get();
@@ -280,6 +291,45 @@ class ProposalController extends Controller
 
         \Log::info("==================================Get Proposals Ended=================================");
 
+    }
+
+    /**
+     * Whether a project's currency-country is allowed by the filter's country whitelist.
+     *
+     * Freelancer reports the currency's country as a currency-region code
+     * (USD->US, GBP->UK, EUR->EU, INR->IN...), while the filter whitelist stores
+     * ISO country codes (United Kingdom = GB, euro countries individually). This
+     * normalizes the few that differ so genuine countries (India) are blocked while
+     * wanted ones (UK, euro) are kept.
+     */
+    public function countryAllowed(Filter $filter, ?string $currencyCountry): bool
+    {
+        if (!$filter->usecountries) {
+            return true;
+        }
+
+        $code = strtoupper(trim((string) $currencyCountry));
+        if ($code === '') {
+            return true; // unknown country -> don't block
+        }
+
+        $allowed = $filter->countries
+            ->pluck('language')
+            ->map(fn ($c) => strtoupper(trim((string) $c)))
+            ->all();
+
+        // Currency-region codes that differ from the ISO code used in the whitelist.
+        $normalized = ['UK' => 'GB'][$code] ?? $code;
+
+        // Euro currency reports 'EU' (no single country). Accept it when the user
+        // whitelisted any eurozone country.
+        if ($normalized === 'EU') {
+            $eurozone = ['DE', 'FR', 'IT', 'ES', 'NL', 'IE', 'AT', 'BE', 'PT', 'FI',
+                         'GR', 'LU', 'SK', 'SI', 'EE', 'LV', 'LT', 'CY', 'MT'];
+            return count(array_intersect($allowed, $eurozone)) > 0;
+        }
+
+        return in_array($normalized, $allowed, true);
     }
 
     public function shouldNotProceed($project): bool

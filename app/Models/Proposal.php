@@ -10,6 +10,9 @@ class Proposal extends Model
 {
     use HasFactory;
 
+    protected $casts = [
+        'skills' => 'array',
+    ];
 
     /**
      * Get the Bid associated with the Proposal
