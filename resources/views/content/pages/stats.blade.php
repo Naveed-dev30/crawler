@@ -7,7 +7,25 @@
 @endsection
 
 @section('content')
-    <h4 class="page-title">Statistics</h4>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h4 class="page-title mb-0">Statistics</h4>
+        <div class="d-flex flex-wrap align-items-end gap-2" id="date-range">
+            <div>
+                <label class="form-label small text-muted mb-1" for="range-from">From</label>
+                <input type="date" class="form-control form-control-sm" id="range-from">
+            </div>
+            <div>
+                <label class="form-label small text-muted mb-1" for="range-to">To</label>
+                <input type="date" class="form-control form-control-sm" id="range-to">
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
+                <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
+                <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
+                <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
+        </div>
+    </div>
 
     <!-- 24h snapshot cards -->
     <div class="row gy-4 mb-4">
@@ -78,6 +96,40 @@
     <script>
         (function () {
             const charts = {};
+            let currentGranularity = 'daily';
+
+            const fromEl = document.querySelector('#range-from');
+            const toEl = document.querySelector('#range-to');
+
+            function ymd(d) {
+                return d.getFullYear() + '-'
+                    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+                    + String(d.getDate()).padStart(2, '0');
+            }
+
+            function setRange(days) {
+                const to = new Date();
+                const from = new Date();
+                from.setDate(from.getDate() - days);
+                fromEl.value = ymd(from);
+                toEl.value = ymd(to);
+                clampBounds();
+            }
+
+            function clampBounds() {
+                const today = ymd(new Date());
+                fromEl.max = toEl.value || today;
+                toEl.max = today;
+                toEl.min = fromEl.value || '';
+            }
+
+            function rangeParams() {
+                const p = new URLSearchParams();
+                if (fromEl.value) { p.set('from', fromEl.value); }
+                if (toEl.value) { p.set('to', toEl.value); }
+                const s = p.toString();
+                return s ? '&' + s : '';
+            }
 
             function renderBar(elId, categories, series, horizontal) {
                 if (charts[elId]) { charts[elId].destroy(); }
@@ -102,13 +154,13 @@
             }
 
             async function loadOutcome(type, elId, granularity) {
-                const res = await fetch(`/stats/bids?type=${type}&granularity=${granularity}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(`/stats/bids?type=${type}&granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
                 renderBar(elId, rows.map(r => r.bucket), outcomeSeries(rows), false);
             }
 
             async function loadValue(granularity) {
-                const res = await fetch(`/stats/value?granularity=${granularity}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(`/stats/value?granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
                 renderBar('chart-value', rows.map(r => r.bucket), [
                     { name: 'Placed (USD)', data: rows.map(r => r.placed_usd) },
@@ -117,7 +169,7 @@
             }
 
             async function loadCountries() {
-                const res = await fetch('/stats/countries', { headers: { Accept: 'application/json' } });
+                const res = await fetch(`/stats/countries?${rangeParams().replace(/^&/, '')}`, { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
                 renderBar('chart-countries', rows.map(r => r.country), [
                     { name: 'Projects', data: rows.map(r => r.count) },
@@ -141,6 +193,12 @@
                 loadValue(granularity);
             }
 
+            // Everything driven by the shared date range (snapshot excluded — fixed 24h).
+            function reloadRangeCharts() {
+                loadAllOutcomes(currentGranularity);
+                loadCountries();
+            }
+
             document.querySelectorAll('#granularity-group button').forEach(btn => {
                 btn.addEventListener('click', function () {
                     document.querySelectorAll('#granularity-group button').forEach(b => {
@@ -149,12 +207,43 @@
                     });
                     this.classList.remove('btn-outline-primary');
                     this.classList.add('btn-primary');
-                    loadAllOutcomes(this.dataset.granularity);
+                    currentGranularity = this.dataset.granularity;
+                    loadAllOutcomes(currentGranularity);
                 });
             });
 
-            // Initial load
-            loadAllOutcomes('daily');
+            function markPreset(days) {
+                document.querySelectorAll('#date-range [data-preset]').forEach(b => {
+                    b.classList.toggle('btn-primary', Number(b.dataset.preset) === days);
+                    b.classList.toggle('btn-outline-primary', Number(b.dataset.preset) !== days);
+                });
+            }
+
+            document.querySelectorAll('#date-range [data-preset]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const days = Number(this.dataset.preset);
+                    setRange(days);
+                    markPreset(days);
+                    reloadRangeCharts();
+                });
+            });
+
+            [fromEl, toEl].forEach(el => el.addEventListener('change', function () {
+                markPreset(null);
+                clampBounds();
+                reloadRangeCharts();
+            }));
+
+            document.querySelector('#range-reset').addEventListener('click', function () {
+                setRange(30);
+                markPreset(30);
+                reloadRangeCharts();
+            });
+
+            // Initial load — default last 30 days (matches backend default).
+            setRange(30);
+            markPreset(30);
+            loadAllOutcomes(currentGranularity);
             loadCountries();
             loadSnapshot();
         })();
