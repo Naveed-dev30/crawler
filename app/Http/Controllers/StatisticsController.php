@@ -61,12 +61,21 @@ class StatisticsController extends Controller
 
     private function resolveRange(Request $request): array
     {
+        $now = Carbon::now();
+
         $to = $request->filled('to')
             ? Carbon::parse($request->query('to'))->endOfDay()
-            : Carbon::now();
+            : $now->copy();
+        if ($to->greaterThan($now)) {
+            $to = $now->copy();
+        }
+
         $from = $request->filled('from')
             ? Carbon::parse($request->query('from'))->startOfDay()
             : $to->copy()->subDays(30)->startOfDay();
+        if ($from->greaterThan($to)) {
+            $from = $to->copy()->subDays(30)->startOfDay();
+        }
 
         return [$from, $to];
     }
