@@ -11,6 +11,10 @@ class Bid extends Model
 {
     use HasFactory, Notifiable;
 
+    protected $casts = [
+        'awarded' => 'boolean',
+        'awarded_price' => 'float',
+    ];
 
     /**
      * Get the proposal that owns the Bid
