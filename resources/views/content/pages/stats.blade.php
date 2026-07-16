@@ -144,19 +144,24 @@
                 return s ? '&' + s : '';
             }
 
-            function renderBar(elId, categories, series, horizontal) {
+            function renderBar(elId, categories, series, horizontal, colors) {
                 if (charts[elId]) { charts[elId].destroy(); }
                 const el = document.querySelector('#' + elId);
                 if (!el) { return; }
-                charts[elId] = new ApexCharts(el, {
+                const opts = {
                     chart: { type: 'bar', height: 300, stacked: false, toolbar: { show: false } },
                     plotOptions: { bar: { horizontal: !!horizontal, columnWidth: '60%' } },
                     dataLabels: { enabled: false },
                     series: series,
                     xaxis: { categories: categories },
-                });
+                };
+                if (colors) { opts.colors = colors; }
+                charts[elId] = new ApexCharts(el, opts);
                 charts[elId].render();
             }
+
+            // Awarded, Placed, Failed
+            const OUTCOME_COLORS = ['#399cff', '#28c76f', '#ea5455'];
 
             const STATUS_COLORS = {
                 Completed: '#28c76f',
@@ -209,7 +214,7 @@
             async function loadOutcome(type, elId, granularity) {
                 const res = await fetch(`/stats/bids?type=${type}&granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
-                renderBar(elId, rows.map(r => r.bucket), outcomeSeries(rows), false);
+                renderBar(elId, rows.map(r => r.bucket), outcomeSeries(rows), false, OUTCOME_COLORS);
             }
 
             async function loadValue(granularity) {
@@ -218,7 +223,7 @@
                 renderBar('chart-value', rows.map(r => r.bucket), [
                     { name: 'Placed (USD)', data: rows.map(r => r.placed_usd) },
                     { name: 'Failed (USD)', data: rows.map(r => r.failed_usd) },
-                ], false);
+                ], false, ['#399cff', '#ea5455']);
             }
 
             function renderStatusList(rows) {
