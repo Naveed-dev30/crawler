@@ -75,6 +75,19 @@
         <div id="chart-value"></div>
     </div></div>
 
+    <!-- Status breakdown donut -->
+    <div class="card mb-4"><div class="card-body">
+        <h5 class="mb-4">Bids by Status</h5>
+        <div class="row align-items-center gy-4">
+            <div class="col-md-6">
+                <div id="chart-status"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="status-list" class="d-flex flex-column gap-3"></div>
+            </div>
+        </div>
+    </div></div>
+
     <!-- Top countries + skills -->
     <div class="row gy-4">
         <div class="col-md-6">
@@ -145,6 +158,46 @@
                 charts[elId].render();
             }
 
+            const STATUS_COLORS = {
+                Completed: '#28c76f',
+                Pending: '#ff9f43',
+                Failed: '#ea5455',
+                Expired: '#82868b',
+            };
+
+            function renderDonut(elId, rows) {
+                if (charts[elId]) { charts[elId].destroy(); }
+                const el = document.querySelector('#' + elId);
+                if (!el) { return; }
+                const labels = rows.map(r => r.status);
+                const counts = rows.map(r => r.count);
+                const amounts = rows.map(r => r.amount_usd);
+                const total = counts.reduce((a, b) => a + b, 0);
+                charts[elId] = new ApexCharts(el, {
+                    chart: { type: 'donut', height: 320 },
+                    labels: labels,
+                    series: counts,
+                    colors: labels.map(l => STATUS_COLORS[l] || '#696cff'),
+                    legend: { position: 'bottom' },
+                    dataLabels: { enabled: true, formatter: (v) => Math.round(v) + '%' },
+                    plotOptions: {
+                        pie: { donut: { labels: {
+                            show: true,
+                            total: { show: true, label: 'Total Bids', formatter: () => total.toLocaleString() },
+                        } } },
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val, opts) {
+                                const amt = amounts[opts.seriesIndex] || 0;
+                                return val.toLocaleString() + ' bids · $' + Number(amt).toLocaleString();
+                            },
+                        },
+                    },
+                });
+                charts[elId].render();
+            }
+
             function outcomeSeries(rows) {
                 return [
                     { name: 'Awarded', data: rows.map(r => r.awarded) },
@@ -166,6 +219,43 @@
                     { name: 'Placed (USD)', data: rows.map(r => r.placed_usd) },
                     { name: 'Failed (USD)', data: rows.map(r => r.failed_usd) },
                 ], false);
+            }
+
+            function renderStatusList(rows) {
+                const list = document.querySelector('#status-list');
+                if (!list) { return; }
+                const totalCount = rows.reduce((a, r) => a + r.count, 0) || 1;
+                const totalAmt = rows.reduce((a, r) => a + Number(r.amount_usd), 0);
+                list.innerHTML = rows.map(r => {
+                    const color = STATUS_COLORS[r.status] || '#696cff';
+                    const pct = Math.round((r.count / totalCount) * 100);
+                    return `
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="width:12px;height:12px;border-radius:3px;background:${color};display:inline-block"></span>
+                                <span class="fw-semibold">${r.status}</span>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-semibold">${r.count.toLocaleString()} <span class="text-muted small">(${pct}%)</span></div>
+                                <div class="text-muted small">$${Number(r.amount_usd).toLocaleString()}</div>
+                            </div>
+                        </div>`;
+                }).join('') + `
+                    <hr class="my-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="fw-bold">Total</span>
+                        <div class="text-end">
+                            <div class="fw-bold">${totalCount.toLocaleString()}</div>
+                            <div class="text-muted small">$${Number(totalAmt).toLocaleString()}</div>
+                        </div>
+                    </div>`;
+            }
+
+            async function loadStatus() {
+                const res = await fetch(`/stats/status?${rangeParams().replace(/^&/, '')}`, { headers: { Accept: 'application/json' } });
+                const rows = await res.json();
+                renderDonut('chart-status', rows);
+                renderStatusList(rows);
             }
 
             async function loadCountries() {
@@ -197,6 +287,7 @@
             function reloadRangeCharts() {
                 loadAllOutcomes(currentGranularity);
                 loadCountries();
+                loadStatus();
             }
 
             document.querySelectorAll('#granularity-group button').forEach(btn => {
@@ -245,6 +336,7 @@
             markPreset(30);
             loadAllOutcomes(currentGranularity);
             loadCountries();
+            loadStatus();
             loadSnapshot();
         })();
     </script>
