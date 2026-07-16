@@ -92,6 +92,7 @@ class FilterController extends Controller
             $countries = $request->formValidationCountries;
             $currencies = $request->formValidationCurrencies;
             $prompt = $request->formValidationPrompt;
+            $negativePrompt = $request->formValidationNegativePrompt;
             $crawlerOn = $request->formValidationCrawler;
             $minHourly = $request->formValidationMinHourlyRate;
             $minFixed = $request->formValidationMinFixedRate;
@@ -153,6 +154,8 @@ class FilterController extends Controller
             if ($prompt) {
                 $filter->prompt = $prompt;
             }
+
+            $filter->negative_prompt = $negativePrompt ?? '';
 
             if ($crawlerOn) {
                 $filter->crawler_on = $crawlerOn;

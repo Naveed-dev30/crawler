@@ -48,10 +48,4 @@ class Bid extends Model
             ->groupBy('date');
     }
 
-    public function scopeNeedsFeedback($query)
-    {
-        return $query->whereNull('admin_feedback');
-    }
-
-
 }

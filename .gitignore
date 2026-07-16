@@ -24,3 +24,6 @@ package-lock.json
 # /public/assets/vendor
 .env
 db.sql
+
+/docs/
+
