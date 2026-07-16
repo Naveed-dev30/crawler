@@ -123,6 +123,9 @@
                         <label class="form-label" for="formValidationPrompt">Prompt</label>
                         <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt"
                                   rows="3">{{ $filter->prompt }}</textarea>
+                        <label class="form-label mt-3" for="formValidationNegativePrompt">Negative Prompt</label>
+                        <textarea class="form-control" id="formValidationNegativePrompt"
+                                  name="formValidationNegativePrompt" rows="3">{{ $filter->negative_prompt }}</textarea>
                     </div>
 
                     <span class="col-md-6">
