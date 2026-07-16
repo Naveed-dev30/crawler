@@ -15,6 +15,16 @@
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
     <td><span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span></td>
     <td>{{ $bid->proposal->type }}</td>
+    @if (!empty($completed))
+        <td>
+            @if ($bid->awarded)
+                <span class="badge bg-label-success">True</span>
+            @else
+                <span class="badge bg-label-secondary">False</span>
+            @endif
+        </td>
+        <td>{{ $bid->awarded_price !== null ? $bid->awarded_price . '$' : '—' }}</td>
+    @endif
     <td>
         <div class="col">
             <div class="row">{{ $bid->created_at->copy()->timezone('Asia/Karachi')->format('h:i a') }}</div>

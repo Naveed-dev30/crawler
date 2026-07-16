@@ -67,8 +67,23 @@ class BidController extends Controller
       'failed' => (clone $base)->whereIn('bids.bid_status', $failed)->count(),
     ];
 
-    $tab = $request->query('tab') === 'failed' ? 'failed' : 'placed';
-    $statuses = $tab === 'failed' ? $failed : $placed;
+    $statusCounts = (clone $base)
+      ->whereNotIn('bids.bid_status', ['Project Missing', 'Skill Missing', 'Handle'])
+      ->select('bids.bid_status as s')
+      ->selectRaw('COUNT(*) as c')
+      ->groupBy('bids.bid_status')
+      ->orderByDesc('c')
+      ->pluck('c', 's');
+
+    $tab = in_array($request->query('tab'), ['failed', 'completed'], true)
+      ? $request->query('tab')
+      : 'placed';
+    $statuses = match ($tab) {
+      'failed' => $failed,
+      'completed' => ['completed'],
+      default => $placed,
+    };
+    $isCompleted = $tab === 'completed';
 
     $bids = (clone $base)
       ->whereIn('bids.bid_status', $statuses)
@@ -79,14 +94,16 @@ class BidController extends Controller
 
     $rowsHtml = '';
     foreach ($bids as $bid) {
-      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid])->render();
+      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid, 'completed' => $isCompleted])->render();
     }
     if ($bids->isEmpty()) {
-      $rowsHtml = '<tr><td colspan="7" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
+      $colspan = $isCompleted ? 9 : 7;
+      $rowsHtml = '<tr><td colspan="' . $colspan . '" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
     }
 
     return response()->json([
       'cards' => $cards,
+      'statusCounts' => $statusCounts,
       'rowsHtml' => $rowsHtml,
       'paginationHtml' => $bids->links('vendor.pagination.bootstrap-5')->render(),
     ]);
