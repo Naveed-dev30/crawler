@@ -38,6 +38,7 @@
         </div>
         <h6 class="text-muted">All Bids</h6>
         <div id="chart-all"></div>
+        <hr class="my-4">
         <div class="row mt-3">
             <div class="col-md-6">
                 <h6 class="text-muted">Fixed</h6>
