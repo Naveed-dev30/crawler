@@ -13,12 +13,6 @@
       "slug": "bids"
     },
     {
-      "url": "/relevance",
-      "name": "Relevance",
-      "icon": "menu-icon tf-icons bx bx-check-shield",
-      "slug": "relevance"
-    },
-    {
       "url": "/review",
       "name": "Review",
       "icon": "menu-icon tf-icons bx bx-list-check",
