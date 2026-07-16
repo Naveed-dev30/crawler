@@ -198,6 +198,66 @@ class StatisticsController extends Controller
         ]);
     }
 
+    public function winRate(Request $request)
+    {
+        $granularity = $this->resolveGranularity($request);
+        [$from, $to] = $this->resolveRange($request);
+
+        $rows = Bid::query()
+            ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
+            ->whereBetween('bids.created_at', [$from, $to])
+            ->where('bids.bid_status', 'completed')
+            ->select(
+                'bids.created_at as created_at',
+                'bids.awarded as awarded',
+                'bids.awarded_price as awarded_price',
+                'bids.price as price',
+                'proposals.exchange_rate as exchange_rate'
+            )
+            ->get();
+
+        $buckets = [];
+        foreach ($this->bucketSequence($from, $to, $granularity) as $key) {
+            $buckets[$key] = ['bucket' => $key, 'completed' => 0, 'awarded' => 0, 'win_rate' => 0];
+        }
+
+        $totalCompleted = 0;
+        $totalAwarded = 0;
+        $earningsUsd = 0;
+
+        foreach ($rows as $row) {
+            $totalCompleted++;
+            $key = $this->bucketKey(Carbon::parse($row->created_at), $granularity);
+            if (isset($buckets[$key])) {
+                $buckets[$key]['completed']++;
+            }
+            if ($row->awarded) {
+                $totalAwarded++;
+                if (isset($buckets[$key])) {
+                    $buckets[$key]['awarded']++;
+                }
+                $native = $row->awarded_price ?? $row->price ?? 0;
+                $earningsUsd += $native * ($row->exchange_rate ?? 1);
+            }
+        }
+
+        foreach ($buckets as $key => $b) {
+            $buckets[$key]['win_rate'] = $b['completed'] > 0
+                ? round(($b['awarded'] / $b['completed']) * 100, 1)
+                : 0;
+        }
+
+        return response()->json([
+            'summary' => [
+                'completed'    => $totalCompleted,
+                'awarded'      => $totalAwarded,
+                'win_rate'     => $totalCompleted > 0 ? round(($totalAwarded / $totalCompleted) * 100, 1) : 0,
+                'earnings_usd' => round($earningsUsd, 2),
+            ],
+            'series' => array_values($buckets),
+        ]);
+    }
+
     public function statusBreakdown(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
