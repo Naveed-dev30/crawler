@@ -12,38 +12,40 @@
     </div>
 
     {{-- Filter bar (sticky on scroll) --}}
-    <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;"><div class="card-body">
-        <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">From</label>
-                <input type="date" id="f-from" class="form-control form-control-sm">
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">To</label>
-                <input type="date" id="f-to" class="form-control form-control-sm">
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">Min amount</label>
-                <input type="number" id="f-min" class="form-control form-control-sm" min="0">
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">Max amount</label>
-                <input type="number" id="f-max" class="form-control form-control-sm" min="0">
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">Type</label>
-                <select id="f-type" class="form-select form-select-sm">
-                    <option value="">All</option>
-                    <option value="hourly">Hourly</option>
-                    <option value="fixed">Fixed</option>
-                </select>
-            </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label mb-1">Search</label>
-                <input type="text" id="f-search" class="form-control form-control-sm" placeholder="Title or project id">
+    <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">From</label>
+                    <input type="date" id="f-from" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">To</label>
+                    <input type="date" id="f-to" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">Min amount</label>
+                    <input type="number" id="f-min" class="form-control form-control-sm" min="0">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">Max amount</label>
+                    <input type="number" id="f-max" class="form-control form-control-sm" min="0">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">Type</label>
+                    <select id="f-type" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="hourly">Hourly</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label mb-1">Search</label>
+                    <input type="text" id="f-search" class="form-control form-control-sm" placeholder="Title or project id">
+                </div>
             </div>
         </div>
-    </div></div>
+    </div>
 
     {{-- Cards --}}
     <div class="row g-3 mb-3">
@@ -63,9 +65,14 @@
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold">Placed</span>
-                        <h2 class="mb-0 fw-bold" id="card-placed" style="color:#696cff">—</h2>
+                        <h2 class="mb-1 fw-bold" id="card-placed" style="color:#696cff">—</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-label-success d-inline-flex align-items-center gap-1 fw-semibold">Completed<span class="badge bg-white text-dark ms-1" id="sub-completed">—</span></span>
+                            <span class="badge bg-label-warning d-inline-flex align-items-center gap-1 fw-semibold">Pending<span class="badge bg-white text-dark ms-1" id="sub-pending">—</span></span>
+                        </div>
                     </div>
-                    <span class="badge rounded p-2 lh-1" style="color:#696cff;background:rgba(105,108,255,.12)"><i class="bx bx-check-circle bx-sm"></i></span>
+                    <span class="badge rounded p-2 lh-1" style="color:#696cff;background:rgba(105,108,255,.12)"><i
+                            class="bx bx-check-circle bx-sm"></i></span>
                 </div>
             </div>
         </div>
@@ -74,7 +81,11 @@
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold">Failed</span>
-                        <h2 class="mb-0 fw-bold text-danger" id="card-failed">—</h2>
+                        <h2 class="mb-1 fw-bold text-danger" id="card-failed">—</h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-label-danger d-inline-flex align-items-center gap-1 fw-semibold">Failed<span class="badge bg-white text-dark ms-1" id="sub-failed">—</span></span>
+                            <span class="badge bg-label-secondary d-inline-flex align-items-center gap-1 fw-semibold">Expired<span class="badge bg-white text-dark ms-1" id="sub-expired">—</span></span>
+                        </div>
                     </div>
                     <span class="badge bg-label-danger rounded p-2 lh-1"><i class="bx bx-x-circle bx-sm"></i></span>
                 </div>
@@ -92,7 +103,11 @@
             border-radius: 0;
             padding: .5rem 1.25rem;
         }
-        #bids-tabs .nav-link:hover { color: #5a5f66; }
+
+        #bids-tabs .nav-link:hover {
+            color: #5a5f66;
+        }
+
         #bids-tabs .nav-link.active {
             color: #696cff;
             font-weight: 700;
@@ -100,35 +115,67 @@
             border-bottom-color: #696cff;
             border-radius: .375rem .375rem 0 0;
         }
+
         #bids-tabs .nav-link[data-tab="failed"].active {
             color: #ff3e1d;
             background-color: rgba(255, 62, 29, .12);
             border-bottom-color: #ff3e1d;
         }
+
+        #bids-tabs .nav-link[data-tab="completed"].active {
+            color: #28c76f;
+            background-color: rgba(40, 199, 111, .12);
+            border-bottom-color: #28c76f;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
             letter-spacing: .5px;
             color: #a1acb8;
         }
-        .bids-table td { padding-top: .6rem; padding-bottom: .6rem; }
-        .bids-table tbody tr { transition: background-color .12s ease; }
-        .bids-table tbody tr:hover { background-color: rgba(105, 108, 255, .05); }
+
+        .bids-table td {
+            padding-top: .6rem;
+            padding-bottom: .6rem;
+        }
+
+        .bids-table tbody tr {
+            transition: background-color .12s ease;
+        }
+
+        .bids-table tbody tr:hover {
+            background-color: rgba(105, 108, 255, .05);
+        }
+
         .tooltip-light .tooltip-inner {
             background-color: #fff;
             color: #384551;
             box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
             font-weight: 500;
         }
-        .tooltip-light.bs-tooltip-top .tooltip-arrow::before { border-top-color: #fff; }
-        .tooltip-light.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #fff; }
-        .tooltip-light.bs-tooltip-start .tooltip-arrow::before { border-left-color: #fff; }
-        .tooltip-light.bs-tooltip-end .tooltip-arrow::before { border-right-color: #fff; }
+
+        .tooltip-light.bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #fff;
+        }
+
+        .tooltip-light.bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #fff;
+        }
+
+        .tooltip-light.bs-tooltip-start .tooltip-arrow::before {
+            border-left-color: #fff;
+        }
+
+        .tooltip-light.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #fff;
+        }
     </style>
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
                 <li class="nav-item"><button class="nav-link active" data-tab="placed" type="button">Placed Bids</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="completed" type="button">Completed Bids</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed Bids</button></li>
             </ul>
         </div>
@@ -136,11 +183,21 @@
             <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
                     <tr>
-                        <th>ID</th><th>Title</th><th>Price</th><th>Status</th><th>Type</th><th>Time</th><th>Review</th>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Type</th>
+                        <th class="completed-col d-none">Awarded</th>
+                        <th class="completed-col d-none">Awarded Price</th>
+                        <th>Time</th>
+                        <th>Review</th>
                     </tr>
                 </thead>
                 <tbody id="bids-tbody">
-                    <tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">Loading…</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -148,9 +205,8 @@
     <div class="mt-4 card px-4 pt-3" id="bids-pagination"></div>
 
     {{-- Reused left slide-over: no backdrop so other rows stay clickable; scrollable body --}}
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas"
-         data-bs-backdrop="false" data-bs-scroll="true"
-         style="width: 52rem; max-width: 95vw;">
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas" data-bs-backdrop="false" data-bs-scroll="true"
+        style="width: 52rem; max-width: 95vw;">
         <div id="bidOffcanvasContent" class="h-100 d-flex flex-column"></div>
     </div>
 @endsection
@@ -191,6 +247,14 @@
                 el('card-total').textContent = data.cards.total;
                 el('card-placed').textContent = data.cards.placed;
                 el('card-failed').textContent = data.cards.failed;
+                const sc = {};
+                Object.entries(data.statusCounts || {}).forEach(([s, c]) => { sc[String(s).toLowerCase()] = c; });
+                el('sub-completed').textContent = sc.completed || 0;
+                el('sub-pending').textContent = sc.pending || 0;
+                el('sub-failed').textContent = sc.failed || 0;
+                el('sub-expired').textContent = sc.expired || 0;
+                document.querySelectorAll('.completed-col').forEach(th =>
+                    th.classList.toggle('d-none', currentTab !== 'completed'));
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
