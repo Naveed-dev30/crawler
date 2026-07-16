@@ -23,4 +23,9 @@ class Proposal extends Model
     {
         return $this->hasOne(Bid::class);
     }
+
+    public function scopeNeedsReview($query)
+    {
+        return $query->whereNull('review_label');
+    }
 }

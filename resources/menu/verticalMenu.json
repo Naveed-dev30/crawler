@@ -19,6 +19,12 @@
       "slug": "relevance"
     },
     {
+      "url": "/review",
+      "name": "Review",
+      "icon": "menu-icon tf-icons bx bx-list-check",
+      "slug": "review"
+    },
+    {
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",
