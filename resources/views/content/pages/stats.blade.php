@@ -43,6 +43,44 @@
         </div>
     </div>
 
+    <!-- Win-rate KPI cards (range-driven) -->
+    <div class="row gy-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100"><div class="card-body">
+                <span class="text-muted">Win Rate</span>
+                <h3 class="fw-bold mb-0" id="kpi-winrate" style="color:#28c76f">—</h3>
+                <small class="text-muted">awarded ÷ completed</small>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100"><div class="card-body">
+                <span class="text-muted">Won (Awarded)</span>
+                <h3 class="fw-bold mb-0" id="kpi-awarded">—</h3>
+                <small class="text-muted">in selected range</small>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100"><div class="card-body">
+                <span class="text-muted">Completed Bids</span>
+                <h3 class="fw-bold mb-0" id="kpi-completed">—</h3>
+                <small class="text-muted">eligible to win</small>
+            </div></div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card h-100"><div class="card-body">
+                <span class="text-muted">Earnings (USD)</span>
+                <h3 class="fw-bold mb-0" id="kpi-earnings" style="color:#696cff">—</h3>
+                <small class="text-muted">awarded price × rate</small>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- Win rate over time -->
+    <div class="card mb-4"><div class="card-body">
+        <h5>Win Rate Over Time</h5>
+        <div id="chart-winrate"></div>
+    </div></div>
+
     <!-- Bid outcome charts with shared granularity -->
     <div class="card mb-4"><div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -203,6 +241,45 @@
                 charts[elId].render();
             }
 
+            function renderWinRate(elId, rows) {
+                if (charts[elId]) { charts[elId].destroy(); }
+                const el = document.querySelector('#' + elId);
+                if (!el) { return; }
+                charts[elId] = new ApexCharts(el, {
+                    chart: { type: 'line', height: 300, toolbar: { show: false } },
+                    stroke: { curve: 'smooth', width: 3 },
+                    colors: ['#28c76f'],
+                    markers: { size: 4 },
+                    dataLabels: { enabled: false },
+                    series: [{ name: 'Win Rate', data: rows.map(r => r.win_rate) }],
+                    xaxis: { categories: rows.map(r => r.bucket) },
+                    yaxis: {
+                        min: 0, max: 100,
+                        labels: { formatter: (v) => Math.round(v) + '%' },
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val, opts) {
+                                const r = rows[opts.dataPointIndex] || {};
+                                return val + '% (' + (r.awarded || 0) + '/' + (r.completed || 0) + ')';
+                            },
+                        },
+                    },
+                });
+                charts[elId].render();
+            }
+
+            async function loadWinRate(granularity) {
+                const res = await fetch(`/stats/winrate?granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                const s = data.summary || {};
+                document.querySelector('#kpi-winrate').textContent = (s.win_rate ?? 0) + '%';
+                document.querySelector('#kpi-awarded').textContent = Number(s.awarded ?? 0).toLocaleString();
+                document.querySelector('#kpi-completed').textContent = Number(s.completed ?? 0).toLocaleString();
+                document.querySelector('#kpi-earnings').textContent = '$' + Number(s.earnings_usd ?? 0).toLocaleString();
+                renderWinRate('chart-winrate', data.series || []);
+            }
+
             function outcomeSeries(rows) {
                 return [
                     { name: 'Awarded', data: rows.map(r => r.awarded) },
@@ -286,6 +363,7 @@
                 loadOutcome('hourly', 'chart-hourly', granularity);
                 loadOutcome('all', 'chart-all', granularity);
                 loadValue(granularity);
+                loadWinRate(granularity);
             }
 
             // Everything driven by the shared date range (snapshot excluded — fixed 24h).
