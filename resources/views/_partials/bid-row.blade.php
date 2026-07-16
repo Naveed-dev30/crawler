@@ -13,12 +13,27 @@
     <td>{{ $bid->proposal->project_id }}</td>
     <td>{{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}</td>
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
-    <td><span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span></td>
+    <td>
+        <span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span>
+        @if (empty($completed) && $bid->bid_status === 'completed')
+            <div class="mt-1 small">
+                @if ($bid->awarded)
+                    <span class="fw-semibold" style="color:#399cff">
+                        <i class="fa fa-trophy me-1"></i>Awarded{{ $bid->awarded_price !== null ? ' · ' . $bid->awarded_price . '$' : '' }}
+                    </span>
+                @else
+                    <span class="text-muted">
+                        <i class="fa fa-minus-circle me-1"></i>Not awarded
+                    </span>
+                @endif
+            </div>
+        @endif
+    </td>
     <td>{{ $bid->proposal->type }}</td>
     @if (!empty($completed))
         <td>
             @if ($bid->awarded)
-                <span class="badge bg-label-success">True</span>
+                <span class="badge" style="color:#399cff;background-color:rgba(57,156,255,.12)">True</span>
             @else
                 <span class="badge bg-label-secondary">False</span>
             @endif
