@@ -49,28 +49,24 @@
             <div class="card h-100"><div class="card-body">
                 <span class="text-muted">Win Rate</span>
                 <h3 class="fw-bold mb-0" id="kpi-winrate" style="color:#28c76f">—</h3>
-                <small class="text-muted">awarded ÷ completed</small>
             </div></div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="card h-100"><div class="card-body">
                 <span class="text-muted">Won (Awarded)</span>
                 <h3 class="fw-bold mb-0" id="kpi-awarded">—</h3>
-                <small class="text-muted">in selected range</small>
             </div></div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="card h-100"><div class="card-body">
                 <span class="text-muted">Completed Bids</span>
                 <h3 class="fw-bold mb-0" id="kpi-completed">—</h3>
-                <small class="text-muted">eligible to win</small>
             </div></div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="card h-100"><div class="card-body">
                 <span class="text-muted">Earnings (USD)</span>
                 <h3 class="fw-bold mb-0" id="kpi-earnings" style="color:#696cff">—</h3>
-                <small class="text-muted">awarded price × rate</small>
             </div></div>
         </div>
     </div>
@@ -300,7 +296,7 @@
                 renderBar('chart-value', rows.map(r => r.bucket), [
                     { name: 'Placed (USD)', data: rows.map(r => r.placed_usd) },
                     { name: 'Failed (USD)', data: rows.map(r => r.failed_usd) },
-                ], false, ['#399cff', '#ea5455']);
+                ], false, ['#28c76f', '#ea5455']);
             }
 
             function renderStatusList(rows) {
