@@ -38,6 +38,14 @@ class OpenAIJob implements ShouldQueue
             return;
         }
 
+        $negative = trim((string) $filter->negative_prompt);
+        if ($negative !== '') {
+            if (! app(\App\Services\ProposalQualifier::class)->qualify($negative, $this->proposal->description)) {
+                \Log::info("Skip proposal (negative-prompt gate): {$this->proposal->project_id}");
+                return;
+            }
+        }
+
         $prompt = $filter->prompt;
 
         $data = [

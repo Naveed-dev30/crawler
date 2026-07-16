@@ -3,6 +3,7 @@
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StatisticsController;
 use App\Models\Bid;
 use App\Notifications\BidFailed;
@@ -61,9 +62,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
-    Route::get('/relevance', [BidController::class, 'relevance'])->name('relevance');
-    Route::get('/relevance/load', [BidController::class, 'loadRelevance'])->name('relevance.load');
-    Route::post('/relevance/feedback', [BidController::class, 'storeFeedback'])->name('relevance.feedback');
+    Route::get('/review', [ReviewController::class, 'index'])->name('review');
+    Route::post('/review/feedback', [ReviewController::class, 'storeFeedback'])->name('review.feedback');
+    Route::get('/review/load', [ReviewController::class, 'load'])->name('review.load');
 });
 
 
