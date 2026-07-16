@@ -198,6 +198,45 @@ class StatisticsController extends Controller
         ]);
     }
 
+    public function statusBreakdown(Request $request)
+    {
+        [$from, $to] = $this->resolveRange($request);
+
+        $statuses = ['pending', 'completed', 'expired', 'failed'];
+
+        $rows = Bid::query()
+            ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
+            ->whereBetween('bids.created_at', [$from, $to])
+            ->whereIn('bids.bid_status', $statuses)
+            ->select(
+                'bids.bid_status as bid_status',
+                'proposals.min_budget as min_budget',
+                'proposals.type as type',
+                'proposals.exchange_rate as exchange_rate'
+            )
+            ->get();
+
+        $out = [];
+        foreach ($statuses as $s) {
+            $out[$s] = ['status' => ucfirst($s), 'count' => 0, 'amount_usd' => 0];
+        }
+
+        foreach ($rows as $row) {
+            $usd = ($row->min_budget ?? 0) * ($row->exchange_rate ?? 1);
+            if ($row->type === 'hourly') {
+                $usd *= 10;
+            }
+            $out[$row->bid_status]['count']++;
+            $out[$row->bid_status]['amount_usd'] += $usd;
+        }
+
+        foreach ($out as $k => $row) {
+            $out[$k]['amount_usd'] = round($row['amount_usd'], 2);
+        }
+
+        return response()->json(array_values($out));
+    }
+
     public function countries(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
