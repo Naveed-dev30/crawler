@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class BidController extends Controller
 {
-    private function filteredBidQuery(Request $request)
+    protected function filteredBidQuery(Request $request)
     {
         $query = Bid::query()
             ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
