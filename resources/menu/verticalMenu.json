@@ -19,6 +19,12 @@
       "slug": "review"
     },
     {
+      "url": "/leaderboard",
+      "name": "Leaderboard",
+      "icon": "menu-icon tf-icons bx bx-trophy",
+      "slug": "leaderboard"
+    },
+    {
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",

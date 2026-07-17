@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
+use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StatisticsController;
@@ -65,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/review', [ReviewController::class, 'index'])->name('review');
     Route::post('/review/feedback', [ReviewController::class, 'storeFeedback'])->name('review.feedback');
     Route::get('/review/load', [ReviewController::class, 'load'])->name('review.load');
+    Route::get('/leaderboard', [GamificationController::class, 'index'])->name('leaderboard');
 });
 
 
