@@ -1,0 +1,61 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Jobs\SummarizeReasonJob;
+use App\Models\Filter;
+use App\Models\Proposal;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+class SummarizeReasonJobTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function fakeSummary(string $content): void
+    {
+        Http::fake([
+            'https://api.openai.com/*' => Http::response(
+                ['choices' => [['message' => ['content' => $content]]]],
+                200
+            ),
+        ]);
+    }
+
+    public function test_writes_summary_when_prompt_and_reason_present(): void
+    {
+        Filter::factory()->create(['id' => 1, 'summary_prompt' => 'Summarize the reason in two lines.']);
+        $p = Proposal::factory()->create(['qualified' => false, 'qualify_reason' => 'Matches crypto criteria', 'qualify_summary' => null]);
+        $this->fakeSummary("Line one.\nLine two.");
+
+        (new SummarizeReasonJob($p))->handle();
+
+        $this->assertSame("Line one.\nLine two.", $p->fresh()->qualify_summary);
+        Http::assertSentCount(1);
+    }
+
+    public function test_does_nothing_without_summary_prompt(): void
+    {
+        Filter::factory()->create(['id' => 1, 'summary_prompt' => '']);
+        $p = Proposal::factory()->create(['qualify_reason' => 'Matches crypto criteria', 'qualify_summary' => null]);
+        Http::fake();
+
+        (new SummarizeReasonJob($p))->handle();
+
+        $this->assertNull($p->fresh()->qualify_summary);
+        Http::assertNothingSent();
+    }
+
+    public function test_does_nothing_without_reason(): void
+    {
+        Filter::factory()->create(['id' => 1, 'summary_prompt' => 'Summarize.']);
+        $p = Proposal::factory()->create(['qualify_reason' => null, 'qualify_summary' => null]);
+        Http::fake();
+
+        (new SummarizeReasonJob($p))->handle();
+
+        $this->assertNull($p->fresh()->qualify_summary);
+        Http::assertNothingSent();
+    }
+}

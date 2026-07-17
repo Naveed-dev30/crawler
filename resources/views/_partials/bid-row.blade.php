@@ -15,6 +15,19 @@
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
     <td>
         <span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span>
+        @if (strtolower($bid->bid_status) === 'failed')
+            @php
+                $err = strtolower((string) $bid->error_message);
+                $skillFail = str_contains($err, 'skill');
+            @endphp
+            <div class="mt-1 small">
+                @if ($skillFail)
+                    <span class="badge bg-label-warning"><i class="fa fa-wrench me-1"></i>Skill not matched</span>
+                @else
+                    <span class="badge bg-label-secondary"><i class="fa fa-exclamation-circle me-1"></i>Other</span>
+                @endif
+            </div>
+        @endif
         @if (empty($completed) && $bid->bid_status === 'completed')
             <div class="mt-1 small">
                 @if ($bid->awarded)
