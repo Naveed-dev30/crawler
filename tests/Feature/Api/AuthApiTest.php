@@ -50,6 +50,17 @@ class AuthApiTest extends TestCase
         $this->getJson('/api/v1/user')->assertStatus(401);
     }
 
+    public function test_api_returns_json_even_without_accept_header(): void
+    {
+        // Plain post() does NOT set "Accept: application/json"; the API must
+        // still return a JSON validation error, never an HTML login redirect.
+        $res = $this->post('/api/v1/login', []);
+
+        $res->assertStatus(422)
+            ->assertHeader('content-type', 'application/json')
+            ->assertJsonValidationErrors(['email', 'password']);
+    }
+
     public function test_user_endpoint_returns_current_user_without_password(): void
     {
         $user = User::factory()->create();

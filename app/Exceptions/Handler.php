@@ -51,4 +51,14 @@ class Handler extends ExceptionHandler
             }
         });
     }
+
+    /**
+     * Force JSON rendering for any error on an API route, so a client that
+     * forgets the "Accept: application/json" header still gets JSON (never an
+     * HTML redirect to the web login page).
+     */
+    protected function shouldReturnJson($request, Throwable $e): bool
+    {
+        return $request->is('api/*') || parent::shouldReturnJson($request, $e);
+    }
 }
