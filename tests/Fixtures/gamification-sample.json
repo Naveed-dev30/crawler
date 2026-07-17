@@ -1,0 +1,19 @@
+{
+  "source": { "site": "Freelancer.com", "url": "https://www.freelancer.com/users/game/", "scraped_at": "2026-07-16T11:35:45.357000Z" },
+  "user": { "id": 7032685, "username": "ahmadayaz", "public_name": "Raja Ahmad Ayaz N." },
+  "level": { "level": 20, "rank": "Colt", "xp_total": 309961 },
+  "leaderboard": {
+    "top": [
+      { "rank": 1, "user_id": 7480467, "username": "cgullapalli", "public_name": "Chandrasekhar G.", "level": 20, "score": 4593118, "is_current_user": false },
+      { "rank": 2, "user_id": 6847977, "username": "OSSAUK", "public_name": "Allan H.", "level": 20, "score": 4557612, "is_current_user": false },
+      { "rank": 3, "user_id": 2239716, "username": "mikehurley", "public_name": "Elite Information Tech", "level": 20, "score": 2813920, "is_current_user": false },
+      { "rank": 4, "user_id": 1539095, "username": "RSGeneral", "public_name": "Aaron W.", "level": 20, "score": 2474810, "is_current_user": false },
+      { "rank": 5, "user_id": 2740131, "username": "ravinder246", "public_name": "Websyms", "level": 20, "score": 2426533, "is_current_user": false }
+    ],
+    "nearby": [
+      { "rank": 267, "user_id": 53408, "username": "madcap76", "public_name": "David Ray S.", "level": 20, "score": 310344, "is_current_user": false },
+      { "rank": 268, "user_id": 7032685, "username": "ahmadayaz", "public_name": "Raja Ahmad Ayaz N.", "level": 20, "score": 309961, "is_current_user": true },
+      { "rank": 269, "user_id": 33712082, "username": "MasterUday", "public_name": "Pro Digital Experts", "level": 20, "score": 309726, "is_current_user": false }
+    ]
+  }
+}

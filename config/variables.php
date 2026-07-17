@@ -28,6 +28,7 @@ return [
     "flKey" => env("FL_ACCESS"),
     "flUserId" => env("FL_USER_ID"),
     "openAIKey" => env('OPENAI_API_KEY'),
+    "gamificationIngestToken" => env('GAMIFICATION_INGEST_TOKEN'),
     'slackWebHook' => env('SLACK_WEBHOOK_URL'),
     'slackApiToken' => env('SLACK_API_TOKEN'),
     'slackAuthKey' => env('SLACK_OAUTH_TOKEN')

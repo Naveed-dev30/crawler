@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
+use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\ProposalController;
 
 /*
@@ -29,4 +30,6 @@ Route::get('getProposals', [ProposalController::class, 'getProposals']);
 Route::get('getBid', [BidController::class, 'getBid']);
 Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
 
+Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
+    ->middleware('gamification.token');
 
