@@ -94,20 +94,6 @@ class BidController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Bid $bid)
-    {
-        $request->validate(['status' => 'required|string']);
-
-        $bid->bid_status = $request->input('status');
-        $bid->save();
-        $bid->load('proposal');
-
-        return response()->json([
-            'success' => true,
-            'data' => new BidResource($bid),
-        ]);
-    }
-
     public function updateCheck(Request $request, Bid $bid)
     {
         $request->validate(['check' => 'required|string']);
