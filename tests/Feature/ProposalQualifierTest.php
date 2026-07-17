@@ -23,56 +23,73 @@ class ProposalQualifierTest extends TestCase
         return new ProposalQualifier();
     }
 
-    public function test_true_reply_returns_true_and_sends_one_request(): void
+    public function test_true_reply_returns_qualified_true_with_reason(): void
     {
-        $this->fakeReply('true');
-        $this->assertTrue($this->qualifier()->qualify('no crypto', 'A Laravel API project'));
+        $this->fakeReply('{"qualified": true, "reason": "No crypto or gambling; safe web project."}');
+        $result = $this->qualifier()->qualify('no crypto', 'A Laravel API project');
+
+        $this->assertTrue($result['qualified']);
+        $this->assertStringContainsString('safe web project', $result['reason']);
         Http::assertSentCount(1);
     }
 
-    public function test_false_reply_returns_false(): void
+    public function test_false_reply_returns_qualified_false_with_reason(): void
     {
-        $this->fakeReply('false');
-        $this->assertFalse($this->qualifier()->qualify('no crypto', 'A crypto trading bot'));
-        Http::assertSentCount(1);
+        $this->fakeReply('{"qualified": false, "reason": "Matches negative criteria: crypto trading."}');
+        $result = $this->qualifier()->qualify('no crypto', 'A crypto trading bot');
+
+        $this->assertFalse($result['qualified']);
+        $this->assertStringContainsString('crypto', $result['reason']);
     }
 
-    public function test_true_reply_is_normalized_with_whitespace(): void
+    public function test_reply_wrapped_in_markdown_fence_is_parsed(): void
     {
-        $this->fakeReply("TRUE\n");
-        $this->assertTrue($this->qualifier()->qualify('x', 'y'));
+        $this->fakeReply("```json\n{\"qualified\": false, \"reason\": \"gambling\"}\n```");
+        $result = $this->qualifier()->qualify('no gambling', 'A poker app');
+
+        $this->assertFalse($result['qualified']);
+        $this->assertSame('gambling', $result['reason']);
     }
 
-    public function test_false_reply_is_normalized_with_punctuation(): void
+    public function test_reply_with_surrounding_prose_is_parsed(): void
     {
-        $this->fakeReply(' false. ');
-        $this->assertFalse($this->qualifier()->qualify('x', 'y'));
-    }
+        $this->fakeReply('Sure! {"qualified": false, "reason": "crypto"} Hope this helps.');
+        $result = $this->qualifier()->qualify('no crypto', 'A crypto bot');
 
-    public function test_ambiguous_reply_retries_then_fails_closed(): void
-    {
-        $this->fakeReply('maybe not sure');
-        $this->assertFalse($this->qualifier()->qualify('x', 'y'));
-        Http::assertSentCount(2); // initial + 1 retry
+        $this->assertFalse($result['qualified']);
+        $this->assertSame('crypto', $result['reason']);
     }
 
     public function test_http_error_retries_then_fails_closed(): void
     {
         $this->fakeReply('', 500);
-        $this->assertFalse($this->qualifier()->qualify('x', 'y'));
-        Http::assertSentCount(2);
+        $result = $this->qualifier()->qualify('x', 'y');
+
+        $this->assertFalse($result['qualified']);
+        $this->assertSame('', $result['reason']);
+        Http::assertSentCount(2); // initial + 1 retry
     }
 
-    public function test_system_message_contains_negative_prompt_and_instruction(): void
+    public function test_unparseable_reply_fails_closed(): void
     {
-        $this->fakeReply('true');
+        $this->fakeReply('maybe, not sure');
+        $result = $this->qualifier()->qualify('x', 'y');
+
+        $this->assertFalse($result['qualified']);
+        $this->assertSame('', $result['reason']);
+    }
+
+    public function test_system_message_contains_negative_prompt_and_json_instruction(): void
+    {
+        $this->fakeReply('{"qualified": true, "reason": "ok"}');
         $this->qualifier()->qualify('no gambling sites', 'A poker app');
 
         Http::assertSent(function ($request) {
             $system = strtolower($request->data()['messages'][0]['content'] ?? '');
             return str_contains($system, 'no gambling sites')
-                && str_contains($system, 'strict project filter')
-                && str_contains($system, 'reply only true or false');
+                && str_contains($system, 'json')
+                && str_contains($system, 'qualified')
+                && str_contains($system, 'reason');
         });
     }
 }

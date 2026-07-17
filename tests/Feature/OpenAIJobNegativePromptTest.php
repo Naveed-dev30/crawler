@@ -41,10 +41,13 @@ class OpenAIJobNegativePromptTest extends TestCase
 
     /**
      * Fake OpenAI: the qualify call (system message contains "strict project filter")
-     * returns $verdict; any other call (the cover letter) returns letter text.
+     * returns a JSON verdict for $qualified; any other call (the cover letter)
+     * returns letter text.
      */
-    private function fakeOpenAI(string $verdict, int $qualifyStatus = 200): void
+    private function fakeOpenAI(bool $qualified, int $qualifyStatus = 200): void
     {
+        $verdict = json_encode(['qualified' => $qualified, 'reason' => 'test reason']);
+
         Http::fake(function ($request) use ($verdict, $qualifyStatus) {
             $system = $request->data()['messages'][0]['content'] ?? '';
             if (str_contains($system, 'strict project filter')) {
@@ -57,7 +60,7 @@ class OpenAIJobNegativePromptTest extends TestCase
     public function test_empty_negative_prompt_creates_bid_without_qualify_call(): void
     {
         $this->seedFilter('');
-        $this->fakeOpenAI('true');
+        $this->fakeOpenAI(true);
         $proposal = $this->makeProposal();
 
         (new OpenAIJob($proposal))->handle();
@@ -69,7 +72,7 @@ class OpenAIJobNegativePromptTest extends TestCase
     public function test_qualify_true_creates_bid(): void
     {
         $this->seedFilter('no crypto');
-        $this->fakeOpenAI('true');
+        $this->fakeOpenAI(true);
         $proposal = $this->makeProposal();
 
         (new OpenAIJob($proposal))->handle();
@@ -81,7 +84,7 @@ class OpenAIJobNegativePromptTest extends TestCase
     public function test_qualify_false_skips_bid(): void
     {
         $this->seedFilter('no crypto');
-        $this->fakeOpenAI('false');
+        $this->fakeOpenAI(false);
         $proposal = $this->makeProposal();
 
         (new OpenAIJob($proposal))->handle();
@@ -93,7 +96,7 @@ class OpenAIJobNegativePromptTest extends TestCase
     public function test_qualify_error_skips_bid_fail_closed(): void
     {
         $this->seedFilter('no crypto');
-        $this->fakeOpenAI('', 500); // qualify returns 500 on every attempt
+        $this->fakeOpenAI(false, 500); // qualify returns 500 on every attempt
         $proposal = $this->makeProposal();
 
         (new OpenAIJob($proposal))->handle();

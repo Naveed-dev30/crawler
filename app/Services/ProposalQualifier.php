@@ -12,21 +12,25 @@ class ProposalQualifier
 
     /**
      * Decide whether to proceed with a bid for a proposal, given the operator's
-     * negative prompt. Returns true = proceed, false = skip.
+     * negative prompt, and capture the model's reason.
      *
-     * Fail-closed: any API error, timeout, or non-true/false reply after retries
-     * returns false (skip). Never throws.
+     * @return array{qualified: bool, reason: string}
+     *
+     * Fail-closed: any API error, timeout, or unparseable reply after retries
+     * returns ['qualified' => false, 'reason' => '']. Never throws.
      */
-    public function qualify(string $negativePrompt, string $description): bool
+    public function qualify(string $negativePrompt, string $description): array
     {
         $bearer = 'Bearer ' . config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
         $system = 'You are a strict project filter. The user does NOT want to bid on '
             . 'projects matching these negative criteria: ' . $negativePrompt . '. '
-            . 'Given the project description, reply with exactly one word — "false" if '
-            . 'the project MATCHES the negative criteria (it should be skipped), or "true" '
-            . 'if it does NOT match (safe to proceed). Reply only true or false, nothing else.';
+            . 'Given the project description, decide whether to skip it. Reply with ONLY a '
+            . 'JSON object of the form {"qualified": <true|false>, "reason": "<short reason>"}. '
+            . 'Set "qualified" to false if the project MATCHES the negative criteria (skip it), '
+            . 'or true if it does NOT match (safe to proceed). "reason" is a short phrase '
+            . 'naming the criteria matched or why it is safe. Output nothing but the JSON.';
 
         $payload = [
             'model' => self::MODEL,
@@ -44,12 +48,11 @@ class ProposalQualifier
                     ->post($url, $payload);
 
                 if ($response->successful()) {
-                    $raw = $response->json('choices.0.message.content');
-                    $verdict = $this->parse($raw);
-                    if ($verdict !== null) {
-                        return $verdict;
+                    $parsed = $this->parse($response->json('choices.0.message.content'));
+                    if ($parsed !== null) {
+                        return $parsed;
                     }
-                    Log::warning("ProposalQualifier: unparseable reply '" . trim((string) $raw) . "' (attempt {$attempt})");
+                    Log::warning('ProposalQualifier: unparseable reply (attempt ' . $attempt . ')');
                 } else {
                     Log::warning('ProposalQualifier: HTTP ' . $response->status() . " (attempt {$attempt})");
                 }
@@ -59,24 +62,41 @@ class ProposalQualifier
         }
 
         Log::info('ProposalQualifier: no clear verdict after retries → skipping proposal (fail-closed)');
-        return false;
+
+        return ['qualified' => false, 'reason' => ''];
     }
 
     /**
-     * Parse a model reply to a strict boolean. Returns null when the reply is not
-     * unambiguously true or false.
+     * Parse a model reply (a JSON object, possibly wrapped in a markdown fence)
+     * into ['qualified' => bool, 'reason' => string]. Returns null when the reply
+     * has no usable boolean "qualified".
+     *
+     * @return array{qualified: bool, reason: string}|null
      */
-    private function parse(?string $raw): ?bool
+    private function parse(?string $raw): ?array
     {
-        $t = strtolower(trim((string) $raw));
-        $t = trim($t, " \t\n\r\0\x0B.\"'`");
+        $text = trim((string) $raw);
 
-        if ($t === 'true') {
-            return true;
+        // Strip a leading/trailing markdown code fence if present.
+        $text = preg_replace('/^```(?:json)?/i', '', $text);
+        $text = preg_replace('/```\s*$/', '', $text);
+        $text = trim($text);
+
+        $data = json_decode($text, true);
+
+        // Fallback: if the reply wraps the JSON object in prose, extract the
+        // first {...} object and decode that.
+        if (! is_array($data) && preg_match('/\{.*\}/s', $text, $m)) {
+            $data = json_decode($m[0], true);
         }
-        if ($t === 'false') {
-            return false;
+
+        if (! is_array($data) || ! array_key_exists('qualified', $data) || ! is_bool($data['qualified'])) {
+            return null;
         }
-        return null;
+
+        return [
+            'qualified' => $data['qualified'],
+            'reason' => is_string($data['reason'] ?? null) ? trim($data['reason']) : '',
+        ];
     }
 }
