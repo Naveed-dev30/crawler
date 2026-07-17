@@ -9,6 +9,7 @@ use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BidController as ApiBidController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,5 +42,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('user', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
+
+        Route::get('bids', [ApiBidController::class, 'index']);
+        Route::get('bids/{bid}', [ApiBidController::class, 'show']);
     });
 });
