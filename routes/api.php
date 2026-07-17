@@ -8,6 +8,7 @@ use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\Api\V1\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,3 +34,12 @@ Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
 Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
     ->middleware('gamification.token');
 
+
+Route::prefix('v1')->group(function () {
+    Route::post('login', [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('user', [AuthController::class, 'me']);
+        Route::post('logout', [AuthController::class, 'logout']);
+    });
+});
