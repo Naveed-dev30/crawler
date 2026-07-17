@@ -47,7 +47,6 @@ Route::prefix('v1')->group(function () {
         Route::get('bids', [ApiBidController::class, 'index']);
         Route::post('bids/expire', [ApiBidController::class, 'expire']);
         Route::get('bids/{bid}', [ApiBidController::class, 'show']);
-        Route::post('bids/{bid}/status', [ApiBidController::class, 'updateStatus']);
         Route::post('bids/{bid}/check', [ApiBidController::class, 'updateCheck']);
 
         Route::get('review', [ApiReviewController::class, 'index']);
