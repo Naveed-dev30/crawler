@@ -10,6 +10,7 @@ use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BidController as ApiBidController;
+use App\Http\Controllers\Api\V1\ReviewController as ApiReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,5 +49,8 @@ Route::prefix('v1')->group(function () {
         Route::get('bids/{bid}', [ApiBidController::class, 'show']);
         Route::post('bids/{bid}/status', [ApiBidController::class, 'updateStatus']);
         Route::post('bids/{bid}/check', [ApiBidController::class, 'updateCheck']);
+
+        Route::get('review', [ApiReviewController::class, 'index']);
+        Route::post('review/feedback', [ApiReviewController::class, 'storeFeedback']);
     });
 });
