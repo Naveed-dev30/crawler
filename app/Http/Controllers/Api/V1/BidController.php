@@ -93,4 +93,45 @@ class BidController extends Controller
             'data' => (new BidResource($bid))->withFull(),
         ]);
     }
+
+    public function updateStatus(Request $request, Bid $bid)
+    {
+        $request->validate(['status' => 'required|string']);
+
+        $bid->bid_status = $request->input('status');
+        $bid->save();
+        $bid->load('proposal');
+
+        return response()->json([
+            'success' => true,
+            'data' => new BidResource($bid),
+        ]);
+    }
+
+    public function updateCheck(Request $request, Bid $bid)
+    {
+        $request->validate(['check' => 'required|string']);
+
+        $bid->check = $request->input('check');
+        $bid->save();
+
+        return response()->json([
+            'success' => true,
+            'check' => $bid->check,
+        ]);
+    }
+
+    public function expire()
+    {
+        $bids = Bid::where('bid_status', '!=', 'completed')->get();
+        foreach ($bids as $bid) {
+            $bid->bid_status = 'expired';
+            $bid->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'expired_count' => $bids->count(),
+        ]);
+    }
 }

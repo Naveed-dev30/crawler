@@ -71,4 +71,61 @@ class BidApiTest extends TestCase
     {
         $this->getJson('/api/v1/bids')->assertStatus(401);
     }
+
+    public function test_update_status(): void
+    {
+        $this->auth();
+        $bid = Bid::factory()->create(['bid_status' => 'pending']);
+
+        $this->postJson("/api/v1/bids/{$bid->id}/status", ['status' => 'completed'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', 'completed');
+
+        $this->assertSame('completed', $bid->fresh()->bid_status);
+    }
+
+    public function test_update_status_requires_status(): void
+    {
+        $this->auth();
+        $bid = Bid::factory()->create();
+
+        $this->postJson("/api/v1/bids/{$bid->id}/status", [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_update_status_missing_bid_returns_404(): void
+    {
+        $this->auth();
+        $this->postJson('/api/v1/bids/999999/status', ['status' => 'completed'])
+            ->assertStatus(404);
+    }
+
+    public function test_update_check(): void
+    {
+        $this->auth();
+        $bid = Bid::factory()->create();
+
+        $this->postJson("/api/v1/bids/{$bid->id}/check", ['check' => 'Reviewed'])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('check', 'Reviewed');
+
+        $this->assertSame('Reviewed', $bid->fresh()->check);
+    }
+
+    public function test_expire_sets_non_completed_to_expired(): void
+    {
+        $this->auth();
+        Bid::factory()->create(['bid_status' => 'pending']);
+        Bid::factory()->create(['bid_status' => 'completed']);
+        Bid::factory()->create(['bid_status' => 'failed']);
+
+        $res = $this->postJson('/api/v1/bids/expire')->assertOk();
+        $this->assertSame(2, $res->json('expired_count'));
+        $this->assertSame(0, Bid::where('bid_status', 'pending')->count());
+        $this->assertSame(1, Bid::where('bid_status', 'completed')->count());
+        $this->assertSame(2, Bid::where('bid_status', 'expired')->count());
+    }
 }
