@@ -45,7 +45,6 @@ Route::prefix('v1')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
 
         Route::get('bids', [ApiBidController::class, 'index']);
-        Route::post('bids/expire', [ApiBidController::class, 'expire']);
         Route::get('bids/{bid}', [ApiBidController::class, 'show']);
         Route::post('bids/{bid}/check', [ApiBidController::class, 'updateCheck']);
 

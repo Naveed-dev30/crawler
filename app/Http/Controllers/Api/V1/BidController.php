@@ -106,18 +106,4 @@ class BidController extends Controller
             'check' => $bid->check,
         ]);
     }
-
-    public function expire()
-    {
-        $bids = Bid::where('bid_status', '!=', 'completed')->get();
-        foreach ($bids as $bid) {
-            $bid->bid_status = 'expired';
-            $bid->save();
-        }
-
-        return response()->json([
-            'success' => true,
-            'expired_count' => $bids->count(),
-        ]);
-    }
 }

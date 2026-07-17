@@ -85,17 +85,4 @@ class BidApiTest extends TestCase
         $this->assertSame('Reviewed', $bid->fresh()->check);
     }
 
-    public function test_expire_sets_non_completed_to_expired(): void
-    {
-        $this->auth();
-        Bid::factory()->create(['bid_status' => 'pending']);
-        Bid::factory()->create(['bid_status' => 'completed']);
-        Bid::factory()->create(['bid_status' => 'failed']);
-
-        $res = $this->postJson('/api/v1/bids/expire')->assertOk();
-        $this->assertSame(2, $res->json('expired_count'));
-        $this->assertSame(0, Bid::where('bid_status', 'pending')->count());
-        $this->assertSame(1, Bid::where('bid_status', 'completed')->count());
-        $this->assertSame(2, Bid::where('bid_status', 'expired')->count());
-    }
 }
