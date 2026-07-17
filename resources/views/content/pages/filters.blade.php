@@ -126,6 +126,9 @@
                         <label class="form-label mt-3" for="formValidationNegativePrompt">Negative Prompt</label>
                         <textarea class="form-control" id="formValidationNegativePrompt"
                                   name="formValidationNegativePrompt" rows="3">{{ $filter->negative_prompt }}</textarea>
+                        <label class="form-label mt-3" for="formValidationSummaryPrompt">Summary Prompt</label>
+                        <textarea class="form-control" id="formValidationSummaryPrompt"
+                                  name="formValidationSummaryPrompt" rows="3">{{ $filter->summary_prompt }}</textarea>
                     </div>
 
                     <span class="col-md-6">

@@ -157,6 +157,8 @@ class FilterController extends Controller
 
             $filter->negative_prompt = $negativePrompt ?? '';
 
+            $filter->summary_prompt = $request->formValidationSummaryPrompt ?? '';
+
             if ($crawlerOn) {
                 $filter->crawler_on = $crawlerOn;
             } else {

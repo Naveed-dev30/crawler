@@ -32,6 +32,18 @@
     <h6 class="mt-4">Project Description:</h6>
     <span class="fw-light">{{ $bid->proposal->description }}</span>
 
+    @if (trim((string) $bid->proposal->qualify_reason) !== '')
+        <div class="divider divider-primary"><div class="divider-text">Qualification</div></div>
+        <h6>Reason:</h6>
+        <span class="fw-bold">{{ $bid->proposal->qualify_reason }}</span>
+        <h6 class="mt-3">Summary:</h6>
+        @if (trim((string) $bid->proposal->qualify_summary) !== '')
+            <span class="fw-light">{{ $bid->proposal->qualify_summary }}</span>
+        @else
+            <span class="text-muted fst-italic">No summary available</span>
+        @endif
+    @endif
+
     <div class="divider divider-primary"><div class="divider-text">Bid</div></div>
     <h6>Coverletter</h6>
     <span class="fw-light">{{ $bid->cover_letter }}</span>

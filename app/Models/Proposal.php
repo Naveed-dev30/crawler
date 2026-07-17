@@ -12,6 +12,7 @@ class Proposal extends Model
 
     protected $casts = [
         'skills' => 'array',
+        'qualified' => 'boolean',
     ];
 
     /**
@@ -27,5 +28,10 @@ class Proposal extends Model
     public function scopeNeedsReview($query)
     {
         return $query->whereNull('review_label');
+    }
+
+    public function scopeNotQualified($query)
+    {
+        return $query->where('qualified', false);
     }
 }
