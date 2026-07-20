@@ -34,6 +34,8 @@ class NotQualifiedTabTest extends TestCase
             ->json();
 
         $this->assertArrayHasKey('cards', $res);
+        $this->assertArrayHasKey('statusCounts', $res);
+        $this->assertArrayHasKey('paginationHtml', $res);
         $this->assertStringContainsString('Bad crypto project', $res['rowsHtml']);
         $this->assertStringContainsString('Matches crypto criteria', $res['rowsHtml']);
         $this->assertStringContainsString('A crypto bot build request', $res['rowsHtml']);
@@ -54,6 +56,20 @@ class NotQualifiedTabTest extends TestCase
 
         $this->assertStringContainsString('Crypto bot', $res['rowsHtml']);
         $this->assertStringNotContainsString('Laravel site', $res['rowsHtml']);
+    }
+
+    public function test_search_filters_by_project_id(): void
+    {
+        Proposal::factory()->create(['project_id' => 987654, 'title' => 'Alpha', 'qualified' => false, 'qualify_reason' => 'r']);
+        Proposal::factory()->create(['project_id' => 111111, 'title' => 'Beta', 'qualified' => false, 'qualify_reason' => 'r']);
+
+        $res = $this->actingAs($this->user())
+            ->getJson('/bids/data?tab=not-qualified&q=987654')
+            ->assertOk()
+            ->json();
+
+        $this->assertStringContainsString('Alpha', $res['rowsHtml']);
+        $this->assertStringNotContainsString('Beta', $res['rowsHtml']);
     }
 
     public function test_missing_summary_shows_placeholder(): void
