@@ -1,76 +1,90 @@
-@extends('layouts.layoutMaster')
+# Filters Two-Column Layout Implementation Plan
 
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-@section('title', 'Filters')
+**Goal:** Two-column Filters form: stepped prompt column (Step 1-3, tall textareas) left, criteria + Control box right, Save Changes footer.
 
+**Architecture:** Blade-only rewrite of the form body inside `@section('content')` of `filters.blade.php` (toast block, page-title, card shell, form tag, csrf all preserved). Test expectations updated. No controller/DB/field-name changes.
 
-@section('vendor-style')
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/flatpickr/flatpickr.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/typeahead-js/typeahead.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/formvalidation/dist/css/formValidation.min.css') }}"/>
-@endsection
+**Tech Stack:** Laravel 10 Blade, Bootstrap 5 grid + Sneat switches.
 
-@section('vendor-script')
-    <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/moment/moment.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/flatpickr/flatpickr.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/FormValidation.min.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/plugins/Bootstrap5.min.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/plugins/AutoFocus.min.js') }}"></script>
-@endsection
+**Spec:** `docs/superpowers/specs/2026-07-20-filters-two-column-design.md`
 
-@section('page-script')
-    <script src="{{ asset('assets/js/form-validation.js') }}"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
-                new bootstrap.Popover(el);
-            });
+## Global Constraints
 
-            const toast = document.getElementById('filters-toast');
-            if (toast) {
-                new bootstrap.Toast(toast, { delay: 3500 }).show();
-            }
-        });
-    </script>
-@endsection
+- Field names/ids UNCHANGED: `formValidationCountries[]`, `formValidationCurrencies[]`, `formValidationMinHourlyRate`, `formValidationMinFixedRate`, `formValidationNegativePrompt`, `formValidationPrompt`, `formValidationSummaryPrompt`, `formValidationCrawler` (value="1"), `useCountries`, `useminhour`, `useminfix`.
+- Step labels exactly: "Step 1 - Qualifier Prompt", "Step 2 - Proposal Drafting Prompt", "Step 3 - Response Allocation Prompt". Textareas `rows="20"`.
+- Criteria labels exactly: "Allowed Countries", "Allowed Currencies" (with muted "(locked)"), "Min Hourly Project Rate", "Min Fixed Project Rate".
+- Control box titled "Control": row 1 "Enable Crawler" switch, row 2 three left-aligned switches (Countries / Min Hourly Cost / Min Fixed Cost).
+- Button text exactly "Save Changes", right-aligned full-width footer row, type submit.
+- Popover icons + `data-bs-content` copy carried over VERBATIM from the current file (do not edit the three content strings).
+- Toast markup/JS, vendor includes, form action/method/csrf untouched.
+- No Claude co-author trailer in commit messages.
+- Known pre-existing failure: ExampleTest. Local commits only; NEVER push. Branch: `hotFixes`.
 
-@section('content')
-    @if (session('status'))
-        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
-            <div class="toast bg-white border-0 shadow-lg rounded-3 overflow-hidden" id="filters-toast"
-                 role="alert" aria-live="assertive" aria-atomic="true"
-                 style="border-left: 4px solid #28c76f !important; min-width: 320px;">
-                <div class="d-flex align-items-center p-3">
-                    <span class="badge bg-label-success rounded-circle p-2 me-3 lh-1">
-                        <i class="bx bx-check bx-sm"></i>
-                    </span>
-                    <div class="me-3">
-                        <div class="fw-semibold text-body">Saved</div>
-                        <small class="text-muted">{{ session('status') }}</small>
-                    </div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-    @endif
+---
 
-    <h4 class="page-title">Filters</h4>
-    <div class="row">
-        <!-- FormValidation -->
-        <div class="col-12">
-            <div class="card">
-                <h5 class="card-header">Set Crawler Filter</h5>
-                <div class="card-body">
+### Task 1: Two-column layout
 
-                    <form id="formValidationExamples" method="POST" action={{ route('updateFilters') }} class="row g-3
-                    ">
-                    @csrf
+**Files:**
+- Modify: `resources/views/content/pages/filters.blade.php` (lines 74-202 — everything between `@csrf` and `</form>`)
+- Test: `tests/Feature/FiltersPageCleanupTest.php`
 
+**Interfaces:**
+- Consumes: `$filter`, `$countries`, `$currencies` from `FilterController@index` (unchanged).
+- Produces: same POST payload to `/updateFilters`.
+
+- [ ] **Step 1: Update the tests**
+
+In `tests/Feature/FiltersPageCleanupTest.php`:
+
+Replace `test_qualifier_prompt_shown_before_prompt` with:
+
+```php
+    public function test_stepped_prompts_shown_in_order(): void
+    {
+        Filter::factory()->create(['id' => 1]);
+
+        $this->actingAs($this->admin())->get('/filters')
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Step 1 - Qualifier Prompt',
+                'Step 2 - Proposal Drafting Prompt',
+                'Step 3 - Response Allocation Prompt',
+            ]);
+    }
+```
+
+Replace `test_sectioned_layout_with_inline_switches` with:
+
+```php
+    public function test_two_column_layout_criteria_and_control(): void
+    {
+        Filter::factory()->create(['id' => 1]);
+
+        $res = $this->actingAs($this->admin())->get('/filters')->assertOk();
+        $res->assertSeeInOrder(['Allowed Countries', 'Allowed Currencies', 'Min Hourly Project Rate', 'Min Fixed Project Rate', 'Control', 'Enable Crawler']);
+        $res->assertSee('name="useCountries"', false);
+        $res->assertSee('name="useminhour"', false);
+        $res->assertSee('name="useminfix"', false);
+        $res->assertSee('name="formValidationCrawler"', false);
+        $res->assertSee('Save Changes');
+        $res->assertSee('rows="20"', false);
+    }
+```
+
+Leave every other test untouched.
+
+- [ ] **Step 2: Run tests to verify the new ones fail**
+
+Run: `php artisan test --filter=FiltersPageCleanupTest`
+Expected: FAIL — both new tests (labels don't exist yet). Other 4 pass.
+
+- [ ] **Step 3: Rewrite the form body**
+
+In `resources/views/content/pages/filters.blade.php`, replace everything between the `@csrf` line and the closing `</form>` tag (currently lines 74-202: the two section headers, criteria fields, apply-criteria strip, three prompt blocks, and the footer strip) with:
+
+```blade
                     <div class="col-lg-7">
                         <div class="mb-3">
                             <label class="form-label fw-semibold" for="formValidationNegativePrompt">Step 1 - Qualifier Prompt
@@ -192,10 +206,23 @@
                             <i class="bx bx-save me-1"></i>Save Changes
                         </button>
                     </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <!-- /FormValidation -->
-    </div>
-@endsection
+```
+
+Keep untouched: everything above `@csrf` (toast block, page title, card, form tag) and everything after `</form>`.
+
+Note: the popover `data-bs-content` strings are verbatim copies of the current file; only the two `title` attributes for Steps 2-3 change to match the new labels ("Proposal Drafting Prompt", "Response Allocation Prompt") — this is intended.
+
+- [ ] **Step 4: Run tests**
+
+Run: `php artisan test --filter=FiltersPageCleanupTest`
+Expected: PASS (6 tests)
+
+Run: `php artisan test`
+Expected: all green except pre-existing ExampleTest failure.
+
+- [ ] **Step 5: Commit (NO co-author trailer)**
+
+```bash
+git add resources/views/content/pages/filters.blade.php tests/Feature/FiltersPageCleanupTest.php
+git commit -m "feat: two-column filters layout with stepped prompts and control box"
+```
