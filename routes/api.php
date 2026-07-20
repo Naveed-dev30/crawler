@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
+use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BidController as ApiBidController;
@@ -36,6 +37,8 @@ Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
 Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
     ->middleware('gamification.token');
 
+Route::post('insights/ingest', [InsightsController::class, 'ingest'])
+    ->middleware('ingest.token');
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
