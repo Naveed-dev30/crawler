@@ -65,4 +65,17 @@ class FiltersPageCleanupTest extends TestCase
         $this->assertSame('skip crypto', $filter->negative_prompt);
         $this->assertSame('summarize briefly', $filter->summary_prompt);
     }
+
+    public function test_sectioned_layout_with_inline_switches(): void
+    {
+        Filter::factory()->create(['id' => 1]);
+
+        $res = $this->actingAs($this->admin())->get('/filters')->assertOk();
+        $res->assertSeeInOrder(['1. Project Criteria', '2. AI Prompts']);
+        $res->assertSee('name="useCountries"', false);
+        $res->assertSee('name="useminhour"', false);
+        $res->assertSee('name="useminfix"', false);
+        $res->assertSee('name="formValidationCrawler"', false);
+        $res->assertSee('Crawler Enabled');
+    }
 }
