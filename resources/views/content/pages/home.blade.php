@@ -248,6 +248,7 @@
 @endsection
 
 @section('page-script')
+    @include('_partials.toast-helper')
     <script>
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -360,7 +361,15 @@
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
                     body: JSON.stringify({ bid_id: id, check: check })
                 });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Bid review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
                 const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
                 if (badge) {
                     badge.textContent = check;
