@@ -39,6 +39,7 @@ Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
 
 Route::post('insights/ingest', [InsightsController::class, 'ingest'])
     ->middleware('gamification.token');
+Route::get('insights', [InsightsController::class, 'index']);
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
