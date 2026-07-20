@@ -4,6 +4,9 @@ export class MissingConfigError extends Error {
   constructor() {
     super('API base URL and ingest token must be set in the extension options.')
     this.name = 'MissingConfigError'
+    // Missing config can never resolve itself between retries — only the user
+    // filling in the options page fixes it, so retrying just wastes 42s.
+    this.fatal = true
   }
 }
 

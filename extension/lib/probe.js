@@ -2,7 +2,12 @@
 // self-contained: no imports, no closure over module scope. Chrome serializes
 // the function source across the isolation boundary, so anything it references
 // from outside would be undefined at run time.
-export function findPageData(requiredKeys) {
+export function findPageData(requiredKeys, options) {
+  // `options` is passed across the MAIN-world serialization boundary, so it
+  // must never be assumed present: an undefined/null options must not throw.
+  const opts = options || {}
+  const requireArray = opts.requireArray === true
+
   const NAMED_GLOBALS = ['serverData', '__INITIAL_STATE__', '__NUXT__', '__DATA__', 'appData', 'webapp']
 
   // Runs `thunk`, swallowing any exception in favor of `fallback`. Property
@@ -22,7 +27,13 @@ export function findPageData(requiredKeys) {
     if (o === null || typeof o !== 'object') return false
     // `k in o` can itself throw for a hostile Proxy `has` trap; treat that
     // candidate as a non-match instead of aborting the whole scan.
-    return safe(() => requiredKeys.some((k) => k in o), false)
+    return safe(() => requiredKeys.some((k) => {
+      if (!(k in o)) return false
+      // With requireArray, mere key presence isn't enough — key-presence-only
+      // matching is generic enough to hit an unrelated global that happens to
+      // carry e.g. an `items` property that isn't a list at all.
+      return requireArray ? Array.isArray(o[k]) : true
+    }), false)
   }
 
   const read = (key) => safe(() => window[key], undefined)
@@ -94,6 +105,7 @@ export function findPageData(requiredKeys) {
           length: scriptText(s).length,
         })),
         requiredKeys,
+        requireArray,
       },
     }
   } catch (e) {
