@@ -30,11 +30,27 @@
             document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
                 new bootstrap.Popover(el);
             });
+
+            const toast = document.getElementById('filters-toast');
+            if (toast) {
+                new bootstrap.Toast(toast, { delay: 3500 }).show();
+            }
         });
     </script>
 @endsection
 
 @section('content')
+    @if (session('status'))
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
+            <div class="toast align-items-center text-bg-success border-0" id="filters-toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body"><i class="bx bx-check-circle me-1"></i>{{ session('status') }}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <h4 class="page-title">Filters</h4>
     <div class="row">
         <!-- FormValidation -->

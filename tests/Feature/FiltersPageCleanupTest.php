@@ -66,6 +66,17 @@ class FiltersPageCleanupTest extends TestCase
         $this->assertSame('summarize briefly', $filter->summary_prompt);
     }
 
+    public function test_successful_update_flashes_toast_message(): void
+    {
+        Filter::factory()->create(['id' => 1]);
+
+        $this->actingAs($this->admin())
+            ->followingRedirects()
+            ->post('/updateFilters', ['formValidationPrompt' => 'p'])
+            ->assertOk()
+            ->assertSee('Filters saved successfully.');
+    }
+
     public function test_sectioned_layout_with_inline_switches(): void
     {
         Filter::factory()->create(['id' => 1]);
