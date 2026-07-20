@@ -7,8 +7,6 @@ use App\Http\Requests\UpdateFilterRequest;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Filter;
-use App\Models\Keyword;
-use App\Models\NegativeKeyword;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -26,15 +24,8 @@ class FilterController extends Controller
         $filter = Filter::find(1);
         $countries = Country::all();
         $currencies = Currency::all();
-        $keywords = Keyword::all();
-        $negKeywords = NegativeKeyword::all();
-        $tagsValue = "";
 
-        foreach ($keywords as $keyword) {
-            $tagsValue = "$tagsValue,$keyword->name";
-        }
-
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies, 'keywords' => $keywords, 'negKeywords' => $negKeywords, 'tagsValue' => $tagsValue]);
+        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies]);
     }
 
     /**
@@ -96,60 +87,9 @@ class FilterController extends Controller
             $crawlerOn = $request->formValidationCrawler;
             $minHourly = $request->formValidationMinHourlyRate;
             $minFixed = $request->formValidationMinFixedRate;
-            $tags = $request->TagifyBasic;
-            $negTags = $request->negativeKeywords;
-            $selectedKeywords = $request->formValidationKeywords;
 
 
             $filter = Filter::find(1);
-            if ($tags) {
-                $existingKeywords = Keyword::pluck('name')->toArray();
-                $tagsJson = json_decode($tags, true);
-                $newKeywords = [];
-
-                foreach ($tagsJson as $tag) {
-                    $newKeywords[] = $tag['value'];
-
-                    // Check if the keyword already exists in the database
-                    if (!in_array($tag['value'], $existingKeywords)) {
-                        // Create a new Keyword record and save it
-                        $keyword = new Keyword();
-                        $keyword->name = $tag['value'];
-                        $keyword->save();
-                    }
-                }
-
-                // Determine the keywords that need to be deleted
-                $keywordsToDelete = array_diff($existingKeywords, $newKeywords);
-
-                // Delete the keywords that are no longer present in the list
-                Keyword::whereIn('name', $keywordsToDelete)->delete();
-            }
-
-            /// [Neg Tags]
-            if ($negTags) {
-                $existingNegKeywords = NegativeKeyword::pluck('name')->toArray();
-                $negTagsJson = json_decode($negTags, true);
-                $newNegKeywords = [];
-
-                foreach ($negTagsJson as $negTag) {
-                    $newNegKeywords[] = $negTag['value'];
-
-                    // Check if the keyword already exists in the database
-                    if (!in_array($negTag['value'], $existingNegKeywords)) {
-                        // Create a new Keyword record and save it
-                        $negKeyword = new NegativeKeyword();
-                        $negKeyword->name = $negTag['value'];
-                        $negKeyword->save();
-                    }
-                }
-
-                // Determine the keywords that need to be deleted
-                $negKeywordsToDelete = array_diff($existingNegKeywords, $newNegKeywords);
-
-                // Delete the keywords that are no longer present in the list
-                NegativeKeyword::whereIn('name', $negKeywordsToDelete)->delete();
-            }
 
             if ($prompt) {
                 $filter->prompt = $prompt;
@@ -172,13 +112,6 @@ class FilterController extends Controller
                 }
             }
 
-            if ($selectedKeywords) {
-                $filter->keywords()->detach();
-                foreach ($selectedKeywords as $keyword) {
-                    $filter->keywords()->attach($keyword);
-                }
-            }
-
             if ($currencies) {
                 $filter->currencies()->detach();
                 foreach ($currencies as $currency) {
@@ -194,7 +127,6 @@ class FilterController extends Controller
                 $filter->min_hourly_amount = $minHourly;
             }
 
-            $filter->usekeywords = $request->usekeywords == "on" ? 1 : 0;
             $filter->usecountries = $request->useCountries == "on" ? 1 : 0;
             $filter->useminfix = $request->useminfix == "on" ? 1 : 0;
             $filter->useminhour = $request->useminhour == "on" ? 1 : 0;
