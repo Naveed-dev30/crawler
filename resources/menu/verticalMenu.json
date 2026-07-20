@@ -19,12 +19,6 @@
       "slug": "review"
     },
     {
-      "url": "/not-qualified",
-      "name": "Not Qualified",
-      "icon": "menu-icon tf-icons bx bx-block",
-      "slug": "not-qualified"
-    },
-    {
       "url": "/leaderboard",
       "name": "Leaderboard",
       "icon": "menu-icon tf-icons bx bx-trophy",

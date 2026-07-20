@@ -15,23 +15,23 @@
     <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;">
         <div class="card-body">
             <div class="row g-2 align-items-end">
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">From</label>
                     <input type="date" id="f-from" class="form-control form-control-sm">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">To</label>
                     <input type="date" id="f-to" class="form-control form-control-sm">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Min amount</label>
                     <input type="number" id="f-min" class="form-control form-control-sm" min="0">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Max amount</label>
                     <input type="number" id="f-max" class="form-control form-control-sm" min="0">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Type</label>
                     <select id="f-type" class="form-select form-select-sm">
                         <option value="">All</option>
@@ -48,7 +48,7 @@
     </div>
 
     {{-- Cards --}}
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-3" id="bids-cards">
         <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body d-flex align-items-center justify-content-between">
@@ -128,11 +128,43 @@
             border-bottom-color: #28c76f;
         }
 
+        #bids-tabs .nav-link[data-tab="not-qualified"].active {
+            color: #00cfe8;
+            background-color: rgba(0, 207, 232, .12);
+            border-bottom-color: #00cfe8;
+        }
+
+        #bids-tabs .nav-link[data-tab="skill-not-matched"].active {
+            color: #ffab00;
+            background-color: rgba(255, 171, 0, .12);
+            border-bottom-color: #ffab00;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
             letter-spacing: .5px;
             color: #a1acb8;
+        }
+
+        /* Not Qualified tab: long reason/summary text wraps instead of stretching the table,
+           clamped to 3 lines with a More/Less toggle */
+        .bids-table td.nq-wrap {
+            white-space: normal;
+            word-break: break-word;
+            max-width: 26rem;
+        }
+
+        .bids-table td.nq-wrap .nq-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .bids-table td.nq-wrap .nq-clamp.expanded {
+            display: inline;
+            -webkit-line-clamp: unset;
         }
 
         .bids-table td {
@@ -174,15 +206,16 @@
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="placed" type="button">Placed Bids</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="completed" type="button">Completed Bids</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed Bids</button></li>
+                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Completed</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skill Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
             </ul>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
-                    <tr>
+                    <tr id="thead-bids">
                         <th>ID</th>
                         <th>Title</th>
                         <th>Price</th>
@@ -192,6 +225,14 @@
                         <th class="completed-col d-none">Awarded Price</th>
                         <th>Time</th>
                         <th>Review</th>
+                    </tr>
+                    <tr id="thead-nq" class="d-none">
+                        <th>Project</th>
+                        <th>Title</th>
+                        <th>Reason</th>
+                        <th>Summary</th>
+                        <th>When</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="bids-tbody">
@@ -212,10 +253,18 @@
 @endsection
 
 @section('page-script')
+    @include('_partials.toast-helper')
+    @if (session('status'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                window.showAppToast('Done', @json(session('status')), '#28c76f');
+            });
+        </script>
+    @endif
     <script>
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            let currentTab = 'placed';
+            let currentTab = 'completed';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -255,6 +304,11 @@
                 el('sub-expired').textContent = sc.expired || 0;
                 document.querySelectorAll('.completed-col').forEach(th =>
                     th.classList.toggle('d-none', currentTab !== 'completed'));
+                const nq = currentTab === 'not-qualified';
+                el('thead-bids').classList.toggle('d-none', nq);
+                el('thead-nq').classList.toggle('d-none', !nq);
+                document.querySelectorAll('.bid-only-filter').forEach(d => d.classList.toggle('d-none', nq));
+                el('bids-cards').classList.toggle('d-none', nq);
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
@@ -297,6 +351,17 @@
                 if (page) { currentPage = parseInt(page, 10); loadData(); }
             });
 
+            // Delegated: More/Less toggle for clamped not-qualified text
+            el('bids-tbody').addEventListener('click', function (ev) {
+                const link = ev.target.closest('.nq-more');
+                if (!link) return;
+                ev.preventDefault();
+                const span = link.parentElement.querySelector('.nq-clamp');
+                if (!span) return;
+                const expanded = span.classList.toggle('expanded');
+                link.textContent = expanded ? 'Less' : 'More';
+            });
+
             // Delegated: open slide-over (swap content if already open)
             el('bids-tbody').addEventListener('click', async function (ev) {
                 const btn = ev.target.closest('.bid-view-btn');
@@ -319,7 +384,15 @@
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
                     body: JSON.stringify({ bid_id: id, check: check })
                 });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Bid review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
                 const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
                 if (badge) {
                     badge.textContent = check;

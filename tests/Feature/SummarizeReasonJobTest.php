@@ -23,15 +23,28 @@ class SummarizeReasonJobTest extends TestCase
         ]);
     }
 
-    public function test_writes_summary_when_prompt_and_reason_present(): void
+    public function test_summarizes_proposal_not_reason(): void
     {
-        Filter::factory()->create(['id' => 1, 'summary_prompt' => 'Summarize the reason in two lines.']);
-        $p = Proposal::factory()->create(['qualified' => false, 'qualify_reason' => 'Matches crypto criteria', 'qualify_summary' => null]);
+        Filter::factory()->create(['id' => 1, 'summary_prompt' => 'Summarize this project in two lines.']);
+        $p = Proposal::factory()->create([
+            'title' => 'Crypto trading bot',
+            'description' => 'Build an automated MT5 trading bot with backtesting.',
+            'qualified' => false,
+            'qualify_reason' => 'Matches crypto criteria',
+            'qualify_summary' => null,
+        ]);
         $this->fakeSummary("Line one.\nLine two.");
 
         (new SummarizeReasonJob($p))->handle();
 
         $this->assertSame("Line one.\nLine two.", $p->fresh()->qualify_summary);
+        Http::assertSent(function ($request) use ($p) {
+            $user = $request['messages'][1]['content'] ?? '';
+
+            return str_contains($user, $p->title)
+                && str_contains($user, $p->description)
+                && ! str_contains($user, 'Matches crypto criteria');
+        });
         Http::assertSentCount(1);
     }
 
@@ -47,10 +60,10 @@ class SummarizeReasonJobTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_does_nothing_without_reason(): void
+    public function test_does_nothing_without_description(): void
     {
         Filter::factory()->create(['id' => 1, 'summary_prompt' => 'Summarize.']);
-        $p = Proposal::factory()->create(['qualify_reason' => null, 'qualify_summary' => null]);
+        $p = Proposal::factory()->create(['title' => '', 'description' => '', 'qualify_summary' => null]);
         Http::fake();
 
         (new SummarizeReasonJob($p))->handle();
