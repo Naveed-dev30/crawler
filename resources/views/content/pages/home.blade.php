@@ -134,6 +134,12 @@
             border-bottom-color: #ff9800;
         }
 
+        #bids-tabs .nav-link[data-tab="skill-not-matched"].active {
+            color: #ffab00;
+            background-color: rgba(255, 171, 0, .12);
+            border-bottom-color: #ffab00;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
@@ -180,10 +186,10 @@
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="placed" type="button">Placed Bids</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="completed" type="button">Completed Bids</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed Bids</button></li>
+                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Completed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skill Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
             </ul>
         </div>
         <div class="table-responsive">
@@ -230,7 +236,7 @@
     <script>
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            let currentTab = 'placed';
+            let currentTab = 'completed';
             let currentPage = 1;
             let searchFocused = false;
 

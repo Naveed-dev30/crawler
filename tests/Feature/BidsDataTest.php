@@ -32,7 +32,7 @@ class BidsDataTest extends TestCase
 
         Bid::factory()->create(['proposal_id' => $p1->id, 'bid_status' => 'pending',   'price' => 100, 'created_at' => '2026-07-10 09:00:00']);
         Bid::factory()->create(['proposal_id' => $p1->id, 'bid_status' => 'completed', 'price' => 500, 'created_at' => '2026-07-11 09:00:00']);
-        Bid::factory()->create(['proposal_id' => $p2->id, 'bid_status' => 'failed',    'price' => 200, 'created_at' => '2026-07-12 09:00:00']);
+        Bid::factory()->create(['proposal_id' => $p2->id, 'bid_status' => 'failed',    'price' => 200, 'created_at' => '2026-07-12 09:00:00', 'error_message' => 'Skill not matched for this project']);
         Bid::factory()->create(['proposal_id' => $p2->id, 'bid_status' => 'expired',   'price' => 300, 'created_at' => '2026-07-13 09:00:00']);
     }
 
@@ -41,7 +41,7 @@ class BidsDataTest extends TestCase
         $this->getJson('/bids/data')->assertUnauthorized();
     }
 
-    public function test_cards_and_default_placed_tab(): void
+    public function test_cards_and_default_completed_tab(): void
     {
         $this->seedBids();
 
@@ -50,21 +50,58 @@ class BidsDataTest extends TestCase
         $this->assertEquals(4, $res->json('cards.total'));
         $this->assertEquals(2, $res->json('cards.placed'));
         $this->assertEquals(2, $res->json('cards.failed'));
-        // default tab = placed → rows contain the pending+completed bids' projects, not the failed ones
+        // default tab = completed → pending + completed rows, no failures
         $this->assertStringContainsString('1234', $res->json('rowsHtml'));
         $this->assertStringContainsString('pending', $res->json('rowsHtml'));
         $this->assertStringNotContainsString('expired', $res->json('rowsHtml'));
     }
 
-    public function test_failed_tab(): void
+    public function test_failed_tab_excludes_skill_errors(): void
     {
         $this->seedBids();
 
         $res = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=failed')->assertOk();
 
-        $this->assertStringContainsString('failed', $res->json('rowsHtml'));
+        // only the expired bid (price 300, null error); the skill-error bid (price 200) is excluded
         $this->assertStringContainsString('expired', $res->json('rowsHtml'));
+        $this->assertStringContainsString('300', $res->json('rowsHtml'));
+        $this->assertStringNotContainsString('200', $res->json('rowsHtml'));
         $this->assertStringNotContainsString('pending', $res->json('rowsHtml'));
+    }
+
+    public function test_skill_not_matched_tab(): void
+    {
+        $this->seedBids();
+
+        $res = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=skill-not-matched')->assertOk();
+
+        // only the failed bid with the skill error (price 200)
+        $this->assertStringContainsString('200', $res->json('rowsHtml'));
+        $this->assertStringNotContainsString('300', $res->json('rowsHtml'));
+        $this->assertStringNotContainsString('pending', $res->json('rowsHtml'));
+    }
+
+    public function test_unknown_tab_falls_back_to_completed(): void
+    {
+        $this->seedBids();
+
+        $res = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=placed')->assertOk();
+
+        $this->assertStringContainsString('pending', $res->json('rowsHtml'));
+        $this->assertStringContainsString('1234', $res->json('rowsHtml'));
+        $this->assertStringNotContainsString('expired', $res->json('rowsHtml'));
+    }
+
+    public function test_bids_page_tab_buttons(): void
+    {
+        $res = $this->actingAs(User::factory()->create())->get('/bids')->assertOk();
+        $res->assertSeeInOrder([
+            'data-tab="completed"',
+            'data-tab="not-qualified"',
+            'data-tab="skill-not-matched"',
+            'data-tab="failed"',
+        ], false);
+        $res->assertDontSee('data-tab="placed"', false);
     }
 
     public function test_type_filter(): void

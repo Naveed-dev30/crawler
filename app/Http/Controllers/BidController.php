@@ -104,18 +104,22 @@ class BidController extends Controller
       ]);
     }
 
-    $tab = in_array($request->query('tab'), ['failed', 'completed'], true)
+    $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched'], true)
       ? $request->query('tab')
-      : 'placed';
-    $statuses = match ($tab) {
-      'failed' => $failed,
-      'completed' => ['completed'],
-      default => $placed,
-    };
+      : 'completed';
     $isCompleted = $tab === 'completed';
 
     $bids = (clone $base)
-      ->whereIn('bids.bid_status', $statuses)
+      ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
+      ->when($tab === 'skill-not-matched', fn ($q) => $q
+        ->whereIn('bids.bid_status', $failed)
+        ->where('bids.error_message', 'like', '%skill%'))
+      ->when($tab === 'failed', fn ($q) => $q
+        ->whereIn('bids.bid_status', $failed)
+        ->where(function ($sub) {
+          $sub->where('bids.error_message', 'not like', '%skill%')
+            ->orWhereNull('bids.error_message');
+        }))
       ->with('proposal')
       ->latest('bids.created_at')
       ->paginate(100)
