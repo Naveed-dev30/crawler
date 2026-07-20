@@ -133,7 +133,7 @@ class FilterController extends Controller
 
             $filter->save();
 
-            return redirect('/filters');
+            return redirect('/filters')->with('status', 'Filters saved successfully.');
         } catch (Exception $exception) {
             Log::error("Something went wrong ar update fileters: {$exception->getMessage()}");
         }
