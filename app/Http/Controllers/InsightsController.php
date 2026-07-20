@@ -8,15 +8,26 @@ use Illuminate\Http\Request;
 
 class InsightsController extends Controller
 {
-    private const SOURCES = ['insights_bids', 'insights'];
-
-    public function ingest(Request $request)
+    public function ingestBids(Request $request)
     {
-        $source = $request->input('source');
+        return $this->store($request, 'insights_bids');
+    }
+
+    public function ingestOverview(Request $request)
+    {
+        return $this->store($request, 'insights');
+    }
+
+    /**
+     * $source is supplied by the route, never by the request body, so a client
+     * cannot mislabel a capture as a different page.
+     */
+    private function store(Request $request, string $source)
+    {
         $url = $request->input('url');
         $payload = $request->input('payload');
 
-        if (! in_array($source, self::SOURCES, true) || ! is_string($url) || $url === '' || blank($payload)) {
+        if (! is_string($url) || $url === '' || blank($payload)) {
             return response()->json(['message' => 'Invalid payload'], 422);
         }
 

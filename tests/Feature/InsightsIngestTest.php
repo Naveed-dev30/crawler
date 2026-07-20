@@ -18,37 +18,47 @@ class InsightsIngestTest extends TestCase
         config(['variables.ingestToken' => self::TOKEN]);
     }
 
+    private const BIDS = '/api/insights/bids/ingest';
+    private const OVERVIEW = '/api/insights/overview/ingest';
+
     private function body(array $overrides = []): array
     {
         return array_merge([
-            'source' => 'insights_bids',
             'url' => 'https://www.freelancer.com/insights/bids',
             'scraped_at' => '2026-07-20T09:00:00Z',
             'payload' => ['bids' => 42],
         ], $overrides);
     }
 
-    private function postCapture(array $body)
+    // NOT named post(): TestCase inherits a public post() from
+    // MakesHttpRequests, and redeclaring it private is a PHP fatal error.
+    private function postCapture(array $body, string $route = self::BIDS)
     {
         return $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
-            ->postJson('/api/insights/ingest', $body);
+            ->postJson($route, $body);
     }
 
     public function test_rejects_missing_token(): void
     {
-        $this->postJson('/api/insights/ingest', $this->body())->assertStatus(401);
+        $this->postJson(self::BIDS, $this->body())->assertStatus(401);
         $this->assertSame(0, PageCapture::count());
     }
 
     public function test_rejects_wrong_token(): void
     {
         $this->withHeader('Authorization', 'Bearer nope')
-            ->postJson('/api/insights/ingest', $this->body())
+            ->postJson(self::BIDS, $this->body())
             ->assertStatus(401);
         $this->assertSame(0, PageCapture::count());
     }
 
-    public function test_stores_a_valid_capture(): void
+    public function test_overview_route_also_requires_a_token(): void
+    {
+        $this->postJson(self::OVERVIEW, $this->body())->assertStatus(401);
+        $this->assertSame(0, PageCapture::count());
+    }
+
+    public function test_bids_route_stores_the_bids_source(): void
     {
         $this->postCapture($this->body())
             ->assertOk()
@@ -59,17 +69,32 @@ class InsightsIngestTest extends TestCase
         $this->assertSame(hash('sha256', json_encode(['bids' => 42])), $capture->content_hash);
     }
 
-    public function test_rejects_unknown_source(): void
+    public function test_overview_route_stores_the_insights_source(): void
     {
-        $this->postCapture($this->body(['source' => 'nonsense']))->assertStatus(422);
-        $this->assertSame(0, PageCapture::count());
+        $this->postCapture($this->body(), self::OVERVIEW)->assertOk();
+
+        $this->assertSame('insights', PageCapture::firstOrFail()->source);
     }
 
-    public function test_rejects_gamification_source(): void
+    public function test_source_comes_from_the_route_not_the_body(): void
     {
-        // Gamification has its own endpoint and its own table.
-        $this->postCapture($this->body(['source' => 'gamification']))->assertStatus(422);
-        $this->assertSame(0, PageCapture::count());
+        // A body-supplied source must be ignored entirely: posting to the bids
+        // route can never produce an 'insights' row, however the client labels it.
+        $this->postCapture($this->body(['source' => 'insights']))->assertOk();
+
+        $this->assertSame('insights_bids', PageCapture::firstOrFail()->source);
+    }
+
+    public function test_the_two_routes_write_independent_rows(): void
+    {
+        $this->postCapture($this->body())->assertOk();
+        $this->postCapture($this->body(), self::OVERVIEW)->assertOk();
+
+        $this->assertSame(2, PageCapture::count());
+        $this->assertSame(
+            ['insights', 'insights_bids'],
+            PageCapture::orderBy('source')->pluck('source')->all()
+        );
     }
 
     public function test_rejects_missing_payload(): void
