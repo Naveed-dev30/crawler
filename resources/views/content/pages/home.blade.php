@@ -129,9 +129,9 @@
         }
 
         #bids-tabs .nav-link[data-tab="not-qualified"].active {
-            color: #ff9800;
-            background-color: rgba(255, 152, 0, .12);
-            border-bottom-color: #ff9800;
+            color: #00cfe8;
+            background-color: rgba(0, 207, 232, .12);
+            border-bottom-color: #00cfe8;
         }
 
         #bids-tabs .nav-link[data-tab="skill-not-matched"].active {
