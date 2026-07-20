@@ -9,6 +9,31 @@ use Illuminate\Support\Facades\Log;
 
 class InsightsController extends Controller
 {
+    public function index()
+    {
+        $latest = InsightSnapshot::orderByDesc('scraped_at')->first();
+
+        $history = InsightSnapshot::orderByDesc('scraped_at')
+            ->limit(90)
+            ->get(['scraped_at', 'earnings_total', 'earnings_30d', 'bids_remaining', 'unearned_bids', 'overall_ranking'])
+            ->reverse()
+            ->values()
+            ->map(fn ($s) => [
+                'date' => $s->scraped_at->format('Y-m-d'),
+                'earnings_total' => $s->earnings_total,
+                'earnings_30d' => $s->earnings_30d,
+                'bids_remaining' => $s->bids_remaining,
+                'unearned_bids' => $s->unearned_bids,
+                'overall_ranking' => $s->overall_ranking,
+            ])
+            ->all();
+
+        return response()->json([
+            'latest' => $latest?->makeHidden('raw'),
+            'history' => $history,
+        ]);
+    }
+
     public function ingest(Request $request)
     {
         $payload = $request->all();
