@@ -7,6 +7,7 @@ use App\Models\BidInsightChange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BidInsightsController extends Controller
 {
@@ -14,8 +15,10 @@ class BidInsightsController extends Controller
     {
         $payload = $request->all();
 
+        Log::info('========================= bid insights ingest: payload', ['payload' => $payload]);
+
         $bids = $payload['bids'] ?? null;
-        if (! is_array($bids)) {
+        if (!is_array($bids)) {
             return response()->json(['message' => 'Invalid payload'], 422);
         }
 
@@ -33,12 +36,12 @@ class BidInsightsController extends Controller
 
         DB::transaction(function () use ($bids, $scrapedAt, &$created, &$updated, &$changes, &$skipped) {
             foreach ($bids as $item) {
-                if (! is_array($item)) {
+                if (!is_array($item)) {
                     $skipped++;
                     continue;
                 }
                 $pid = $item['project_id'] ?? null;
-                if (! (is_int($pid) || (is_string($pid) && ctype_digit($pid)))) {
+                if (!(is_int($pid) || (is_string($pid) && ctype_digit($pid)))) {
                     $skipped++;
                     continue;
                 }
@@ -84,7 +87,7 @@ class BidInsightsController extends Controller
         }
 
         foreach (BidInsight::RECURRING_FIELDS as $field) {
-            if (! array_key_exists($field, $item)) {
+            if (!array_key_exists($field, $item)) {
                 continue;
             }
             $old = $existing->{$field};
