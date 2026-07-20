@@ -99,7 +99,9 @@
                                @if (!$filter->useminfix) disabled @endif />
                     </div>
 
-                    <div class="col-12 d-flex flex-wrap gap-4">
+                    <div class="col-12">
+                        <div class="bg-light rounded p-3 d-flex flex-wrap align-items-center gap-4">
+                        <span class="text-muted small text-uppercase me-2">Apply criteria:</span>
                         <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useCountries"
                                    @if ($filter->usecountries) checked @endif />
@@ -127,6 +129,7 @@
                             </span>
                             <span class="switch-label">Min Fixed Cost</span>
                         </label>
+                        </div>
                     </div>
 
                     <div class="col-12">
