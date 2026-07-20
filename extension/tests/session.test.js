@@ -1,0 +1,39 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { assertLoggedIn, LoggedOutError } from '../lib/session.js'
+
+test('passes through a normal JSON response', () => {
+  const response = { url: 'https://www.freelancer.com/api/insights', status: 200 }
+  assert.doesNotThrow(() => assertLoggedIn(response, '{"data":1}'))
+})
+
+test('throws when redirected to a login URL', () => {
+  const response = { url: 'https://www.freelancer.com/login?next=/insights', status: 200 }
+  assert.throws(() => assertLoggedIn(response, '{}'), LoggedOutError)
+})
+
+test('throws when redirected to a signup URL', () => {
+  const response = { url: 'https://www.freelancer.com/signup', status: 200 }
+  assert.throws(() => assertLoggedIn(response, '{}'), LoggedOutError)
+})
+
+test('throws on a 401 status', () => {
+  const response = { url: 'https://www.freelancer.com/api/insights', status: 401 }
+  assert.throws(() => assertLoggedIn(response, '{}'), LoggedOutError)
+})
+
+test('throws on a 403 status', () => {
+  const response = { url: 'https://www.freelancer.com/api/insights', status: 403 }
+  assert.throws(() => assertLoggedIn(response, '{}'), LoggedOutError)
+})
+
+test('throws when the body is a login form instead of data', () => {
+  const response = { url: 'https://www.freelancer.com/users/game/', status: 200 }
+  const html = '<html><body><form action="/login"><input name="password"></form></body></html>'
+  assert.throws(() => assertLoggedIn(response, html), LoggedOutError)
+})
+
+test('does not false-positive on data mentioning the word login', () => {
+  const response = { url: 'https://www.freelancer.com/api/insights', status: 200 }
+  assert.doesNotThrow(() => assertLoggedIn(response, '{"last_login":"2026-07-20"}'))
+})
