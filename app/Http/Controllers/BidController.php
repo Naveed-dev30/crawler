@@ -317,7 +317,7 @@ class BidController extends Controller
       $notCompletedBid->bid_status = 'expired';
       $notCompletedBid->save();
     }
-    return redirect('/bids');
+    return redirect('/bids')->with('status', $notCompletedBids->count() . ' pending bids expired.');
   }
 
   public function updateBidCheck(Request $request)
