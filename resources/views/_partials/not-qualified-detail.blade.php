@@ -3,13 +3,7 @@
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
 </div>
 <div class="offcanvas-body">
-    <div class="d-flex justify-content-between align-items-center gap-2">
-        <span class="badge bg-label-info">Not Qualified</span>
-        <a href="https://www.freelancer.com/projects/{{ $proposal->project_id }}" target="_blank" rel="noopener"
-           class="btn btn-sm btn-label-primary">
-            <i class="fa fa-external-link me-1"></i> Open on Freelancer
-        </a>
-    </div>
+    <span class="badge bg-label-info">Not Qualified</span>
 
     <p class="mt-3 mb-1">Crawled: {{ $proposal->created_at->copy()->timezone('Asia/Karachi')->format('d-M, Y h:i a') }}</p>
     <h6>Project Min Budget: <span class="fw-light">{{ $proposal->min_budget }}$</span></h6>
@@ -31,4 +25,11 @@
     @else
         <span class="text-muted fst-italic">No summary available</span>
     @endif
+
+    <div class="mt-4">
+        <a href="https://www.freelancer.com/projects/{{ $proposal->project_id }}" target="_blank" rel="noopener"
+           class="btn btn-primary w-100">
+            View on Freelancer
+        </a>
+    </div>
 </div>
