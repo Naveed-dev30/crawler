@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.css') }}"/>
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/flatpickr/flatpickr.css') }}"/>
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/typeahead-js/typeahead.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/tagify/tagify.css') }}"/>
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/formvalidation/dist/css/formValidation.min.css') }}"/>
 @endsection
 
@@ -19,7 +18,6 @@
     <script src="{{ asset('assets/vendor/libs/moment/moment.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/flatpickr/flatpickr.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/tagify/tagify.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/FormValidation.min.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/plugins/Bootstrap5.min.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/formvalidation/dist/js/plugins/AutoFocus.min.js') }}"></script>
@@ -29,33 +27,38 @@
     <script src="{{ asset('assets/js/form-validation.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const tagifyBasicEl = document.querySelector("#TagifyBasic");
-            new Tagify(tagifyBasicEl);
+            document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
+                new bootstrap.Popover(el);
+            });
 
-            const tagifyBasicNegativeKeywords = document.querySelector("#tagifyNegativeKeywords");
-            new Tagify(tagifyBasicNegativeKeywords);
+            const toast = document.getElementById('filters-toast');
+            if (toast) {
+                new bootstrap.Toast(toast, { delay: 3500 }).show();
+            }
         });
     </script>
 @endsection
 
-@php
-    $tags = '';
-    $negTags = '';
-@endphp
-
-@foreach ($keywords as $keyword)
-    @php
-        $tags = $tags . ',' . $keyword->name;
-    @endphp
-@endforeach
-
-@foreach ($negKeywords as $negKeyword)
-    @php
-        $negTags = $negTags . ',' . $negKeyword->name;
-    @endphp
-@endforeach
-
 @section('content')
+    @if (session('status'))
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
+            <div class="toast bg-white border-0 shadow-lg rounded-3 overflow-hidden" id="filters-toast"
+                 role="alert" aria-live="assertive" aria-atomic="true"
+                 style="border-left: 4px solid #28c76f !important; min-width: 320px;">
+                <div class="d-flex align-items-center p-3">
+                    <span class="badge bg-label-success rounded-circle p-2 me-3 lh-1">
+                        <i class="bx bx-check bx-sm"></i>
+                    </span>
+                    <div class="me-3">
+                        <div class="fw-semibold text-body">Saved</div>
+                        <small class="text-muted">{{ session('status') }}</small>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <h4 class="page-title">Filters</h4>
     <div class="row">
         <!-- FormValidation -->
@@ -67,9 +70,10 @@
                     <form id="formValidationExamples" method="POST" action={{ route('updateFilters') }} class="row g-3
                     ">
                     @csrf
-                    <!-- Personal Info -->
+
                     <div class="col-12">
-                        <h6 class="mt-2 fw-normal">1. Filter Data</h6>
+                        <h6 class="mt-2 mb-1 fw-semibold"><i class="bx bx-filter-alt text-primary me-1"></i>Project Criteria</h6>
+                        <p class="text-muted small mb-2">Which projects the crawler picks up from Freelancer.</p>
                         <hr class="mt-0"/>
                     </div>
 
@@ -90,7 +94,8 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label" for="formValidationCurrencies">Currencies</label>
+                        <label class="form-label" for="formValidationCurrencies">Currencies
+                            <small class="text-muted">(locked)</small></label>
                         <select class="selectpicker w-100" id="formValidationCurrencies" data-style="btn-default"
                                 data-icon-base="bx" data-tick-icon="bx-check text-white"
                                 name="formValidationCurrencies[]"
@@ -108,131 +113,92 @@
                     <div class="col-md-6">
                         <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>
                         <input type="number" class="form-control" name="formValidationMinHourlyRate"
-                               value="{{ $filter->min_hourly_amount }}" rows="3"
-                               @if (!$filter->useminhour) disabled @endif></input>
+                               value="{{ $filter->min_hourly_amount }}"
+                               @if (!$filter->useminhour) disabled @endif />
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>
-                        <input type="number" class="form-control" name="formValidationMinFixedRate" rows="3"
+                        <input type="number" class="form-control" name="formValidationMinFixedRate"
                                value="{{ $filter->min_fixed_amount }}"
                                @if (!$filter->useminfix) disabled @endif />
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationPrompt">Prompt</label>
-                        <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt"
-                                  rows="3">{{ $filter->prompt }}</textarea>
-                        <label class="form-label mt-3" for="formValidationNegativePrompt">Negative Prompt</label>
-                        <textarea class="form-control" id="formValidationNegativePrompt"
-                                  name="formValidationNegativePrompt" rows="3">{{ $filter->negative_prompt }}</textarea>
-                        <label class="form-label mt-3" for="formValidationSummaryPrompt">Summary Prompt</label>
-                        <textarea class="form-control" id="formValidationSummaryPrompt"
-                                  name="formValidationSummaryPrompt" rows="3">{{ $filter->summary_prompt }}</textarea>
-                    </div>
-
-                    <span class="col-md-6">
-                            <div class="mb-3">
-                                <label for="tagifyNegativeKeywords" class="form-label">Negative
-                                    Keywords</label>
-                                <input id="tagifyNegativeKeywords" class="form-control" name="negativeKeywords"
-                                       value={{ $negTags }} />
-                            </div>
-                        </span>
-
-                    <span class="col-md-6">
-                            <div class="mb-3">
-                                <label for="TagifyBasic" class="form-label">Keywords</label>
-                                <input id="TagifyBasic" class="form-control" name="TagifyBasic"
-                                       @if (!$filter->usekeywords) disabled @endif value="{{$tagsValue}}"/>
-                            </div>
-                        </span>
-                    <span class="col-md-6"></span>
-                    <div class="col-md-6">
-                        <label class="form-label" for="formValidationKeywords">Select</label>
-                        <select class="selectpicker w-100" id="formValidationKeywords" data-style="btn-default"
-                                data-icon-base="bx" data-tick-icon="bx-check text-white" name="formValidationKeywords[]"
-                                multiple @if (!$filter->usekeywords) disabled @endif>
-                            @foreach ($keywords as $keyword)
-                                <option value="{{ $keyword->id }}" @if (in_array(
-                                            $keyword->id,
-                                            $filter->keywords()->pluck('keywords.id')->all())) selected @endif>
-                                    {{ $keyword->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="formValidationCheckbox"
-                               name="formValidationCrawler" value="1"
-                               @if ($filter->crawler_on) checked @endif />
-                        <label class="form-check-label">Crawler Enabled</label>
-                    </div>
-
-                    <div class="row">
-                        {{-- Use Keywords --}}
-                        <label class="switch switch-success mt-4 col-auto">
-                            <input type="checkbox" class="switch-input" name="usekeywords"
-                                   @if ($filter->usekeywords) checked @endif />
-                            <span class="switch-toggle-slider">
-                                    <span class="switch-on">
-                                        <i class="bx bx-check"></i>
-                                    </span>
-                                    <span class="switch-off">
-                                        <i class="bx bx-x"></i>
-                                    </span>
-                                </span>
-                            <span class="switch-label">Keywords</span>
-                        </label>
-
-                        {{-- Use Countries --}}
-                        <label class="switch switch-success mt-4 col-auto">
+                    <div class="col-12">
+                        <div class="border rounded p-3 d-flex flex-wrap align-items-center gap-4">
+                        <span class="text-muted small text-uppercase me-2">Apply criteria:</span>
+                        <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useCountries"
                                    @if ($filter->usecountries) checked @endif />
-                            <span class="switch-toggle-slider">
-                                    <span class="switch-on">
-                                        <i class="bx bx-check"></i>
-                                    </span>
-                                    <span class="switch-off">
-                                        <i class="bx bx-x"></i>
-                                    </span>
-                                </span>
+                            <span class="switch-toggle-slider"></span>
                             <span class="switch-label">Countries</span>
                         </label>
-
-                        {{-- Use Min Fixed --}}
-                        <label class="switch switch-success mt-4 col-auto">
-                            <input type="checkbox" class="switch-input" name="useminfix"
-                                   @if ($filter->useminfix) checked @endif />
-                            <span class="switch-toggle-slider">
-                                    <span class="switch-on">
-                                        <i class="bx bx-check"></i>
-                                    </span>
-                                    <span class="switch-off">
-                                        <i class="bx bx-x"></i>
-                                    </span>
-                                </span>
-                            <span class="switch-label">Min Fixed Cost</span>
-                        </label>
-
-                        {{-- Use Min Hourly --}}
-                        <label class="switch switch-success mt-4 col-auto">
+                        <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useminhour"
                                    @if ($filter->useminhour) checked @endif />
-                            <span class="switch-toggle-slider">
-                                    <span class="switch-on">
-                                        <i class="bx bx-check"></i>
-                                    </span>
-                                    <span class="switch-off">
-                                        <i class="bx bx-x"></i>
-                                    </span>
-                                </span>
+                            <span class="switch-toggle-slider"></span>
                             <span class="switch-label">Min Hourly Cost</span>
                         </label>
+                        <label class="switch switch-success mb-0">
+                            <input type="checkbox" class="switch-input" name="useminfix"
+                                   @if ($filter->useminfix) checked @endif />
+                            <span class="switch-toggle-slider"></span>
+                            <span class="switch-label">Min Fixed Cost</span>
+                        </label>
+                        </div>
                     </div>
 
                     <div class="col-12">
-                        <button type="Save" name="submitButton" class="btn btn-primary">Submit</button>
+                        <h6 class="mt-4 mb-1 fw-semibold"><i class="bx bx-brain text-primary me-1"></i>AI Prompts</h6>
+                        <p class="text-muted small mb-2">How projects are qualified and how bids get written.</p>
+                        <hr class="mt-0"/>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="formValidationNegativePrompt">Qualifier Prompt
+                            <i class="bx bx-info-circle text-muted" tabindex="0"
+                               data-bs-toggle="popover" data-bs-trigger="hover focus"
+                               title="Qualifier Prompt"
+                               data-bs-content="Runs first, when the crawler saves a new project. Sent to OpenAI together with the project description to decide if the project matches your skip-criteria. If it matches, the project is marked Not Qualified and no bid is generated. If the AI call fails, the project is treated as not qualified (fail-closed)."></i>
+                        </label>
+                        <textarea class="form-control" id="formValidationNegativePrompt"
+                                  name="formValidationNegativePrompt" rows="4">{{ $filter->negative_prompt }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="formValidationPrompt">Prompt
+                            <i class="bx bx-info-circle text-muted" tabindex="0"
+                               data-bs-toggle="popover" data-bs-trigger="hover focus"
+                               title="Prompt"
+                               data-bs-content="Runs after the Qualifier Prompt gate passes. Used as the AI system message to write the bid cover letter for the project."></i>
+                        </label>
+                        <textarea class="form-control" id="formValidationPrompt" name="formValidationPrompt"
+                                  rows="4">{{ $filter->prompt }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="formValidationSummaryPrompt">Summary Prompt
+                            <i class="bx bx-info-circle text-muted" tabindex="0"
+                               data-bs-toggle="popover" data-bs-trigger="hover focus"
+                               title="Summary Prompt"
+                               data-bs-content="Runs when a project fails qualification. Sends the project itself (title and description) to OpenAI to produce a short project summary shown on the Not Qualified page and in bid details."></i>
+                        </label>
+                        <textarea class="form-control" id="formValidationSummaryPrompt"
+                                  name="formValidationSummaryPrompt" rows="4">{{ $filter->summary_prompt }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="border rounded p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <label class="switch switch-success mb-0">
+                                <input type="checkbox" class="switch-input" name="formValidationCrawler" value="1"
+                                       @if ($filter->crawler_on) checked @endif />
+                                <span class="switch-toggle-slider"></span>
+                                <span class="switch-label fw-semibold">Crawler Enabled</span>
+                            </label>
+                            <button type="submit" name="submitButton" class="btn btn-primary px-4">
+                                <i class="bx bx-save me-1"></i>Save Filters
+                            </button>
+                        </div>
                     </div>
                     </form>
                 </div>

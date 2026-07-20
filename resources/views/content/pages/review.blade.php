@@ -33,6 +33,7 @@
 @endsection
 
 @section('page-script')
+@include('_partials.toast-helper')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const list = document.getElementById('review-list');
@@ -41,6 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     let currentTab = 'new';
     let loading = false;
+
+    const showToast = window.showAppToast;
+
+    const labelToasts = {
+        relevant: { title: 'Marked Relevant', color: '#28c76f' },
+        not_relevant_skill: { title: 'Marked Not Relevant Skill', color: '#ffab00' },
+        scam: { title: 'Marked Scam', color: '#ff3e1d' },
+    };
 
     function hasMore() { return sentinel.dataset.hasMore === '1'; }
 
@@ -118,6 +127,8 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(r => { if (!r.ok) throw new Error('failed'); return r.json(); })
             .then(() => {
+                const t = labelToasts[label] || { title: 'Feedback saved', color: '#28c76f' };
+                showToast(t.title, 'Feedback saved for this project.', t.color);
                 const badge = activeCountEl();
                 if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent || '0', 10) - 1);
                 card.style.transition = 'opacity .2s';
@@ -125,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(() => { card.remove(); maybeShowEmpty(); if (hasMore()) loadMore(); }, 200);
             })
             .catch(() => {
+                showToast('Failed', 'Could not save feedback — try again.', '#ff3e1d');
                 card.querySelectorAll('.review-btn').forEach(b => b.disabled = false);
             });
     });
