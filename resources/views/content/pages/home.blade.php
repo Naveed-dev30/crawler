@@ -147,11 +147,19 @@
             color: #a1acb8;
         }
 
-        /* Not Qualified tab: long reason/summary text wraps instead of stretching the table */
+        /* Not Qualified tab: long reason/summary text wraps instead of stretching the table,
+           clamped to 3 lines (full text on hover via title attr) */
         .bids-table td.nq-wrap {
             white-space: normal;
             word-break: break-word;
             max-width: 26rem;
+        }
+
+        .bids-table td.nq-wrap > span {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .bids-table td {
