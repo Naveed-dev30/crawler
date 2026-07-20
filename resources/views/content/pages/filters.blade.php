@@ -42,10 +42,18 @@
 @section('content')
     @if (session('status'))
         <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
-            <div class="toast align-items-center text-bg-success border-0" id="filters-toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body"><i class="bx bx-check-circle me-1"></i>{{ session('status') }}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <div class="toast bg-white border-0 shadow-lg rounded-3 overflow-hidden" id="filters-toast"
+                 role="alert" aria-live="assertive" aria-atomic="true"
+                 style="border-left: 4px solid #28c76f !important; min-width: 320px;">
+                <div class="d-flex align-items-center p-3">
+                    <span class="badge bg-label-success rounded-circle p-2 me-3 lh-1">
+                        <i class="bx bx-check bx-sm"></i>
+                    </span>
+                    <div class="me-3">
+                        <div class="fw-semibold text-body">Saved</div>
+                        <small class="text-muted">{{ session('status') }}</small>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
         </div>
