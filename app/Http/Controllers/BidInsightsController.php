@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BidInsight;
+use App\Models\BidInsightChange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,11 +75,70 @@ class BidInsightsController extends Controller
 
     private function applyUpdate(BidInsight $existing, array $item, Carbon $scrapedAt): int
     {
-        // Task 6 implements diffing; for now just touch scrape metadata.
+        $changeCount = 0;
+
+        foreach (BidInsight::ONE_TIME_FIELDS as $field) {
+            if ($existing->{$field} === null && array_key_exists($field, $item)) {
+                $existing->{$field} = $item[$field];
+            }
+        }
+
+        foreach (BidInsight::RECURRING_FIELDS as $field) {
+            if (! array_key_exists($field, $item)) {
+                continue;
+            }
+            $old = $existing->{$field};
+            $new = $item[$field];
+            if ($this->normalize($old) !== $this->normalize($new)) {
+                BidInsightChange::create([
+                    'bid_insight_id' => $existing->id,
+                    'field' => $field,
+                    'old_value' => $this->stringify($old),
+                    'new_value' => $this->stringify($new),
+                    'observed_at' => $scrapedAt,
+                ]);
+                $existing->{$field} = $new;
+                $changeCount++;
+            }
+        }
+
         $existing->last_scraped_at = $scrapedAt;
         $existing->raw = $item;
         $existing->save();
 
-        return 0;
+        return $changeCount;
+    }
+
+    private function normalize(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_array($value)) {
+            return json_encode($value);
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_numeric($value)) {
+            return (string) (float) $value;
+        }
+
+        return (string) $value;
+    }
+
+    private function stringify(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_array($value)) {
+            return json_encode($value);
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        return (string) $value;
     }
 }
