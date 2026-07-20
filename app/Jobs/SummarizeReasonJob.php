@@ -31,8 +31,10 @@ class SummarizeReasonJob implements ShouldQueue
             return; // gated: no summary prompt configured
         }
 
-        $reason = trim((string) $this->proposal->qualify_reason);
-        if ($reason === '') {
+        $project = trim(
+            trim((string) $this->proposal->title) . "\n\n" . trim((string) $this->proposal->description)
+        );
+        if ($project === '') {
             return; // nothing to summarize
         }
 
@@ -44,7 +46,7 @@ class SummarizeReasonJob implements ShouldQueue
             'temperature' => 0,
             'messages' => [
                 ['role' => 'system', 'content' => $summaryPrompt],
-                ['role' => 'user', 'content' => $reason],
+                ['role' => 'user', 'content' => $project],
             ],
         ];
 

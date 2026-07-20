@@ -48,7 +48,7 @@
                     @csrf
 
                     <div class="col-12">
-                        <h6 class="mt-2 mb-1 fw-semibold"><i class="bx bx-filter-alt text-primary me-1"></i>1. Project Criteria</h6>
+                        <h6 class="mt-2 mb-1 fw-semibold"><i class="bx bx-filter-alt text-primary me-1"></i>Project Criteria</h6>
                         <p class="text-muted small mb-2">Which projects the crawler picks up from Freelancer.</p>
                         <hr class="mt-0"/>
                     </div>
@@ -134,7 +134,7 @@
                     </div>
 
                     <div class="col-12">
-                        <h6 class="mt-4 mb-1 fw-semibold"><i class="bx bx-brain text-primary me-1"></i>2. AI Prompts</h6>
+                        <h6 class="mt-4 mb-1 fw-semibold"><i class="bx bx-brain text-primary me-1"></i>AI Prompts</h6>
                         <p class="text-muted small mb-2">How projects are qualified and how bids get written.</p>
                         <hr class="mt-0"/>
                     </div>
@@ -166,7 +166,7 @@
                             <i class="bx bx-info-circle text-muted" tabindex="0"
                                data-bs-toggle="popover" data-bs-trigger="hover focus"
                                title="Summary Prompt"
-                               data-bs-content="Runs only when a project fails qualification and a rejection reason was recorded. Rewrites the raw reason into a short summary shown on the Not Qualified page and in bid details."></i>
+                               data-bs-content="Runs when a project fails qualification. Sends the project itself (title and description) to OpenAI to produce a short project summary shown on the Not Qualified page and in bid details."></i>
                         </label>
                         <textarea class="form-control" id="formValidationSummaryPrompt"
                                   name="formValidationSummaryPrompt" rows="4">{{ $filter->summary_prompt }}</textarea>

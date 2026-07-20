@@ -45,7 +45,7 @@ class FiltersPageCleanupTest extends TestCase
         $res->assertSee('data-bs-toggle="popover"', false);
         $res->assertSee('Runs first, when the crawler saves a new project');
         $res->assertSee('Used as the AI system message to write the bid cover letter');
-        $res->assertSee('Rewrites the raw reason into a short summary');
+        $res->assertSee('produce a short project summary');
     }
 
     public function test_update_without_keyword_fields_saves_prompts(): void
@@ -71,7 +71,7 @@ class FiltersPageCleanupTest extends TestCase
         Filter::factory()->create(['id' => 1]);
 
         $res = $this->actingAs($this->admin())->get('/filters')->assertOk();
-        $res->assertSeeInOrder(['1. Project Criteria', '2. AI Prompts']);
+        $res->assertSeeInOrder(['Project Criteria', 'AI Prompts']);
         $res->assertSee('name="useCountries"', false);
         $res->assertSee('name="useminhour"', false);
         $res->assertSee('name="useminfix"', false);
