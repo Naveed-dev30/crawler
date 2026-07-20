@@ -31,6 +31,12 @@
       "slug": "leaderboard"
     },
     {
+      "url": "/insights",
+      "name": "Insights",
+      "icon": "menu-icon tf-icons bx bx-line-chart",
+      "slug": "insights"
+    },
+    {
       "url": "/filters",
       "name": "Filters",
       "icon": "menu-icon tf-icons bx bx-file",

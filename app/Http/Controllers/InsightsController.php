@@ -34,6 +34,28 @@ class InsightsController extends Controller
         ]);
     }
 
+    public function page()
+    {
+        $latest = InsightSnapshot::orderByDesc('scraped_at')->first();
+
+        $history = InsightSnapshot::orderByDesc('scraped_at')
+            ->limit(90)
+            ->get(['scraped_at', 'earnings_total', 'bids_remaining'])
+            ->reverse()
+            ->values()
+            ->map(fn ($s) => [
+                'date' => $s->scraped_at->format('Y-m-d'),
+                'earnings_total' => $s->earnings_total,
+                'bids_remaining' => $s->bids_remaining,
+            ])
+            ->all();
+
+        return view('content.pages.insights', [
+            'latest' => $latest,
+            'history' => $history,
+        ]);
+    }
+
     public function ingest(Request $request)
     {
         $payload = $request->all();
