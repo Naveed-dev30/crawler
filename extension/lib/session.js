@@ -5,8 +5,9 @@ export class LoggedOutError extends Error {
   }
 }
 
-// Anchored to the start of the PATH. Matching the raw URL string would flag
-// a legitimate authenticated request like /api/insights?next=/login.
+// Anchored to the start of the PATH. Matching the raw URL string would flag an
+// authenticated request that merely carries a login URL in a query parameter,
+// e.g. /api/insights?redirect=https://www.freelancer.com/login.
 const AUTH_PATH = /^\/(login|signup|signin)\b/i
 // A login form in the body, not merely the word "login" appearing in data.
 const LOGIN_FORM = /<form[^>]*action=["'][^"']*\/(login|signin)\b/i
