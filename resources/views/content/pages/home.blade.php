@@ -206,10 +206,10 @@
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Completed</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skill Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Bids Placed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
         </div>
         <div class="table-responsive">
