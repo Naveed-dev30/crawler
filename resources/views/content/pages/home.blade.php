@@ -48,7 +48,7 @@
     </div>
 
     {{-- Cards --}}
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-3" id="bids-cards">
         <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body d-flex align-items-center justify-content-between">
@@ -295,6 +295,7 @@
                 el('thead-bids').classList.toggle('d-none', nq);
                 el('thead-nq').classList.toggle('d-none', !nq);
                 document.querySelectorAll('.bid-only-filter').forEach(d => d.classList.toggle('d-none', nq));
+                el('bids-cards').classList.toggle('d-none', nq);
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
