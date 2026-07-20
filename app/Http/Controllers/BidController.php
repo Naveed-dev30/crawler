@@ -75,6 +75,35 @@ class BidController extends Controller
       ->orderByDesc('c')
       ->pluck('c', 's');
 
+    if ($request->query('tab') === 'not-qualified') {
+      $proposals = \App\Models\Proposal::notQualified()
+        ->when($request->filled('q'), function ($query) use ($request) {
+          $q = $request->query('q');
+          $query->where(function ($sub) use ($q) {
+            $sub->where('title', 'like', "%{$q}%")
+              ->orWhere('project_id', 'like', "%{$q}%");
+          });
+        })
+        ->orderByDesc('created_at')
+        ->paginate(50)
+        ->withQueryString();
+
+      $rowsHtml = '';
+      foreach ($proposals as $proposal) {
+        $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal])->render();
+      }
+      if ($proposals->isEmpty()) {
+        $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
+      }
+
+      return response()->json([
+        'cards' => $cards,
+        'statusCounts' => $statusCounts,
+        'rowsHtml' => $rowsHtml,
+        'paginationHtml' => $proposals->links('vendor.pagination.bootstrap-5')->render(),
+      ]);
+    }
+
     $tab = in_array($request->query('tab'), ['failed', 'completed'], true)
       ? $request->query('tab')
       : 'placed';
