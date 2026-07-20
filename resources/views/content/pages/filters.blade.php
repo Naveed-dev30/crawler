@@ -101,33 +101,24 @@
                     </div>
 
                     <div class="col-12">
-                        <div class="bg-light rounded p-3 d-flex flex-wrap align-items-center gap-4">
+                        <div class="border rounded p-3 d-flex flex-wrap align-items-center gap-4">
                         <span class="text-muted small text-uppercase me-2">Apply criteria:</span>
                         <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useCountries"
                                    @if ($filter->usecountries) checked @endif />
-                            <span class="switch-toggle-slider">
-                                <span class="switch-on"><i class="bx bx-check"></i></span>
-                                <span class="switch-off"><i class="bx bx-x"></i></span>
-                            </span>
+                            <span class="switch-toggle-slider"></span>
                             <span class="switch-label">Countries</span>
                         </label>
                         <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useminhour"
                                    @if ($filter->useminhour) checked @endif />
-                            <span class="switch-toggle-slider">
-                                <span class="switch-on"><i class="bx bx-check"></i></span>
-                                <span class="switch-off"><i class="bx bx-x"></i></span>
-                            </span>
+                            <span class="switch-toggle-slider"></span>
                             <span class="switch-label">Min Hourly Cost</span>
                         </label>
                         <label class="switch switch-success mb-0">
                             <input type="checkbox" class="switch-input" name="useminfix"
                                    @if ($filter->useminfix) checked @endif />
-                            <span class="switch-toggle-slider">
-                                <span class="switch-on"><i class="bx bx-check"></i></span>
-                                <span class="switch-off"><i class="bx bx-x"></i></span>
-                            </span>
+                            <span class="switch-toggle-slider"></span>
                             <span class="switch-label">Min Fixed Cost</span>
                         </label>
                         </div>
@@ -173,14 +164,11 @@
                     </div>
 
                     <div class="col-12">
-                        <div class="bg-light rounded p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="border rounded p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
                             <label class="switch switch-success mb-0">
                                 <input type="checkbox" class="switch-input" name="formValidationCrawler" value="1"
                                        @if ($filter->crawler_on) checked @endif />
-                                <span class="switch-toggle-slider">
-                                    <span class="switch-on"><i class="bx bx-check"></i></span>
-                                    <span class="switch-off"><i class="bx bx-x"></i></span>
-                                </span>
+                                <span class="switch-toggle-slider"></span>
                                 <span class="switch-label fw-semibold">Crawler Enabled</span>
                             </label>
                             <button type="submit" name="submitButton" class="btn btn-primary px-4">
