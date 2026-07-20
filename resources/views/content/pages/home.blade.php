@@ -148,18 +148,23 @@
         }
 
         /* Not Qualified tab: long reason/summary text wraps instead of stretching the table,
-           clamped to 3 lines (full text on hover via title attr) */
+           clamped to 3 lines with a More/Less toggle */
         .bids-table td.nq-wrap {
             white-space: normal;
             word-break: break-word;
             max-width: 26rem;
         }
 
-        .bids-table td.nq-wrap > span {
+        .bids-table td.nq-wrap .nq-clamp {
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        .bids-table td.nq-wrap .nq-clamp.expanded {
+            display: inline;
+            -webkit-line-clamp: unset;
         }
 
         .bids-table td {
@@ -344,6 +349,17 @@
                 const url = new URL(a.href, window.location.origin);
                 const page = url.searchParams.get('page');
                 if (page) { currentPage = parseInt(page, 10); loadData(); }
+            });
+
+            // Delegated: More/Less toggle for clamped not-qualified text
+            el('bids-tbody').addEventListener('click', function (ev) {
+                const link = ev.target.closest('.nq-more');
+                if (!link) return;
+                ev.preventDefault();
+                const span = link.parentElement.querySelector('.nq-clamp');
+                if (!span) return;
+                const expanded = span.classList.toggle('expanded');
+                link.textContent = expanded ? 'Less' : 'More';
             });
 
             // Delegated: open slide-over (swap content if already open)
