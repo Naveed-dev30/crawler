@@ -147,6 +147,13 @@
             color: #a1acb8;
         }
 
+        /* Not Qualified tab: long reason/summary text wraps instead of stretching the table */
+        .bids-table td.nq-wrap {
+            white-space: normal;
+            word-break: break-word;
+            max-width: 26rem;
+        }
+
         .bids-table td {
             padding-top: .6rem;
             padding-bottom: .6rem;

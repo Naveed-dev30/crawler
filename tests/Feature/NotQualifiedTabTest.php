@@ -72,6 +72,29 @@ class NotQualifiedTabTest extends TestCase
         $this->assertStringNotContainsString('Beta', $res['rowsHtml']);
     }
 
+    public function test_long_reason_and_summary_wrap_instead_of_stretching(): void
+    {
+        $longReason = str_repeat('This project requires an on-site physical presence in another country which does not fit remote freelance work. ', 4);
+        $longSummary = str_repeat('The client wants a full enterprise resource planning suite built, deployed and maintained on a shoestring budget with daily in-person reporting. ', 4);
+
+        Proposal::factory()->create([
+            'project_id' => 777,
+            'title' => 'Very demanding project',
+            'qualified' => false,
+            'qualify_reason' => $longReason,
+            'qualify_summary' => $longSummary,
+        ]);
+
+        $res = $this->actingAs($this->user())
+            ->getJson('/bids/data?tab=not-qualified')
+            ->assertOk()
+            ->json();
+
+        $this->assertStringContainsString('nq-wrap', $res['rowsHtml']);
+        $this->assertStringContainsString('on-site physical presence', $res['rowsHtml']);
+        $this->assertStringContainsString('enterprise resource planning', $res['rowsHtml']);
+    }
+
     public function test_missing_summary_shows_placeholder(): void
     {
         Proposal::factory()->create(['project_id' => 5, 'title' => 'No summary one', 'qualified' => false, 'qualify_reason' => 'r', 'qualify_summary' => null]);
