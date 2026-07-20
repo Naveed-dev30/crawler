@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
+use App\Http\Controllers\BidInsightsController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\InsightsController;
@@ -28,7 +29,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
   return $request->user();
 });
 
-Route::get('filters', [FilterController::class, 'getFilters']);
 Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);
@@ -37,10 +37,14 @@ Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
 Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
     ->middleware('gamification.token');
 
-Route::middleware('ingest.token')->group(function () {
-    Route::post('insights/bids/ingest', [InsightsController::class, 'ingestBids']);
-    Route::post('insights/overview/ingest', [InsightsController::class, 'ingestOverview']);
-});
+Route::post('insights/ingest', [InsightsController::class, 'ingest'])
+    ->middleware('gamification.token');
+Route::get('insights', [InsightsController::class, 'index']);
+
+Route::post('insights/bids/ingest', [BidInsightsController::class, 'ingest'])
+    ->middleware('gamification.token');
+Route::get('insights/bids', [BidInsightsController::class, 'index']);
+Route::get('insights/bids/{bidInsight}/changes', [BidInsightsController::class, 'changes']);
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);

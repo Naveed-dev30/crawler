@@ -13,8 +13,6 @@ use App\Models\Proposal;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
-use App\Models\NegativeKeyword;
-use Illuminate\Support\Str;
 
 
 class ProposalController extends Controller
@@ -122,23 +120,6 @@ class ProposalController extends Controller
             $params['min_hourly_rate'] = $filter->min_hourly_amount;
         }
 
-        if ($filter->usekeywords) {
-            $textQuery = '';
-
-            $keywords = $filter->keywords()->pluck('name')->toArray();
-
-            if ($keywords) {
-                foreach ($keywords as $keyword) {
-                    $textQuery = $textQuery . ' ' . $keyword;
-                }
-            }
-
-            if ($textQuery) {
-                $params['query'] = $textQuery;
-            }
-        }
-
-
         $query = '';
 
         foreach ($params as $param => $value) {
@@ -166,9 +147,6 @@ class ProposalController extends Controller
         if ($response->successful()) {
 
             $jsonResponse = $response->json();
-
-            $negativeKeywords = NegativeKeyword::pluck('name')->toArray();
-
 
             if ($jsonResponse['status'] === 'success') {
                 \Log::info("Json Response Success");
@@ -223,17 +201,8 @@ class ProposalController extends Controller
                     /// [title]
                     $proposal->title = $project['title'];
 
-                    if (Str::contains($proposal->title, $negativeKeywords)) {
-                        \Log::info("Cannot Proceed because Negative Keywords Exists in Title");
-                        continue;
-                    }
-
                     /// [description]
                     $proposal->description = $project['description'];
-                    if (Str::contains($proposal->description, $negativeKeywords)) {
-                        \Log::info("Cannot Proceed because Negative Keywords Exists in Description");
-                        continue;
-                    }
 
                     /// [seo url]
                     $proposal->seo_url = $project['seo_url'];

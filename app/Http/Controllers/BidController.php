@@ -75,18 +75,51 @@ class BidController extends Controller
       ->orderByDesc('c')
       ->pluck('c', 's');
 
-    $tab = in_array($request->query('tab'), ['failed', 'completed'], true)
+    if ($request->query('tab') === 'not-qualified') {
+      $proposals = \App\Models\Proposal::notQualified()
+        ->when($request->filled('q'), function ($query) use ($request) {
+          $q = $request->query('q');
+          $query->where(function ($sub) use ($q) {
+            $sub->where('title', 'like', "%{$q}%")
+              ->orWhere('project_id', 'like', "%{$q}%");
+          });
+        })
+        ->orderByDesc('created_at')
+        ->paginate(50)
+        ->withQueryString();
+
+      $rowsHtml = '';
+      foreach ($proposals as $proposal) {
+        $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal])->render();
+      }
+      if ($proposals->isEmpty()) {
+        $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
+      }
+
+      return response()->json([
+        'cards' => $cards,
+        'statusCounts' => $statusCounts,
+        'rowsHtml' => $rowsHtml,
+        'paginationHtml' => $proposals->links('vendor.pagination.bootstrap-5')->render(),
+      ]);
+    }
+
+    $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched'], true)
       ? $request->query('tab')
-      : 'placed';
-    $statuses = match ($tab) {
-      'failed' => $failed,
-      'completed' => ['completed'],
-      default => $placed,
-    };
+      : 'completed';
     $isCompleted = $tab === 'completed';
 
     $bids = (clone $base)
-      ->whereIn('bids.bid_status', $statuses)
+      ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
+      ->when($tab === 'skill-not-matched', fn ($q) => $q
+        ->whereIn('bids.bid_status', $failed)
+        ->where('bids.error_message', 'like', '%skill%'))
+      ->when($tab === 'failed', fn ($q) => $q
+        ->whereIn('bids.bid_status', $failed)
+        ->where(function ($sub) {
+          $sub->where('bids.error_message', 'not like', '%skill%')
+            ->orWhereNull('bids.error_message');
+        }))
       ->with('proposal')
       ->latest('bids.created_at')
       ->paginate(100)
@@ -284,7 +317,7 @@ class BidController extends Controller
       $notCompletedBid->bid_status = 'expired';
       $notCompletedBid->save();
     }
-    return redirect('/bids');
+    return redirect('/bids')->with('status', $notCompletedBids->count() . ' pending bids expired.');
   }
 
   public function updateBidCheck(Request $request)
