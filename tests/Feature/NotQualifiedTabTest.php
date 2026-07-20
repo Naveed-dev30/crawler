@@ -39,7 +39,7 @@ class NotQualifiedTabTest extends TestCase
         $this->assertStringContainsString('Bad crypto project', $res['rowsHtml']);
         $this->assertStringContainsString('Matches crypto criteria', $res['rowsHtml']);
         $this->assertStringContainsString('A crypto bot build request', $res['rowsHtml']);
-        $this->assertStringContainsString('freelancer.com/projects/111', $res['rowsHtml']);
+        $this->assertStringContainsString('js-nq-view', $res['rowsHtml']);
         $this->assertStringNotContainsString('Good qualified project', $res['rowsHtml']);
         $this->assertStringNotContainsString('Unjudged project', $res['rowsHtml']);
     }
@@ -125,6 +125,50 @@ class NotQualifiedTabTest extends TestCase
             ->assertOk()
             ->assertSee('data-tab="not-qualified"', false)
             ->assertSee('Not Qualified');
+    }
+
+    public function test_detail_slideover_endpoint(): void
+    {
+        $p = Proposal::factory()->create([
+            'project_id' => 444,
+            'title' => 'Detail project',
+            'description' => 'Full project description here.',
+            'qualified' => false,
+            'qualify_reason' => 'Some reason',
+            'qualify_summary' => 'Some summary',
+        ]);
+
+        $res = $this->actingAs($this->user())
+            ->get('/proposals/' . $p->id . '/nq-detail')
+            ->assertOk();
+
+        $res->assertSee('Detail project');
+        $res->assertSee('Full project description here.');
+        $res->assertSee('Some reason');
+        $res->assertSee('Some summary');
+        $res->assertSee('freelancer.com/projects/444', false);
+    }
+
+    public function test_row_shows_budget_under_time(): void
+    {
+        Proposal::factory()->create([
+            'project_id' => 555,
+            'title' => 'Budget row',
+            'qualified' => false,
+            'qualify_reason' => 'r',
+            'min_budget' => 30,
+            'max_budget' => 250,
+            'type' => 'fixed',
+        ]);
+
+        $res = $this->actingAs($this->user())
+            ->getJson('/bids/data?tab=not-qualified')
+            ->assertOk()
+            ->json();
+
+        $this->assertStringContainsString('$30', $res['rowsHtml']);
+        $this->assertStringContainsString('$250', $res['rowsHtml']);
+        $this->assertStringContainsString('fixed', $res['rowsHtml']);
     }
 
     public function test_old_standalone_route_removed(): void

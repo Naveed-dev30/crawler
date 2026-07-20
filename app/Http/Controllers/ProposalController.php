@@ -26,6 +26,12 @@ class ProposalController extends Controller
     {
     }
 
+    /** Slide-over detail for a not-qualified proposal (AJAX HTML fragment). */
+    public function nqDetail(Proposal $proposal)
+    {
+        return view('_partials.not-qualified-detail', ['proposal' => $proposal])->render();
+    }
+
     /**
      * Show the form for creating a new resource.
      *

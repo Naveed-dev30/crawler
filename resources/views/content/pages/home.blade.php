@@ -362,6 +362,16 @@
                 link.textContent = expanded ? 'Less' : 'More';
             });
 
+            // Delegated: open not-qualified proposal slide-over
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.js-nq-view');
+                if (!btn) return;
+                const res = await fetch('/proposals/' + btn.dataset.proposalId + '/nq-detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) return;
+                el('bidOffcanvasContent').innerHTML = await res.text();
+                bootstrap.Offcanvas.getOrCreateInstance(el('bidOffcanvas')).show();
+            });
+
             // Delegated: open slide-over (swap content if already open)
             el('bids-tbody').addEventListener('click', async function (ev) {
                 const btn = ev.target.closest('.bid-view-btn');

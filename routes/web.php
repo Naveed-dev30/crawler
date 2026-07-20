@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');
     Route::get('/bids/{bid}/detail', [BidController::class, 'detail'])->name('bids.detail');
+    Route::get('/proposals/{proposal}/nq-detail', [ProposalController::class, 'nqDetail'])->name('proposals.nq-detail');
     Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
