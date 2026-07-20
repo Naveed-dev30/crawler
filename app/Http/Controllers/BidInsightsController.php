@@ -32,7 +32,12 @@ class BidInsightsController extends Controller
 
         DB::transaction(function () use ($bids, $scrapedAt, &$created, &$updated, &$changes, &$skipped) {
             foreach ($bids as $item) {
-                if (! is_array($item) || ! is_numeric($item['project_id'] ?? null)) {
+                if (! is_array($item)) {
+                    $skipped++;
+                    continue;
+                }
+                $pid = $item['project_id'] ?? null;
+                if (! (is_int($pid) || (is_string($pid) && ctype_digit($pid)))) {
                     $skipped++;
                     continue;
                 }
