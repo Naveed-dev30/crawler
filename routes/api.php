@@ -37,8 +37,10 @@ Route::post('changeBidStatus', [BidController::class, 'changeStatus']);
 Route::post('gamification/ingest', [GamificationController::class, 'ingest'])
     ->middleware('gamification.token');
 
-Route::post('insights/ingest', [InsightsController::class, 'ingest'])
-    ->middleware('ingest.token');
+Route::middleware('ingest.token')->group(function () {
+    Route::post('insights/bids/ingest', [InsightsController::class, 'ingestBids']);
+    Route::post('insights/overview/ingest', [InsightsController::class, 'ingestOverview']);
+});
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
