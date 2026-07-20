@@ -18,12 +18,12 @@ class InsightsIngestTest extends TestCase
         config(['variables.gamificationIngestToken' => self::TOKEN]);
     }
 
-    public function payload(): array
+    private function payload(): array
     {
         return json_decode(file_get_contents(base_path('tests/Fixtures/user-stats-extracted.json')), true);
     }
 
-    public function postWithToken(array $payload)
+    private function postWithToken(array $payload)
     {
         return $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
             ->postJson('/api/insights/ingest', $payload);
