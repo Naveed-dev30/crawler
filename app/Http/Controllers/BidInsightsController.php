@@ -156,4 +156,11 @@ class BidInsightsController extends Controller
             $bidInsight->changes()->orderByDesc('observed_at')->paginate(50)
         );
     }
+
+    public function page()
+    {
+        $bids = BidInsight::orderByDesc('last_scraped_at')->paginate(50);
+
+        return view('content.pages.insights-bids', ['bids' => $bids]);
+    }
 }
