@@ -63,7 +63,8 @@ class BidsDataTest extends TestCase
         $res = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=failed')->assertOk();
 
         // only the expired bid (price 300, null error); the skill-error bid (price 200) is excluded
-        $this->assertStringContainsString('expired', $res->json('rowsHtml'));
+        // expired renders as a unified "failed" badge
+        $this->assertStringContainsString('>failed<', $res->json('rowsHtml'));
         $this->assertStringContainsString('300', $res->json('rowsHtml'));
         $this->assertStringNotContainsString('200', $res->json('rowsHtml'));
         $this->assertStringNotContainsString('pending', $res->json('rowsHtml'));

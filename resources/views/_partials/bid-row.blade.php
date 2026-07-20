@@ -14,12 +14,14 @@
     <td>{{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}</td>
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
     @php
-        $skillFail = strtolower($bid->bid_status) === 'failed'
-            && str_contains(strtolower((string) $bid->error_message), 'skill');
+        $isFailure = in_array(strtolower($bid->bid_status), ['failed', 'expired'], true);
+        $skillFail = $isFailure && str_contains(strtolower((string) $bid->error_message), 'skill');
     @endphp
     <td>
         @if ($skillFail)
             <span class="badge bg-label-warning me-1"><i class="fa fa-wrench me-1"></i>Skills Not Matched</span>
+        @elseif ($isFailure)
+            <span class="badge bg-label-danger me-1">failed</span>
         @else
             <span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span>
         @endif
