@@ -30,3 +30,7 @@ document.getElementById('save').addEventListener('click', async () => {
   status.textContent = 'Saved.'
   setTimeout(() => (status.textContent = ''), 2000)
 })
+
+const lastRunEl = document.getElementById('lastRun')
+const { lastRun } = await chrome.storage.local.get({ lastRun: null })
+lastRunEl.textContent = lastRun ? JSON.stringify(lastRun, null, 2) : 'Never run.'
