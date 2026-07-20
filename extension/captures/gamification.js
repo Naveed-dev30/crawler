@@ -42,4 +42,28 @@ export default {
       raw_source: raw,
     }
   },
+
+  // Called with the *normalized* body (the same shape posted to the API), not
+  // the raw page data. A capture with warnings is still `ok: true` — it
+  // succeeded — but self-identification failing silently is exactly the kind
+  // of thing that must show up in the report rather than vanish into a null
+  // column server-side.
+  warnings(body) {
+    const warnings = []
+
+    if (body.user.id === null) {
+      warnings.push(
+        'Could not determine current user id (raw.user.id and raw.current_user.id were both missing) — self identification will fail.'
+      )
+    }
+
+    const hasSelfFlag = body.leaderboard.nearby.some((e) => e.is_current_user === true)
+    if (!hasSelfFlag) {
+      warnings.push(
+        'No leaderboard.nearby entry is flagged is_current_user — self_rank/self_username/self_public_name will be stored as null.'
+      )
+    }
+
+    return warnings
+  },
 }

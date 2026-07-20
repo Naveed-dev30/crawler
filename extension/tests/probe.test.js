@@ -76,3 +76,48 @@ test('never throws on a global that errors when read', () => {
 
   assert.doesNotThrow(() => findPageData(['userStats']))
 })
+
+// The discriminating case for finding 2: the bids capture's requiredKeys
+// ('bids', 'bidList', 'projects', 'items') are generic enough that plain key
+// presence can match an unrelated global whose 'items' property isn't a list
+// at all. Without requireArray this test's candidate would be a false match.
+test('requireArray rejects a candidate whose only matching key is not an array', () => {
+  stubPage({ globals: { unrelatedGlobal: { items: { count: 3 } } } })
+
+  const withoutOption = findPageData(['bids', 'items'])
+  assert.equal(withoutOption.strategy, 'window.unrelatedGlobal (scan)', 'sanity: proves the option is non-vacuous')
+
+  const withOption = findPageData(['bids', 'items'], { requireArray: true })
+  assert.equal(withOption.strategy, null)
+  assert.equal(withOption.data, null)
+})
+
+test('requireArray accepts a candidate whose matching key value is an actual array', () => {
+  stubPage({ globals: { serverData: { bids: [{ project_id: 1 }] } } })
+
+  const result = findPageData(['bids', 'items'], { requireArray: true })
+
+  assert.equal(result.strategy, 'window.serverData')
+  assert.deepEqual(result.data, { bids: [{ project_id: 1 }] })
+})
+
+test('requireArray only needs one of several required keys to be an array', () => {
+  stubPage({ globals: { serverData: { projects: 'not-a-list', items: [1, 2] } } })
+
+  const result = findPageData(['bids', 'bidList', 'projects', 'items'], { requireArray: true })
+
+  assert.equal(result.strategy, 'window.serverData')
+})
+
+test('requireArray defaults to off (key presence only) when options is omitted', () => {
+  stubPage({ globals: { serverData: { bids: 'not-a-list' } } })
+
+  assert.doesNotThrow(() => findPageData(['bids']))
+  assert.equal(findPageData(['bids']).strategy, 'window.serverData')
+})
+
+test('an undefined options argument never throws', () => {
+  stubPage({ globals: { serverData: { userStats: { a: 1 } } } })
+
+  assert.doesNotThrow(() => findPageData(['userStats'], undefined))
+})

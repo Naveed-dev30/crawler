@@ -75,3 +75,10 @@ test('propagates a rejected fetch rather than swallowing it', async () => {
 
   await assert.rejects(() => postCapture('/api/insights/ingest', {}), TypeError)
 })
+
+// Missing config can never resolve itself between retries — only the user
+// filling in the options page fixes it. Without `.fatal`, withRetry burns the
+// full 2s/8s/32s backoff before this reaches the report.
+test('MissingConfigError is marked fatal so withRetry does not retry it', () => {
+  assert.equal(new MissingConfigError().fatal, true)
+})

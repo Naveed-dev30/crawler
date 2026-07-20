@@ -2,6 +2,9 @@ export class LoggedOutError extends Error {
   constructor(reason) {
     super('Not signed in to Freelancer.com: ' + reason)
     this.name = 'LoggedOutError'
+    // A session that isn't logged in can never succeed on retry — retrying it
+    // just burns the 2s/8s/32s backoff before the correct diagnosis surfaces.
+    this.fatal = true
   }
 }
 

@@ -59,6 +59,15 @@ test('bids normalize finds the list under an alternate key', () => {
   assert.deepEqual(out.bids, [{ project_id: 2 }])
 })
 
+// The bids capture's requiredKeys ('bids', 'bidList', 'projects', 'items')
+// are generic enough that key-presence-only matching can hit an unrelated
+// global. This declares the opt-in that makes probe.js require an actual
+// array value before accepting a candidate — see probe.test.js for proof
+// that the option itself is non-vacuous.
+test('bids capture declares requireArray so the probe cannot false-match a non-list global', () => {
+  assert.deepEqual(insightsBids.probeOptions, { requireArray: true })
+})
+
 test('gamification normalize produces the contract GamificationController reads', () => {
   const raw = {
     user: { id: 7, username: 'u', public_name: 'U' },
@@ -79,4 +88,60 @@ test('gamification normalize produces the contract GamificationController reads'
   // derives self_rank/self_score from exactly that flag.
   assert.equal(out.leaderboard.nearby[0].is_current_user, true)
   assert.deepEqual(out.raw_source, raw)
+})
+
+test('gamification warnings is empty when self-identification succeeds', () => {
+  const raw = {
+    user: { id: 7, username: 'u', public_name: 'U' },
+    level: { level: 20, rank: 'Colt', xp_total: 300 },
+    leaderboard: {
+      top: [],
+      nearby: [{ rank: 268, user_id: 7, username: 'u', public_name: 'U', level: 20, score: 300 }],
+    },
+  }
+
+  const out = gamification.normalize(raw, AT)
+
+  assert.deepEqual(gamification.warnings(out), [])
+})
+
+// GamificationController derives self_rank/self_username/self_public_name
+// solely from a nearby entry flagged is_current_user === true. If the page
+// never exposes the real page's user id at either raw.user.id or
+// raw.current_user.id, currentUserId stays null and every entry's
+// is_current_user comes out false — the probe and the POST both still
+// succeed, so without this warning the failure is invisible.
+test('gamification warnings flags a missing current user id', () => {
+  const raw = {
+    user: {},
+    level: { level: 20, rank: 'Colt', xp_total: 300 },
+    leaderboard: {
+      top: [],
+      nearby: [{ rank: 268, user_id: 7, username: 'u', public_name: 'U', level: 20, score: 300 }],
+    },
+  }
+
+  const out = gamification.normalize(raw, AT)
+  const warnings = gamification.warnings(out)
+
+  assert.equal(out.user.id, null)
+  assert.ok(warnings.some((w) => /current user id/i.test(w)))
+})
+
+test('gamification warnings flags no nearby entry marked is_current_user', () => {
+  const raw = {
+    user: { id: 7, username: 'u', public_name: 'U' },
+    level: { level: 20, rank: 'Colt', xp_total: 300 },
+    leaderboard: {
+      top: [],
+      // None of these ids match the current user's id (7).
+      nearby: [{ rank: 268, user_id: 99, username: 'other', public_name: 'Other', level: 20, score: 300 }],
+    },
+  }
+
+  const out = gamification.normalize(raw, AT)
+  const warnings = gamification.warnings(out)
+
+  assert.ok(out.leaderboard.nearby.every((e) => e.is_current_user === false))
+  assert.ok(warnings.some((w) => /is_current_user/.test(w)))
 })

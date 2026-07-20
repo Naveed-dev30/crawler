@@ -59,3 +59,10 @@ test('throws when redirected to a signin URL', () => {
 test('tolerates a missing url or body without throwing a TypeError', () => {
   assert.doesNotThrow(() => assertLoggedIn({ status: 200 }, undefined))
 })
+
+// A logged-out session can never resolve itself between retries — only the
+// user logging back in fixes it. Without `.fatal`, withRetry burns the full
+// 2s/8s/32s backoff before this reaches the report.
+test('LoggedOutError is marked fatal so withRetry does not retry it', () => {
+  assert.equal(new LoggedOutError('HTTP 401').fatal, true)
+})
