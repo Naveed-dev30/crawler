@@ -206,10 +206,10 @@
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Completed</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skill Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Bids Placed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
         </div>
         <div class="table-responsive">
@@ -360,6 +360,16 @@
                 if (!span) return;
                 const expanded = span.classList.toggle('expanded');
                 link.textContent = expanded ? 'Less' : 'More';
+            });
+
+            // Delegated: open not-qualified proposal slide-over
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.js-nq-view');
+                if (!btn) return;
+                const res = await fetch('/proposals/' + btn.dataset.proposalId + '/nq-detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) return;
+                el('bidOffcanvasContent').innerHTML = await res.text();
+                bootstrap.Offcanvas.getOrCreateInstance(el('bidOffcanvas')).show();
             });
 
             // Delegated: open slide-over (swap content if already open)
