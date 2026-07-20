@@ -18,7 +18,7 @@ class InsightsController extends Controller
             ->get(['scraped_at', 'earnings_total', 'earnings_30d', 'bids_remaining', 'unearned_bids', 'overall_ranking'])
             ->reverse()
             ->values()
-            ->map(fn ($s) => [
+            ->map(fn($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
                 'earnings_total' => $s->earnings_total,
                 'earnings_30d' => $s->earnings_30d,
@@ -43,7 +43,7 @@ class InsightsController extends Controller
             ->get(['scraped_at', 'earnings_total', 'bids_remaining'])
             ->reverse()
             ->values()
-            ->map(fn ($s) => [
+            ->map(fn($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
                 'earnings_total' => $s->earnings_total,
                 'bids_remaining' => $s->bids_remaining,
@@ -59,6 +59,8 @@ class InsightsController extends Controller
     public function ingest(Request $request)
     {
         $payload = $request->all();
+
+        Log::info('========================= insights ingest: payload', ['payload' => $payload]);
 
         $userStats = is_array($payload['userStats'] ?? null) ? $payload['userStats'] : null;
         $marketStats = is_array($payload['marketplaceStats'] ?? null) ? $payload['marketplaceStats'] : null;
@@ -107,7 +109,7 @@ class InsightsController extends Controller
 
     private function parseMoney(mixed $value): ?float
     {
-        if (! is_string($value) && ! is_numeric($value)) {
+        if (!is_string($value) && !is_numeric($value)) {
             if ($value !== null) {
                 Log::warning('insights ingest: unparseable money value', ['value' => $value]);
             }
@@ -121,7 +123,7 @@ class InsightsController extends Controller
 
     private function bidSummaryValue(mixed $summary, string $label): ?int
     {
-        if (! is_array($summary)) {
+        if (!is_array($summary)) {
             return null;
         }
         foreach ($summary as $item) {
@@ -135,7 +137,7 @@ class InsightsController extends Controller
 
     private function arrayOrNull(mixed $value): ?array
     {
-        if ($value !== null && ! is_array($value)) {
+        if ($value !== null && !is_array($value)) {
             Log::warning('insights ingest: expected array section', ['value' => $value]);
 
             return null;
