@@ -48,7 +48,8 @@
                     @csrf
 
                     <div class="col-12">
-                        <h6 class="mt-2 fw-normal">1. Project Criteria</h6>
+                        <h6 class="mt-2 mb-1 fw-semibold"><i class="bx bx-filter-alt text-primary me-1"></i>1. Project Criteria</h6>
+                        <p class="text-muted small mb-2">Which projects the crawler picks up from Freelancer.</p>
                         <hr class="mt-0"/>
                     </div>
 
@@ -133,7 +134,8 @@
                     </div>
 
                     <div class="col-12">
-                        <h6 class="mt-4 fw-normal">2. AI Prompts</h6>
+                        <h6 class="mt-4 mb-1 fw-semibold"><i class="bx bx-brain text-primary me-1"></i>2. AI Prompts</h6>
+                        <p class="text-muted small mb-2">How projects are qualified and how bids get written.</p>
                         <hr class="mt-0"/>
                     </div>
 
@@ -171,20 +173,20 @@
                     </div>
 
                     <div class="col-12">
-                        <hr class="mb-0"/>
-                    </div>
-
-                    <div class="col-12 d-flex justify-content-between align-items-center">
-                        <label class="switch switch-success mb-0">
-                            <input type="checkbox" class="switch-input" name="formValidationCrawler" value="1"
-                                   @if ($filter->crawler_on) checked @endif />
-                            <span class="switch-toggle-slider">
-                                <span class="switch-on"><i class="bx bx-check"></i></span>
-                                <span class="switch-off"><i class="bx bx-x"></i></span>
-                            </span>
-                            <span class="switch-label">Crawler Enabled</span>
-                        </label>
-                        <button type="Save" name="submitButton" class="btn btn-primary">Submit</button>
+                        <div class="bg-light rounded p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <label class="switch switch-success mb-0">
+                                <input type="checkbox" class="switch-input" name="formValidationCrawler" value="1"
+                                       @if ($filter->crawler_on) checked @endif />
+                                <span class="switch-toggle-slider">
+                                    <span class="switch-on"><i class="bx bx-check"></i></span>
+                                    <span class="switch-off"><i class="bx bx-x"></i></span>
+                                </span>
+                                <span class="switch-label fw-semibold">Crawler Enabled</span>
+                            </label>
+                            <button type="submit" name="submitButton" class="btn btn-primary px-4">
+                                <i class="bx bx-save me-1"></i>Save Filters
+                            </button>
+                        </div>
                     </div>
                     </form>
                 </div>
