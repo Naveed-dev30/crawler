@@ -16,13 +16,17 @@ class FiltersPageCleanupTest extends TestCase
         return User::factory()->create(['role' => 'admin']);
     }
 
-    public function test_qualifier_prompt_shown_before_prompt(): void
+    public function test_stepped_prompts_shown_in_order(): void
     {
         Filter::factory()->create(['id' => 1]);
 
         $this->actingAs($this->admin())->get('/filters')
             ->assertOk()
-            ->assertSeeInOrder(['Qualifier Prompt', 'Prompt', 'Summary Prompt']);
+            ->assertSeeInOrder([
+                'Step 1 - Qualifier Prompt',
+                'Step 2 - Proposal Drafting Prompt',
+                'Step 3 - Response Allocation Prompt',
+            ]);
     }
 
     public function test_keyword_inputs_removed(): void
@@ -77,16 +81,17 @@ class FiltersPageCleanupTest extends TestCase
             ->assertSee('Filters saved successfully.');
     }
 
-    public function test_sectioned_layout_with_inline_switches(): void
+    public function test_two_column_layout_criteria_and_control(): void
     {
         Filter::factory()->create(['id' => 1]);
 
         $res = $this->actingAs($this->admin())->get('/filters')->assertOk();
-        $res->assertSeeInOrder(['Project Criteria', 'AI Prompts']);
+        $res->assertSeeInOrder(['Allowed Countries', 'Allowed Currencies', 'Min Hourly Project Rate', 'Min Fixed Project Rate', 'Control', 'Enable Crawler']);
         $res->assertSee('name="useCountries"', false);
         $res->assertSee('name="useminhour"', false);
         $res->assertSee('name="useminfix"', false);
         $res->assertSee('name="formValidationCrawler"', false);
-        $res->assertSee('Crawler Enabled');
+        $res->assertSee('Save Changes');
+        $res->assertSee('rows="20"', false);
     }
 }
