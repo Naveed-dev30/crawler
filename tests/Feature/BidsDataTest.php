@@ -104,6 +104,17 @@ class BidsDataTest extends TestCase
         $res->assertDontSee('data-tab="placed"', false);
     }
 
+    public function test_expire_pending_flashes_toast_message(): void
+    {
+        $this->seedBids();
+
+        $this->actingAs(User::factory()->create())
+            ->followingRedirects()
+            ->post('/expire_bids')
+            ->assertOk()
+            ->assertSee('pending bids expired.');
+    }
+
     public function test_type_filter(): void
     {
         $this->seedBids();

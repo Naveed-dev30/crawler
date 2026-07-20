@@ -249,6 +249,13 @@
 
 @section('page-script')
     @include('_partials.toast-helper')
+    @if (session('status'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                window.showAppToast('Done', @json(session('status')), '#28c76f');
+            });
+        </script>
+    @endif
     <script>
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
