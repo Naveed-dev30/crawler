@@ -29,7 +29,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
   return $request->user();
 });
 
-Route::get('filters', [FilterController::class, 'getFilters']);
 Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);

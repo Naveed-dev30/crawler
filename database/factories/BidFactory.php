@@ -23,6 +23,7 @@ class BidFactory extends Factory
             'cover_letter' => $this->faker->paragraph(),
             'admin_feedback' => null,
             'awarded' => false,
+            'error_message' => '',
         ];
     }
 }
