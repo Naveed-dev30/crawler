@@ -54,6 +54,8 @@ class BidInsightsIngestTest extends TestCase
     public function test_missing_bids_array_is_422(): void
     {
         $this->postWithToken(['foo' => 'bar'])->assertStatus(422);
+        $this->postWithToken(['bids' => 'nope'])->assertStatus(422);
+        $this->assertSame(0, BidInsight::count());
     }
 
     public function test_initial_ingest_creates_rows_without_changes(): void
@@ -92,5 +94,15 @@ class BidInsightsIngestTest extends TestCase
             ->assertOk()
             ->assertJson(['created' => 1, 'skipped' => 1]);
         $this->assertSame(1, BidInsight::count());
+    }
+
+    public function test_float_project_id_is_skipped(): void
+    {
+        $this->postWithToken([
+            'bids' => [$this->bidItem(['project_id' => '39812345.9'])],
+        ])
+            ->assertOk()
+            ->assertJson(['created' => 0, 'skipped' => 1]);
+        $this->assertSame(0, BidInsight::count());
     }
 }
