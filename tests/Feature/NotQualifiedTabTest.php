@@ -94,4 +94,17 @@ class NotQualifiedTabTest extends TestCase
         $this->assertStringContainsString('No not-qualified proposals yet.', $res['rowsHtml']);
         $this->assertStringContainsString('colspan="6"', $res['rowsHtml']);
     }
+
+    public function test_bids_page_has_fourth_tab(): void
+    {
+        $this->actingAs($this->user())->get('/bids')
+            ->assertOk()
+            ->assertSee('data-tab="not-qualified"', false)
+            ->assertSee('Not Qualified');
+    }
+
+    public function test_old_standalone_route_removed(): void
+    {
+        $this->actingAs($this->user())->get('/not-qualified')->assertNotFound();
+    }
 }

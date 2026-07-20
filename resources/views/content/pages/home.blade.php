@@ -15,23 +15,23 @@
     <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;">
         <div class="card-body">
             <div class="row g-2 align-items-end">
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">From</label>
                     <input type="date" id="f-from" class="form-control form-control-sm">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">To</label>
                     <input type="date" id="f-to" class="form-control form-control-sm">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Min amount</label>
                     <input type="number" id="f-min" class="form-control form-control-sm" min="0">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Max amount</label>
                     <input type="number" id="f-max" class="form-control form-control-sm" min="0">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-2 bid-only-filter">
                     <label class="form-label mb-1">Type</label>
                     <select id="f-type" class="form-select form-select-sm">
                         <option value="">All</option>
@@ -128,6 +128,12 @@
             border-bottom-color: #28c76f;
         }
 
+        #bids-tabs .nav-link[data-tab="not-qualified"].active {
+            color: #ff9800;
+            background-color: rgba(255, 152, 0, .12);
+            border-bottom-color: #ff9800;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
@@ -177,12 +183,13 @@
                 <li class="nav-item"><button class="nav-link active" data-tab="placed" type="button">Placed Bids</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="completed" type="button">Completed Bids</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed Bids</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
-                    <tr>
+                    <tr id="thead-bids">
                         <th>ID</th>
                         <th>Title</th>
                         <th>Price</th>
@@ -192,6 +199,14 @@
                         <th class="completed-col d-none">Awarded Price</th>
                         <th>Time</th>
                         <th>Review</th>
+                    </tr>
+                    <tr id="thead-nq" class="d-none">
+                        <th>Project</th>
+                        <th>Title</th>
+                        <th>Reason</th>
+                        <th>Summary</th>
+                        <th>When</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="bids-tbody">
@@ -255,6 +270,10 @@
                 el('sub-expired').textContent = sc.expired || 0;
                 document.querySelectorAll('.completed-col').forEach(th =>
                     th.classList.toggle('d-none', currentTab !== 'completed'));
+                const nq = currentTab === 'not-qualified';
+                el('thead-bids').classList.toggle('d-none', nq);
+                el('thead-nq').classList.toggle('d-none', !nq);
+                document.querySelectorAll('.bid-only-filter').forEach(d => d.classList.toggle('d-none', nq));
                 el('bids-tbody').innerHTML = data.rowsHtml;
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
