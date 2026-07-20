@@ -27,7 +27,7 @@ class BidFailureIndicatorTest extends TestCase
         $this->failedBid('You must have the required skills to bid on this project.');
 
         $rows = $this->actingAs(User::factory()->create())
-            ->getJson('/bids/data?tab=failed')->assertOk()
+            ->getJson('/bids/data?tab=skill-not-matched')->assertOk()
             ->json('rowsHtml');
 
         $this->assertStringContainsString('Skill not matched', $rows);

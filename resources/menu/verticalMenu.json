@@ -19,16 +19,22 @@
       "slug": "review"
     },
     {
-      "url": "/not-qualified",
-      "name": "Not Qualified",
-      "icon": "menu-icon tf-icons bx bx-block",
-      "slug": "not-qualified"
-    },
-    {
       "url": "/leaderboard",
       "name": "Leaderboard",
       "icon": "menu-icon tf-icons bx bx-trophy",
       "slug": "leaderboard"
+    },
+    {
+      "url": "/insights",
+      "name": "Insights",
+      "icon": "menu-icon tf-icons bx bx-line-chart",
+      "slug": "insights"
+    },
+    {
+      "url": "/insights/bids",
+      "name": "Bid Insights",
+      "icon": "menu-icon tf-icons bx bx-target-lock",
+      "slug": "insights-bids"
     },
     {
       "url": "/filters",

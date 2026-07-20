@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Country;
-use App\Models\Keyword;
 use App\Models\Currency;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,20 +35,5 @@ class Filter extends Model
   public function currencies()
   {
     return $this->belongsToMany(Currency::class);
-  }
-
-  /**
-   * Get all of the Keywords for the Filter
-   *
-   * @return \Illuminate\Database\Eloquent\Relations\HasMany
-   */
-  public function keywords()
-  {
-    return $this->belongsToMany(Keyword::class);
-  }
-
-  public function negativeKeywords()
-  {
-    return $this->belongsToMany(NegativeKeyword::class);
   }
 }
