@@ -141,4 +141,19 @@ class BidInsightsController extends Controller
 
         return (string) $value;
     }
+
+    public function index()
+    {
+        $page = BidInsight::orderByDesc('last_scraped_at')->paginate(50);
+        $page->getCollection()->each->makeHidden('raw');
+
+        return response()->json($page);
+    }
+
+    public function changes(BidInsight $bidInsight)
+    {
+        return response()->json(
+            $bidInsight->changes()->orderByDesc('observed_at')->paginate(50)
+        );
+    }
 }
