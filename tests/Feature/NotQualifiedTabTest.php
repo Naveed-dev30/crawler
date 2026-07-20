@@ -91,6 +91,7 @@ class NotQualifiedTabTest extends TestCase
             ->json();
 
         $this->assertStringContainsString('nq-wrap', $res['rowsHtml']);
+        $this->assertStringContainsString('nq-more', $res['rowsHtml']);
         $this->assertStringContainsString('on-site physical presence', $res['rowsHtml']);
         $this->assertStringContainsString('enterprise resource planning', $res['rowsHtml']);
     }
