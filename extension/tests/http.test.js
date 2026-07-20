@@ -51,3 +51,27 @@ test('throws MissingConfigError when the base URL is unset', async () => {
 
   await assert.rejects(() => postCapture('/api/insights/ingest', {}), MissingConfigError)
 })
+
+// Without this test, deleting the try/catch around response.json() would still
+// pass every other test — none of their stubs ever reject.
+test('yields data:null when the response body is not valid JSON', async () => {
+  stubChrome({ apiBaseUrl: 'https://crawler.test', token: 'secret' })
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async json() { throw new SyntaxError('Unexpected token < in JSON at position 0') },
+  })
+
+  const result = await postCapture('/api/insights/ingest', {})
+
+  assert.deepEqual(result, { ok: true, status: 200, data: null })
+})
+
+// A rejected fetch (DNS failure, offline) intentionally propagates: the service
+// worker's retry layer classifies it as retryable, unlike MissingConfigError.
+test('propagates a rejected fetch rather than swallowing it', async () => {
+  stubChrome({ apiBaseUrl: 'https://crawler.test', token: 'secret' })
+  globalThis.fetch = async () => { throw new TypeError('Failed to fetch') }
+
+  await assert.rejects(() => postCapture('/api/insights/ingest', {}), TypeError)
+})
