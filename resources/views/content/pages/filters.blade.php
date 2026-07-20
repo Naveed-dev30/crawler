@@ -53,7 +53,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
                             <label class="form-label mb-0" for="formValidationCountries">Countries</label>
                             <label class="switch switch-success switch-sm mb-0">
                                 <input type="checkbox" class="switch-input" name="useCountries"
@@ -96,7 +96,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
                             <label class="form-label mb-0" for="formValidationMinHourlyRate">Min Hourly Rate</label>
                             <label class="switch switch-success switch-sm mb-0">
                                 <input type="checkbox" class="switch-input" name="useminhour"
@@ -113,7 +113,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
                             <label class="form-label mb-0" for="formValidationMinFixedRate">Min Fixed Rate</label>
                             <label class="switch switch-success switch-sm mb-0">
                                 <input type="checkbox" class="switch-input" name="useminfix"
