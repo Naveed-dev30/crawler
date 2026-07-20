@@ -53,17 +53,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="form-label mb-0" for="formValidationCountries">Countries</label>
-                            <label class="switch switch-success switch-sm mb-0">
-                                <input type="checkbox" class="switch-input" name="useCountries"
-                                       @if ($filter->usecountries) checked @endif />
-                                <span class="switch-toggle-slider">
-                                    <span class="switch-on"><i class="bx bx-check"></i></span>
-                                    <span class="switch-off"><i class="bx bx-x"></i></span>
-                                </span>
-                            </label>
-                        </div>
+                        <label class="form-label" for="formValidationCountries">Countries</label>
                         <select class="selectpicker w-100" id="formValidationCountries" data-style="btn-default"
                                 data-icon-base="bx" data-tick-icon="bx-check text-white"
                                 name="formValidationCountries[]"
@@ -96,37 +86,47 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="form-label mb-0" for="formValidationMinHourlyRate">Min Hourly Rate</label>
-                            <label class="switch switch-success switch-sm mb-0">
-                                <input type="checkbox" class="switch-input" name="useminhour"
-                                       @if ($filter->useminhour) checked @endif />
-                                <span class="switch-toggle-slider">
-                                    <span class="switch-on"><i class="bx bx-check"></i></span>
-                                    <span class="switch-off"><i class="bx bx-x"></i></span>
-                                </span>
-                            </label>
-                        </div>
+                        <label class="form-label" for="formValidationMinHourlyRate">Min Hourly Rate</label>
                         <input type="number" class="form-control" name="formValidationMinHourlyRate"
                                value="{{ $filter->min_hourly_amount }}"
                                @if (!$filter->useminhour) disabled @endif />
                     </div>
 
                     <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="form-label mb-0" for="formValidationMinFixedRate">Min Fixed Rate</label>
-                            <label class="switch switch-success switch-sm mb-0">
-                                <input type="checkbox" class="switch-input" name="useminfix"
-                                       @if ($filter->useminfix) checked @endif />
-                                <span class="switch-toggle-slider">
-                                    <span class="switch-on"><i class="bx bx-check"></i></span>
-                                    <span class="switch-off"><i class="bx bx-x"></i></span>
-                                </span>
-                            </label>
-                        </div>
+                        <label class="form-label" for="formValidationMinFixedRate">Min Fixed Rate</label>
                         <input type="number" class="form-control" name="formValidationMinFixedRate"
                                value="{{ $filter->min_fixed_amount }}"
                                @if (!$filter->useminfix) disabled @endif />
+                    </div>
+
+                    <div class="col-12 d-flex flex-wrap gap-4">
+                        <label class="switch switch-success mb-0">
+                            <input type="checkbox" class="switch-input" name="useCountries"
+                                   @if ($filter->usecountries) checked @endif />
+                            <span class="switch-toggle-slider">
+                                <span class="switch-on"><i class="bx bx-check"></i></span>
+                                <span class="switch-off"><i class="bx bx-x"></i></span>
+                            </span>
+                            <span class="switch-label">Countries</span>
+                        </label>
+                        <label class="switch switch-success mb-0">
+                            <input type="checkbox" class="switch-input" name="useminhour"
+                                   @if ($filter->useminhour) checked @endif />
+                            <span class="switch-toggle-slider">
+                                <span class="switch-on"><i class="bx bx-check"></i></span>
+                                <span class="switch-off"><i class="bx bx-x"></i></span>
+                            </span>
+                            <span class="switch-label">Min Hourly Cost</span>
+                        </label>
+                        <label class="switch switch-success mb-0">
+                            <input type="checkbox" class="switch-input" name="useminfix"
+                                   @if ($filter->useminfix) checked @endif />
+                            <span class="switch-toggle-slider">
+                                <span class="switch-on"><i class="bx bx-check"></i></span>
+                                <span class="switch-off"><i class="bx bx-x"></i></span>
+                            </span>
+                            <span class="switch-label">Min Fixed Cost</span>
+                        </label>
                     </div>
 
                     <div class="col-12">
