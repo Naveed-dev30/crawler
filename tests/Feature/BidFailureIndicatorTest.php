@@ -22,7 +22,7 @@ class BidFailureIndicatorTest extends TestCase
         ]);
     }
 
-    public function test_skill_failure_shows_skill_not_matched(): void
+    public function test_skill_failure_shows_skills_not_matched_badge_instead_of_failed(): void
     {
         $this->failedBid('You must have the required skills to bid on this project.');
 
@@ -30,11 +30,12 @@ class BidFailureIndicatorTest extends TestCase
             ->getJson('/bids/data?tab=skill-not-matched')->assertOk()
             ->json('rowsHtml');
 
-        $this->assertStringContainsString('Skill not matched', $rows);
+        $this->assertStringContainsString('Skills Not Matched', $rows);
+        $this->assertStringNotContainsString('>failed<', $rows);
         $this->assertStringNotContainsString('>Other<', $rows);
     }
 
-    public function test_other_failure_shows_other(): void
+    public function test_other_failure_shows_plain_failed_badge(): void
     {
         $this->failedBid('Project is no longer available.');
 
@@ -42,7 +43,8 @@ class BidFailureIndicatorTest extends TestCase
             ->getJson('/bids/data?tab=failed')->assertOk()
             ->json('rowsHtml');
 
-        $this->assertStringContainsString('Other', $rows);
-        $this->assertStringNotContainsString('Skill not matched', $rows);
+        $this->assertStringContainsString('failed', $rows);
+        $this->assertStringNotContainsString('>Other<', $rows);
+        $this->assertStringNotContainsString('Skills Not Matched', $rows);
     }
 }
