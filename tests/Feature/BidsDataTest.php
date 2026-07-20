@@ -97,10 +97,11 @@ class BidsDataTest extends TestCase
         $res = $this->actingAs(User::factory()->create())->get('/bids')->assertOk();
         $res->assertSeeInOrder([
             'data-tab="completed"',
-            'data-tab="not-qualified"',
-            'data-tab="skill-not-matched"',
             'data-tab="failed"',
+            'data-tab="skill-not-matched"',
+            'data-tab="not-qualified"',
         ], false);
+        $res->assertSeeInOrder(['Bids Placed', 'Failed', 'Skills Not Matched', 'Not Qualified']);
         $res->assertDontSee('data-tab="placed"', false);
     }
 
