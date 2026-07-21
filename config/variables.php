@@ -27,6 +27,8 @@ return [
     "instagramUrl" => "",
     "flKey" => env("FL_ACCESS"),
     "flUserId" => env("FL_USER_ID"),
+    // Freelancer API base — point at https://www.freelancer-sandbox.com in dev.
+    "flBase" => env("FL_BASE_URL", "https://www.freelancer.com"),
     "openAIKey" => env('OPENAI_API_KEY'),
     "gamificationIngestToken" => env('GAMIFICATION_INGEST_TOKEN'),
     "ingestToken" => env('INGEST_TOKEN', env('GAMIFICATION_INGEST_TOKEN')),
