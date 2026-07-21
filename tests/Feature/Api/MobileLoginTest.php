@@ -106,4 +106,26 @@ class MobileLoginTest extends TestCase
     {
         $this->postJson('/api/v1/mobile/logout')->assertUnauthorized();
     }
+
+    public function test_user_endpoint_returns_current_user(): void
+    {
+        $user = $this->mobileUser();
+        $token = $user->createToken('pixel-8')->plainTextToken;
+
+        $this->getJson('/api/v1/mobile/user', [
+            'Authorization' => "Bearer {$token}",
+        ])->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('user.email', $user->email);
+    }
+
+    public function test_user_endpoint_rejects_non_mobile_role(): void
+    {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $token = $admin->createToken('x')->plainTextToken;
+
+        $this->getJson('/api/v1/mobile/user', [
+            'Authorization' => "Bearer {$token}",
+        ])->assertForbidden();
+    }
 }
