@@ -41,11 +41,12 @@ class StatisticsController extends Controller
             if (!isset($data[$key])) {
                 continue;
             }
+            $status = strtolower($row->bid_status);
             if ($row->awarded) {
                 $data[$key]['awarded']++;
-            } elseif ($row->bid_status === 'completed') {
+            } elseif ($status === 'completed') {
                 $data[$key]['placed']++;
-            } elseif (in_array($row->bid_status, ['failed', 'expired'], true)) {
+            } elseif (in_array($status, ['failed', 'expired'], true)) {
                 $data[$key]['failed']++;
             }
         }
@@ -145,9 +146,10 @@ class StatisticsController extends Controller
                 $usd *= 10;
             }
 
-            if (in_array($row->bid_status, ['pending', 'completed'], true)) {
+            $status = strtolower($row->bid_status);
+            if (in_array($status, ['pending', 'completed'], true)) {
                 $data[$key]['placed_usd'] += $usd;
-            } elseif (in_array($row->bid_status, ['failed', 'expired'], true)) {
+            } elseif (in_array($status, ['failed', 'expired'], true)) {
                 $data[$key]['failed_usd'] += $usd;
             }
         }
@@ -286,8 +288,11 @@ class StatisticsController extends Controller
             if ($row->type === 'hourly') {
                 $usd *= 10;
             }
-            $out[$row->bid_status]['count']++;
-            $out[$row->bid_status]['amount_usd'] += $usd;
+            // bid_status casing is inconsistent in the DB (e.g. BidNowJob writes
+            // "Failed"); MySQL matches case-insensitively but PHP keys don't.
+            $status = strtolower($row->bid_status);
+            $out[$status]['count']++;
+            $out[$status]['amount_usd'] += $usd;
         }
 
         foreach ($out as $k => $row) {
