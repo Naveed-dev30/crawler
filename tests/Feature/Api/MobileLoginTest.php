@@ -87,4 +87,23 @@ class MobileLoginTest extends TestCase
             'device_name' => 'pixel-8',
         ])->assertUnprocessable()->assertJsonValidationErrors('fcm_token');
     }
+
+    public function test_logout_revokes_token_and_clears_fcm_token(): void
+    {
+        $user = $this->mobileUser(['fcm_token' => 'live-token']);
+        $token = $user->createToken('pixel-8')->plainTextToken;
+
+        $this->postJson('/api/v1/mobile/logout', [], [
+            'Authorization' => "Bearer {$token}",
+        ])->assertNoContent();
+
+        $fresh = $user->fresh();
+        $this->assertNull($fresh->fcm_token);
+        $this->assertSame(0, $fresh->tokens()->count());
+    }
+
+    public function test_logout_requires_auth(): void
+    {
+        $this->postJson('/api/v1/mobile/logout')->assertUnauthorized();
+    }
 }
