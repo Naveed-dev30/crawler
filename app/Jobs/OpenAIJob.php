@@ -25,8 +25,6 @@ class OpenAIJob implements ShouldQueue
 
     public function handle(): void
     {
-        \Log::info("Started for AI Proposal Generation: {$this->proposal}");
-
         $bearer = 'Bearer ' . config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
@@ -34,7 +32,6 @@ class OpenAIJob implements ShouldQueue
         $filter = Filter::find(1);
 
         if (!$filter->crawler_on) {
-            \Log::info("Exit Generation. Crawler is not on: {$this->proposal}");
             return;
         }
 
@@ -52,7 +49,6 @@ class OpenAIJob implements ShouldQueue
             }
 
             if (! $verdict['qualified']) {
-                \Log::info("Skip proposal (negative-prompt gate): {$this->proposal->project_id}");
                 return;
             }
         }

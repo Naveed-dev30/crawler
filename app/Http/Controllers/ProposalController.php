@@ -100,7 +100,6 @@ class ProposalController extends Controller
 
     public function getProposals()
     {
-        \Log::info("==================================Get Proposals Started=================================");
         $filter = Filter::find(1);
 
         if (!$filter->crawler_on) {
@@ -147,16 +146,11 @@ class ProposalController extends Controller
             'Freelancer-OAuth-V1' => $accessAuthToken,
         ])->get($url);
 
-        \Log::info("Get Bids Response: {$response->body()}");
-
-
         if ($response->successful()) {
 
             $jsonResponse = $response->json();
 
             if ($jsonResponse['status'] === 'success') {
-                \Log::info("Json Response Success");
-
                 $result = $jsonResponse['result'];
 
 
@@ -165,7 +159,6 @@ class ProposalController extends Controller
                 foreach ($projects as $project) {
                     try {
                     if ($this->shouldNotProceed($project)) {
-                        \Log::info("Cannot Proceed");
                         continue;
                     }
 
@@ -183,21 +176,18 @@ class ProposalController extends Controller
 
 
                     if ($isNDA or $isSealed) {
-                        \Log::info("Cannot Proceed because NDA or Seeled");
                         continue;
                     }
 
                     // Defense-in-depth: even if the API returns it, never bid on a
                     // project whose country is not in the selected whitelist.
                     if (!$this->countryAllowed($filter, $project['currency']['country'] ?? null)) {
-                        \Log::info("Cannot Proceed because country '" . ($project['currency']['country'] ?? '?') . "' not in allowed filter list");
                         continue;
                     }
 
                     $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
                     if ($proposalExists) {
-                        \Log::info("Cannot Proceed because Proposal Already Exists");
                         continue;
                     }
 
@@ -220,14 +210,12 @@ class ProposalController extends Controller
                     if ($proposal->type == 'fixed') {
                         if ($filter->useminfix) {
                             if ($proposal->min_budget < $filter->min_fixed_amount) {
-                                \Log::info("Cannot Proceed because min budget is less the min fixed amount");
                                 continue;
                             }
                         }
                     } else {
                         if ($filter->useminhour) {
                             if ($proposal->min_budget < $filter->min_hourly_amount) {
-                                \Log::info("Cannot Proceed because min budget is less the min hourly amount");
                                 continue;
                             }
                         }
@@ -263,8 +251,6 @@ class ProposalController extends Controller
                 }
             }
         }
-
-        \Log::info("==================================Get Proposals Ended=================================");
 
     }
 
