@@ -15,6 +15,7 @@ const LOAD_TIMEOUT_MS = 30000
 const LOGIN_GUARD_HTML_LIMIT = 50000
 const CAPTURE_WINDOW_MS = 25000  // how long to wait for the SPA's data XHR
 const POLL_INTERVAL_MS = 1500
+const SCRAPE_SETTLE_MS = 4000  // charts/tables render after load; give them a moment
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(ALARM, { periodInMinutes: PERIOD_MINUTES, delayInMinutes: 1 })
@@ -139,6 +140,58 @@ function previewBody(body) {
 }
 
 async function runOne(capture) {
+  return capture.mode === 'scrape' ? runScrape(capture) : runIntercept(capture)
+}
+
+async function runScrape(capture) {
+  let tab = null
+  try {
+    tab = await chrome.tabs.create({ url: capture.url, active: capture.activeTab === true })
+    await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
+    // Charts/tables render after load; give them a moment.
+    await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
+
+    const [{ result: page }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (limit) => ({
+        url: location.href,
+        text: document.body ? document.body.innerText : '',
+        html: document.documentElement.outerHTML.slice(0, limit),
+      }),
+      args: [LOGIN_GUARD_HTML_LIMIT],
+    })
+
+    assertLoggedIn({ url: page.url, status: 200 }, page.html)
+
+    const scrapedAt = new Date().toISOString()
+    const body = capture.scrape(page.text, scrapedAt)
+
+    if (!body || body.__empty) {
+      const error = new Error(`${capture.source}: nothing scraped from the page`)
+      error.fatal = true
+      error.diagnostics = { textSample: String(page.text || '').slice(0, 1500) }
+      throw error
+    }
+    delete body.__empty
+
+    const response = await postCapture(capture.path, body)
+    if (!response.ok) {
+      const error = new Error(`${capture.source}: API returned ${response.status}`)
+      error.fatal = response.status === 401 || response.status === 422
+      error.diagnostics = { path: capture.path, status: response.status, responseBody: response.data, sentPreview: previewBody(body) }
+      throw error
+    }
+
+    const warnings = capture.warnings ? capture.warnings(body) : []
+    const outcome = { strategy: 'scrape', status: response.status, id: response.data?.id ?? null }
+    if (warnings.length) outcome.warnings = warnings
+    return outcome
+  } finally {
+    if (tab) await chrome.tabs.remove(tab.id).catch(() => {})
+  }
+}
+
+async function runIntercept(capture) {
   const { captured, loadTimedOut } = await openAndCapture(capture)
   const probe = matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {})
 
