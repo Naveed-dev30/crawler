@@ -42,7 +42,60 @@
                         document.getElementById('user-ladder').value = '';
                     }
                 }
+                if (!isMobile) {
+                    clearFieldError(document.getElementById('user-profile-prompt'));
+                    clearFieldError(document.getElementById('user-ladder'));
+                }
             };
+
+            // Inline validation below each field instead of the browser bubbles.
+            const setFieldError = (el, message) => {
+                el.classList.add('is-invalid');
+                let target = el.closest('.mb-3');
+                let feedback = target.querySelector('.js-feedback');
+                if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block js-feedback';
+                    target.appendChild(feedback);
+                }
+                feedback.textContent = message;
+            };
+            const clearFieldError = (el) => {
+                el.classList.remove('is-invalid');
+                const feedback = el.closest('.mb-3')?.querySelector('.js-feedback');
+                if (feedback) feedback.remove();
+            };
+
+            const addUserForm = document.getElementById('add-user-form');
+            addUserForm.addEventListener('submit', function (ev) {
+                const name = document.getElementById('user-name');
+                const email = document.getElementById('user-email');
+                const password = document.getElementById('user-password');
+                const prompt = document.getElementById('user-profile-prompt');
+                const ladder = document.getElementById('user-ladder');
+                const isMobile = roleSelect.value === 'mobile';
+
+                [name, email, password, prompt, ladder].forEach(clearFieldError);
+
+                const errors = [];
+                if (!name.value.trim()) errors.push([name, 'Full name is required.']);
+                if (!email.value.trim()) errors.push([email, 'Email is required.']);
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) errors.push([email, 'Enter a valid email address.']);
+                if (!password.value) errors.push([password, 'Password is required.']);
+                else if (password.value.length < 8) errors.push([password, 'Password must be at least 8 characters.']);
+                if (isMobile && !prompt.value.trim()) errors.push([prompt, 'Profile prompt is required for mobile users.']);
+                if (isMobile && !ladder.value) errors.push([ladder, 'Choose an escalation ladder position.']);
+
+                if (errors.length) {
+                    ev.preventDefault();
+                    errors.forEach(([el, msg]) => setFieldError(el, msg));
+                    errors[0][0].focus();
+                }
+            });
+
+            // Clear a field's error as soon as the user fixes it.
+            addUserForm.addEventListener('input', ev => clearFieldError(ev.target));
+            addUserForm.addEventListener('change', ev => clearFieldError(ev.target));
             roleSelect.addEventListener('change', toggleMobileFields);
             toggleMobileFields();
 
@@ -154,7 +207,7 @@
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form method="POST" action="{{ route('users.store') }}">
+                <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate>
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">Add Mobile User</h5>
