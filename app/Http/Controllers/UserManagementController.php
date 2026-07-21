@@ -8,9 +8,20 @@ use Illuminate\Support\Facades\Hash;
 
 class UserManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::orderByRaw("role = 'mobile'")
+        $search = trim((string) $request->query('search', ''));
+        $role = $request->query('role', '');
+
+        $users = User::query()
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when(in_array($role, ['admin', 'team', 'mobile'], true), fn ($q) => $q->where('role', $role))
+            ->orderByRaw("role = 'mobile'")
             ->orderBy('escalation_ladder')
             ->orderBy('name')
             ->paginate(10)
