@@ -81,10 +81,16 @@ async function readCaptured(tabId) {
 }
 
 async function openAndCapture(capture) {
+  // registerInterceptor is awaited first and left outside the try: if it
+  // throws, nothing was registered, so there is nothing to unregister. Once
+  // it succeeds, everything that could fail (tab creation included) must be
+  // inside the try so the finally below can always clean up the shim — and,
+  // if the tab was created, the tab too.
   const id = await registerInterceptor(capture.source, capture.matchPattern)
-  const tab = await chrome.tabs.create({ url: capture.url, active: false })
+  let tab = null
 
   try {
+    tab = await chrome.tabs.create({ url: capture.url, active: false })
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
 
     const [{ result: pageInfo }] = await chrome.scripting.executeScript({
@@ -95,19 +101,27 @@ async function openAndCapture(capture) {
     assertLoggedIn({ url: pageInfo.url, status: 200 }, pageInfo.html)
 
     // The SPA fires its data XHR shortly after load. Poll until a response
-    // matches, or the window closes — whichever first.
+    // matches, or the window closes — whichever first. readCaptured can
+    // transiently return `[]` (its own executeScript read failing while the
+    // tab is mid-navigation) — a shrinking read must never clobber a larger
+    // capture already seen, so only accept a fresh read that is at least as
+    // large as what's retained, and match against the retained value.
     const deadline = Date.now() + CAPTURE_WINDOW_MS
     let captured = []
     while (Date.now() < deadline) {
-      captured = await readCaptured(tab.id)
+      const fresh = await readCaptured(tab.id)
+      if (fresh.length >= captured.length) captured = fresh
       if (matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {}).strategy) break
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
     }
 
     return { captured, loadTimedOut }
   } finally {
-    await chrome.tabs.remove(tab.id)
-    try { await chrome.scripting.unregisterContentScripts({ ids: [id] }) } catch (e) {}
+    // Each cleanup call is independently guarded so a failure in one does not
+    // skip the other: the shim must be unregistered whether or not the tab
+    // was ever created (chrome.tabs.create throwing leaves tab === null).
+    if (tab) await chrome.tabs.remove(tab.id).catch(() => {})
+    await chrome.scripting.unregisterContentScripts({ ids: [id] }).catch(() => {})
   }
 }
 
