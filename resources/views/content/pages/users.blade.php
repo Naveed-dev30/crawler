@@ -2,6 +2,13 @@
 
 @section('title', 'Users')
 
+@section('page-style')
+    <style>
+        /* Native select popups follow the OS dark scheme unless told otherwise. */
+        select.form-select { color-scheme: light; }
+    </style>
+@endsection
+
 @section('page-script')
     <script>
         document.addEventListener("DOMContentLoaded", function () {
