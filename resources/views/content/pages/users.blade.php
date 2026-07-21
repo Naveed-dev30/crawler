@@ -125,12 +125,13 @@
                 </tbody>
             </table>
         </div>
-        @if ($users->hasPages())
-            <div class="card-footer">
-                {{ $users->links('vendor.pagination.bootstrap-5') }}
-            </div>
-        @endif
     </div>
+
+    @if ($users->hasPages())
+        <div class="mt-4 card px-4 pt-3">
+            {{ $users->links('vendor.pagination.bootstrap-5') }}
+        </div>
+    @endif
 
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
