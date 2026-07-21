@@ -2,11 +2,12 @@
 
 @section('title', 'Users')
 
-@section('page-style')
-    <style>
-        /* Native select popups follow the OS dark scheme unless told otherwise. */
-        select.form-select { color-scheme: light; }
-    </style>
+@section('vendor-style')
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css') }}"/>
+@endsection
+
+@section('vendor-script')
+    <script src="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js') }}"></script>
 @endsection
 
 @section('page-script')
@@ -31,6 +32,9 @@
                     el.toggleAttribute('required', isMobile);
                     el.toggleAttribute('disabled', !isMobile);
                 });
+                if (window.jQuery && jQuery.fn.selectpicker) {
+                    jQuery('#user-ladder').selectpicker('refresh');
+                }
             };
             roleSelect.addEventListener('change', toggleMobileFields);
             toggleMobileFields();
@@ -75,8 +79,8 @@
                     <input type="search" class="form-control" name="search" id="users-search"
                            placeholder="Search name or email…" value="{{ request('search') }}"
                            style="min-width: 220px;">
-                    <select class="form-select" name="role" style="min-width: 140px;"
-                            onchange="this.form.submit()">
+                    <select class="selectpicker" data-style="btn-default" data-width="140px"
+                            name="role" onchange="this.form.submit()">
                         <option value="">All roles</option>
                         <option value="admin"@selected(request('role') === 'admin')>Admin</option>
                         <option value="team"@selected(request('role') === 'team')>Team</option>
@@ -170,7 +174,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="user-role">Role</label>
-                            <select class="form-select @error('role') is-invalid @enderror" id="user-role" name="role" required>
+                            <select class="selectpicker w-100 @error('role') is-invalid @enderror"
+                                    data-style="btn-default" id="user-role" name="role" required>
                                 <option value="mobile"@selected(old('role', 'mobile') === 'mobile')>Mobile</option>
                                 <option value="team"@selected(old('role') === 'team')>Team</option>
                             </select>
@@ -187,9 +192,9 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="user-ladder">Escalation Ladder</label>
-                                <select class="form-select @error('escalation_ladder') is-invalid @enderror"
+                                <select class="selectpicker w-100 @error('escalation_ladder') is-invalid @enderror"
+                                        data-style="btn-default" title="Choose position…"
                                         id="user-ladder" name="escalation_ladder" required>
-                                    <option value="" disabled {{ old('escalation_ladder') ? '' : 'selected' }}>Choose position…</option>
                                     @foreach ($availableLadders as $ladder)
                                         <option value="{{ $ladder }}"@selected((int) old('escalation_ladder') === $ladder)>{{ $ladder }}</option>
                                     @endforeach
