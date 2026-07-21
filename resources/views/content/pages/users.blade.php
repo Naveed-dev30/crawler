@@ -103,7 +103,7 @@
             </table>
         </div>
         @if ($users->hasPages())
-            <div class="card-footer d-flex justify-content-end align-items-center gap-3">
+            <div class="card-footer d-flex justify-content-between align-items-center gap-3">
                 <span class="text-muted">
                     Showing <strong>{{ $users->firstItem() }}</strong> to <strong>{{ $users->lastItem() }}</strong>
                     of <strong>{{ $users->total() }}</strong> results
