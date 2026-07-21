@@ -60,4 +60,9 @@ Route::prefix('v1')->group(function () {
         Route::get('review', [ApiReviewController::class, 'index']);
         Route::post('review/feedback', [ApiReviewController::class, 'storeFeedback']);
     });
+
+    // Mobile chat app
+    Route::prefix('mobile')->group(function () {
+        Route::post('login', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'login']);
+    });
 });
