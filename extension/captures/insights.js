@@ -3,6 +3,7 @@ export default {
   url: 'https://www.freelancer.com/insights/',
   path: '/api/insights/ingest',
   requiredKeys: ['userStats', 'marketplaceStats'],
+  matchPattern: 'https://www.freelancer.com/insights/*',
 
   normalize(data, scrapedAt) {
     return {

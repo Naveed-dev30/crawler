@@ -1,12 +1,11 @@
 import { CAPTURES } from './captures/index.js'
-import { findPageData } from './lib/probe.js'
+import { matchResponse } from './lib/probe.js'
 import { postCapture, MissingConfigError } from './lib/http.js'
 import { assertLoggedIn, LoggedOutError } from './lib/session.js'
 import { withRetry } from './lib/retry.js'
 
 const ALARM = 'capture-all'
 const PERIOD_MINUTES = 24 * 60
-const SETTLE_MS = 2500
 // A stalled navigation or redirect loop must never hang the run forever —
 // silence is the worst possible outcome for a system whose whole point is to
 // report back what happened on the first real click.
@@ -14,6 +13,8 @@ const LOAD_TIMEOUT_MS = 30000
 // A login page's <head> (analytics bootstrapping, inline bundles) can run
 // well past a few KB; truncating too early lets a login page evade the guard.
 const LOGIN_GUARD_HTML_LIMIT = 50000
+const CAPTURE_WINDOW_MS = 15000  // how long to wait for the SPA's data XHR
+const POLL_INTERVAL_MS = 1500
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create(ALARM, { periodInMinutes: PERIOD_MINUTES, delayInMinutes: 1 })
@@ -49,20 +50,43 @@ function waitForTabComplete(tabId, timeoutMs) {
   })
 }
 
-async function openAndProbe(capture) {
+async function registerInterceptor(source, matchPattern) {
+  const id = `fl-interceptor-${source}`
+  try {
+    const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id] })
+    if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [id] })
+  } catch (e) {}
+  await chrome.scripting.registerContentScripts([{
+    id,
+    matches: [matchPattern],
+    js: ['interceptor.js'],
+    runAt: 'document_start',
+    world: 'MAIN',
+    persistAcrossSessions: false,
+  }])
+  return id
+}
+
+async function readCaptured(tabId) {
+  try {
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: () => window.__flCapture || [],
+    })
+    return result || []
+  } catch (e) {
+    return []
+  }
+}
+
+async function openAndCapture(capture) {
+  const id = await registerInterceptor(capture.source, capture.matchPattern)
   const tab = await chrome.tabs.create({ url: capture.url, active: false })
 
   try {
-    // A page that never reports 'complete' (stalled navigation, redirect
-    // loop) may still have usable data by now — proceed to probe either way,
-    // but remember the timeout so it shows up in the report rather than
-    // silently vanishing.
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
 
-    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
-
-    // Guard before probing: a login page has no data, and its diagnostics
-    // would be a confusing red herring in the report.
     const [{ result: pageInfo }] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: (limit) => ({ url: location.href, html: document.documentElement.outerHTML.slice(0, limit) }),
@@ -70,17 +94,20 @@ async function openAndProbe(capture) {
     })
     assertLoggedIn({ url: pageInfo.url, status: 200 }, pageInfo.html)
 
-    // MAIN world is required: an isolated content script cannot see page globals.
-    const [{ result }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      world: 'MAIN',
-      func: findPageData,
-      args: [capture.requiredKeys, capture.probeOptions ?? {}],
-    })
+    // The SPA fires its data XHR shortly after load. Poll until a response
+    // matches, or the window closes — whichever first.
+    const deadline = Date.now() + CAPTURE_WINDOW_MS
+    let captured = []
+    while (Date.now() < deadline) {
+      captured = await readCaptured(tab.id)
+      if (matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {}).strategy) break
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
+    }
 
-    return { result, loadTimedOut }
+    return { captured, loadTimedOut }
   } finally {
     await chrome.tabs.remove(tab.id)
+    try { await chrome.scripting.unregisterContentScripts({ ids: [id] }) } catch (e) {}
   }
 }
 
@@ -96,12 +123,13 @@ function previewBody(body) {
 }
 
 async function runOne(capture) {
-  const { result: probe, loadTimedOut } = await openAndProbe(capture)
+  const { captured, loadTimedOut } = await openAndCapture(capture)
+  const probe = matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {})
 
-  if (!probe || !probe.strategy) {
-    const error = new Error(`${capture.source}: page data not found`)
+  if (!probe.strategy) {
+    const error = new Error(`${capture.source}: no API response matched`)
     error.fatal = true
-    error.diagnostics = { ...(probe?.diagnostics ?? {}), loadTimedOut }
+    error.diagnostics = { ...probe.diagnostics, loadTimedOut }
     throw error
   }
 

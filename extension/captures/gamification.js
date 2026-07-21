@@ -19,6 +19,7 @@ export default {
   url: URL,
   path: '/api/gamification/ingest',
   requiredKeys: ['leaderboard', 'level'],
+  matchPattern: 'https://www.freelancer.com/users/game/*',
 
   normalize(raw, scrapedAt) {
     const currentUserId = raw.user?.id ?? raw.current_user?.id ?? null
