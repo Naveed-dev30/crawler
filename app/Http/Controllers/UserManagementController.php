@@ -24,7 +24,7 @@ class UserManagementController extends Controller
             ->orderByRaw("role = 'mobile'")
             ->orderBy('escalation_ladder')
             ->orderBy('name')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         $usedLadders = User::whereNotNull('escalation_ladder')

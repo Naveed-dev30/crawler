@@ -103,14 +103,14 @@ class UsersPageTest extends TestCase
         $response->assertSee('<option value="2">', false);
     }
 
-    public function test_users_table_is_paginated_ten_per_page(): void
+    public function test_users_table_is_paginated_twenty_per_page(): void
     {
-        User::factory()->count(14)->create(['role' => 'team']); // + admin = 15
+        User::factory()->count(24)->create(['role' => 'team']); // + admin = 25
         $admin = $this->admin();
 
         $page1 = $this->actingAs($admin)->get('/users');
         $page1->assertOk();
-        $this->assertCount(10, $page1->viewData('users'));
+        $this->assertCount(20, $page1->viewData('users'));
 
         $page2 = $this->actingAs($admin)->get('/users?page=2');
         $page2->assertOk();
@@ -207,7 +207,7 @@ class UsersPageTest extends TestCase
 
     public function test_filters_survive_pagination_links(): void
     {
-        User::factory()->count(12)->create(['role' => 'team']);
+        User::factory()->count(22)->create(['role' => 'team']);
 
         $response = $this->actingAs($this->admin())->get('/users?role=team&page=2');
 
