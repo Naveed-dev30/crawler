@@ -99,6 +99,13 @@ class FilterController extends Controller
 
             $filter->summary_prompt = $request->formValidationSummaryPrompt ?? '';
 
+            $filter->profile_match_prompt = $request->formValidationProfileMatchPrompt ?? '';
+
+            $escalationMinutes = (int) $request->formValidationEscalationMinutes;
+            $filter->escalation_minutes = in_array($escalationMinutes, [30, 120, 480, 1440], true)
+                ? $escalationMinutes
+                : 30;
+
             if ($crawlerOn) {
                 $filter->crawler_on = $crawlerOn;
             } else {
