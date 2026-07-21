@@ -104,6 +104,17 @@
                             <textarea class="form-control" id="formValidationSummaryPrompt"
                                       name="formValidationSummaryPrompt" rows="20">{{ $filter->summary_prompt }}</textarea>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="formValidationProfileMatchPrompt">Step 4 - Profile Match Prompt
+                                <i class="bx bx-info-circle text-muted" tabindex="0"
+                                   data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                   title="Profile Match Prompt"
+                                   data-bs-content="Used when a new client thread arrives. Sent to OpenAI together with the project and every mobile user's profile prompt to pick which user the thread is assigned to. Leave empty to use the built-in routing prompt."></i>
+                            </label>
+                            <textarea class="form-control" id="formValidationProfileMatchPrompt"
+                                      name="formValidationProfileMatchPrompt" rows="10">{{ $filter->profile_match_prompt }}</textarea>
+                        </div>
                     </div>
 
                     <div class="col-lg-5">
@@ -152,6 +163,21 @@
                             <input type="number" class="form-control" name="formValidationMinFixedRate"
                                    value="{{ $filter->min_fixed_amount }}"
                                    @if (!$filter->useminfix) disabled @endif />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="formValidationEscalationMinutes">Chat Escalation Time
+                                <i class="bx bx-info-circle text-muted" tabindex="0"
+                                   data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                   title="Chat Escalation Time"
+                                   data-bs-content="How long an unanswered client thread waits before it escalates to the next user on the escalation ladder."></i>
+                            </label>
+                            <select class="form-select" id="formValidationEscalationMinutes"
+                                    name="formValidationEscalationMinutes">
+                                @foreach ([30 => '30 minutes', 120 => '2 hours', 480 => '8 hours', 1440 => '1 day'] as $minutes => $label)
+                                    <option value="{{ $minutes }}"@selected((int) $filter->escalation_minutes === $minutes)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="border rounded p-3">
