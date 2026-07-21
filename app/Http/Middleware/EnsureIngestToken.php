@@ -6,11 +6,15 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureGamificationToken
+class EnsureIngestToken
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $expected = (string) config('variables.gamificationIngestToken');
+        // Falls back to the legacy key: GamificationIngestTest sets it directly
+        // via config() in setUp(), bypassing env entirely.
+        $expected = (string) (config('variables.ingestToken')
+            ?: config('variables.gamificationIngestToken'));
+
         $provided = (string) ($request->bearerToken() ?? $request->header('X-Ingest-Token', ''));
 
         if ($expected === '' || ! hash_equals($expected, $provided)) {

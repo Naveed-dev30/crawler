@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Freelancer Page Capture",
+  "version": "1.0.0",
+  "description": "Captures Freelancer.com insights and gamification pages and posts them to the crawler app.",
+  "permissions": ["alarms", "storage", "scripting", "tabs", "notifications"],
+  "host_permissions": ["https://www.freelancer.com/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Capture Freelancer pages now"
+  },
+  "options_page": "options.html"
+}
