@@ -13,6 +13,20 @@
             @if ($errors->any())
                 new bootstrap.Modal(document.getElementById('addUserModal')).show();
             @endif
+
+            // Team users take no part in chat routing — hide mobile-only fields.
+            const roleSelect = document.getElementById('user-role');
+            const mobileFields = document.getElementById('mobile-only-fields');
+            const toggleMobileFields = () => {
+                const isMobile = roleSelect.value === 'mobile';
+                mobileFields.style.display = isMobile ? '' : 'none';
+                mobileFields.querySelectorAll('textarea, select').forEach(el => {
+                    el.toggleAttribute('required', isMobile);
+                    el.toggleAttribute('disabled', !isMobile);
+                });
+            };
+            roleSelect.addEventListener('change', toggleMobileFields);
+            toggleMobileFields();
         });
     </script>
 @endsection
@@ -40,8 +54,7 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Users</h5>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal"
-                    @if (empty($availableLadders)) disabled title="All escalation ladder slots are in use" @endif>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
                 <i class="bx bx-plus me-1"></i>Add User
             </button>
         </div>
@@ -89,6 +102,11 @@
                 </tbody>
             </table>
         </div>
+        @if ($users->hasPages())
+            <div class="card-footer d-flex justify-content-end">
+                {{ $users->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
     </div>
 
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
@@ -120,24 +138,34 @@
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="mb-3">
-                            <label class="form-label" for="user-profile-prompt">Profile Prompt</label>
-                            <textarea class="form-control @error('profile_prompt') is-invalid @enderror"
-                                      id="user-profile-prompt" name="profile_prompt" rows="4"
-                                      placeholder="Describe this user's skills and specialties — used by AI to route matching project threads to them"
-                                      required>{{ old('profile_prompt') }}</textarea>
-                            @error('profile_prompt')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="user-ladder">Escalation Ladder</label>
-                            <select class="form-select @error('escalation_ladder') is-invalid @enderror"
-                                    id="user-ladder" name="escalation_ladder" required>
-                                <option value="" disabled {{ old('escalation_ladder') ? '' : 'selected' }}>Choose position…</option>
-                                @foreach ($availableLadders as $ladder)
-                                    <option value="{{ $ladder }}"@selected((int) old('escalation_ladder') === $ladder)>{{ $ladder }}</option>
-                                @endforeach
+                            <label class="form-label" for="user-role">Role</label>
+                            <select class="form-select @error('role') is-invalid @enderror" id="user-role" name="role" required>
+                                <option value="mobile"@selected(old('role', 'mobile') === 'mobile')>Mobile</option>
+                                <option value="team"@selected(old('role') === 'team')>Team</option>
                             </select>
-                            @error('escalation_ladder')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            <div class="form-text">Unanswered threads escalate to the next higher number. 1 is the first responder.</div>
+                            @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div id="mobile-only-fields">
+                            <div class="mb-3">
+                                <label class="form-label" for="user-profile-prompt">Profile Prompt</label>
+                                <textarea class="form-control @error('profile_prompt') is-invalid @enderror"
+                                          id="user-profile-prompt" name="profile_prompt" rows="4"
+                                          placeholder="Describe this user's skills and specialties — used by AI to route matching project threads to them"
+                                          required>{{ old('profile_prompt') }}</textarea>
+                                @error('profile_prompt')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="user-ladder">Escalation Ladder</label>
+                                <select class="form-select @error('escalation_ladder') is-invalid @enderror"
+                                        id="user-ladder" name="escalation_ladder" required>
+                                    <option value="" disabled {{ old('escalation_ladder') ? '' : 'selected' }}>Choose position…</option>
+                                    @foreach ($availableLadders as $ladder)
+                                        <option value="{{ $ladder }}"@selected((int) old('escalation_ladder') === $ladder)>{{ $ladder }}</option>
+                                    @endforeach
+                                </select>
+                                @error('escalation_ladder')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <div class="form-text">Unanswered threads escalate to the next higher number. 1 is the first responder.</div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

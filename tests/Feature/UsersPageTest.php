@@ -102,4 +102,80 @@ class UsersPageTest extends TestCase
         $response->assertDontSee('<option value="1">', false);
         $response->assertSee('<option value="2">', false);
     }
+
+    public function test_users_table_is_paginated_ten_per_page(): void
+    {
+        User::factory()->count(14)->create(['role' => 'team']); // + admin = 15
+        $admin = $this->admin();
+
+        $page1 = $this->actingAs($admin)->get('/users');
+        $page1->assertOk();
+        $this->assertCount(10, $page1->viewData('users'));
+
+        $page2 = $this->actingAs($admin)->get('/users?page=2');
+        $page2->assertOk();
+        $this->assertCount(5, $page2->viewData('users'));
+    }
+
+    public function test_admin_can_create_team_user_without_prompt_and_ladder(): void
+    {
+        $this->actingAs($this->admin())
+            ->post('/users', [
+                'name' => 'Team Member',
+                'email' => 'team-new@example.com',
+                'password' => 'secret123',
+                'role' => 'team',
+            ])
+            ->assertRedirect();
+
+        $user = User::where('email', 'team-new@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertSame('team', $user->role);
+        $this->assertNull($user->profile_prompt);
+        $this->assertNull($user->escalation_ladder);
+    }
+
+    public function test_team_user_ignores_submitted_prompt_and_ladder(): void
+    {
+        $this->actingAs($this->admin())
+            ->post('/users', [
+                'name' => 'Team Member',
+                'email' => 'team-x@example.com',
+                'password' => 'secret123',
+                'role' => 'team',
+                'profile_prompt' => 'should be ignored',
+                'escalation_ladder' => 3,
+            ])
+            ->assertRedirect();
+
+        $user = User::where('email', 'team-x@example.com')->first();
+        $this->assertNull($user->profile_prompt);
+        $this->assertNull($user->escalation_ladder);
+    }
+
+    public function test_admin_role_cannot_be_created(): void
+    {
+        $this->actingAs($this->admin())
+            ->post('/users', [
+                'name' => 'Sneaky Admin',
+                'email' => 'sneak@example.com',
+                'password' => 'secret123',
+                'role' => 'admin',
+            ])
+            ->assertSessionHasErrors('role');
+
+        $this->assertNull(User::where('email', 'sneak@example.com')->first());
+    }
+
+    public function test_mobile_role_still_requires_prompt_and_ladder(): void
+    {
+        $this->actingAs($this->admin())
+            ->post('/users', [
+                'name' => 'Mobile NoPrompt',
+                'email' => 'mob@example.com',
+                'password' => 'secret123',
+                'role' => 'mobile',
+            ])
+            ->assertSessionHasErrors(['profile_prompt', 'escalation_ladder']);
+    }
 }
