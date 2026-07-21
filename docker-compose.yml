@@ -20,6 +20,7 @@ services:
       - '.:/var/www/html'
     # First boot: install PHP deps if vendor/ is missing, then serve on :80.
     # (vendor/ is git-ignored, so it won't exist on a fresh clone.)
+    # Scheduling lives in the dedicated 'scheduler' service below.
     command:
       - bash
       - -c
@@ -28,12 +29,37 @@ services:
         # Normalize ownership so the sail (uid 1000) process can always write logs/cache.
         # Self-heals root-owned files that would otherwise crash logging (see logging.php).
         chown -R sail:sail storage bootstrap/cache || true
-        # Laravel scheduler (drives ProposalController::getProposals every minute)
-        while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done &
         php artisan serve --host=0.0.0.0 --port=80
     networks:
       - crawler
     depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    image: crawler-app
+    restart: unless-stopped
+    environment:
+      WWWUSER: '${WWWUSER:-1000}'
+      LARAVEL_SAIL: 1
+    volumes:
+      - '.:/var/www/html'
+    # schedule:work is minute-aligned (no drift), unlike a sleep-60 loop, so
+    # everyThirtyMinutes tasks (bid award check) fire reliably at :00/:30.
+    # Waits for vendor/ because laravel.test installs it on first boot.
+    command:
+      - bash
+      - -c
+      - |
+        until [ -d vendor ]; do sleep 5; done
+        php artisan schedule:work
+    networks:
+      - crawler
+    depends_on:
+      laravel.test:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
