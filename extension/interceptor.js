@@ -13,7 +13,7 @@
 
     const captured = []
     window.__flCapture = captured
-    const MAX = 60
+    const MAX = 120
     const MAX_BYTES = 2_000_000
 
     const record = (url, method, body) => {
