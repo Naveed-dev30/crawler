@@ -36,7 +36,7 @@ class BidAwardChecker
             foreach ($chunk as $pid) {
                 $query .= '&projects[]=' . $pid;
             }
-            $url = 'https://www.freelancer.com/api/projects/0.1/bids/?' . $query;
+            $url = rtrim(config('variables.flBase'), '/') . '/api/projects/0.1/bids/?' . $query;
 
             try {
                 $response = Http::timeout(60)

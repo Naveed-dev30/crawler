@@ -22,6 +22,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'profile_prompt',
+        'escalation_ladder',
+        'fcm_token',
     ];
 
     /**
@@ -33,6 +36,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether the user is a mobile-app chat user.
+     */
+    public function isMobile(): bool
+    {
+        return $this->role === 'mobile';
+    }
+
+    public function scopeMobile($query)
+    {
+        return $query->where('role', 'mobile');
+    }
+
+    public function threads()
+    {
+        return $this->hasMany(Thread::class, 'assigned_user_id');
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
@@ -40,6 +61,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'fcm_token',
     ];
 
     /**

@@ -36,5 +36,10 @@ return [
             'bot_user_oauth_token' => env('SLACK_OAUTH_TOKEN'),
             'channel' => '#stack',
         ],
-    ]
+    ],
+
+    'firebase' => [
+        // Path to the Firebase service-account JSON used for FCM pushes.
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+    ],
 ];

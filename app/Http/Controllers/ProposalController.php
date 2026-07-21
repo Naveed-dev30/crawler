@@ -140,7 +140,7 @@ class ProposalController extends Controller
 
         $query = rtrim($query, '&');
 
-        $url = 'https://www.freelancer.com/api/projects/0.1/projects/active?' . $query;
+        $url = rtrim(config('variables.flBase'), '/') . '/api/projects/0.1/projects/active?' . $query;
 
         $response = Http::timeout(30)->withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
@@ -297,7 +297,7 @@ class ProposalController extends Controller
     {
         $response = Http::timeout(30)->withHeaders([
             "freelancer-auth-v2" => "7032685;b3mJw8I8w8zk3scCNDcWNZP8Qa//CCbr00HBRcQRTEE=",
-        ])->get("https://www.freelancer.com/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
+        ])->get(rtrim(config('variables.flBase'), '/') . "/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
 
         if ($response->ok()) {
             $jsonResponse = $response->json();

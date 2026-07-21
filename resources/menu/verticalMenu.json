@@ -42,6 +42,13 @@
       "icon": "menu-icon tf-icons bx bx-file",
       "slug": "filters",
       "access": "admin"
+    },
+    {
+      "url": "/users",
+      "name": "Users",
+      "icon": "menu-icon tf-icons bx bx-user",
+      "slug": "users",
+      "access": "admin"
     }
   ]
 }
