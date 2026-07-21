@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile;
 
+use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadMessageResource;
 use App\Models\Thread;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class MessageController extends Controller
 {
+    use RespondsMobile;
+
     public function index(Request $request, Thread $thread)
     {
         $this->authorizeThread($request, $thread);
@@ -19,7 +22,11 @@ class MessageController extends Controller
             ->orderBy('message_time')
             ->paginate(200);
 
-        return ThreadMessageResource::collection($messages);
+        return $this->okPaginated(
+            $messages,
+            ThreadMessageResource::collection($messages->items()),
+            'Messages fetched successfully.'
+        );
     }
 
     public function store(Request $request, Thread $thread, FreelancerMessenger $messenger)
@@ -38,7 +45,7 @@ class MessageController extends Controller
         $result = $messenger->sendMessage((int) $thread->freelancer_thread_id, $text, $files);
 
         if ($result === null) {
-            return response()->json(['message' => 'Freelancer rejected the message.'], 502);
+            return $this->fail('Freelancer rejected the message.', 502);
         }
 
         $stored = $thread->messages()->create([
@@ -63,9 +70,11 @@ class MessageController extends Controller
             $thread->save();
         }
 
-        return (new ThreadMessageResource($stored->load('attachments')))
-            ->response()
-            ->setStatusCode(201);
+        return $this->ok(
+            new ThreadMessageResource($stored->load('attachments')),
+            'Message sent successfully.',
+            201
+        );
     }
 
     private function authorizeThread(Request $request, Thread $thread): void

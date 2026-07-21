@@ -60,7 +60,7 @@ class MobileMessagesApiTest extends TestCase
 
         $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/messages", [
             'message' => 'On it, will deliver Friday',
-        ])->assertCreated();
+        ])->assertCreated()->assertJsonPath('success', true);
 
         $stored = ThreadMessage::where('direction', 'sent')->first();
         $this->assertNotNull($stored);
@@ -78,7 +78,7 @@ class MobileMessagesApiTest extends TestCase
 
         $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/messages", [
             'message' => 'hello',
-        ])->assertStatus(502);
+        ])->assertStatus(502)->assertJsonPath('success', false);
 
         $this->assertSame(0, ThreadMessage::count());
         $this->assertSame('fresh', $this->thread->fresh()->status);

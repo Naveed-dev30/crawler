@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile;
 
+use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadResource;
 use App\Models\Thread;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 
 class ThreadController extends Controller
 {
+    use RespondsMobile;
+
     public function index(Request $request)
     {
         $threads = Thread::where('assigned_user_id', $request->user()->id)
@@ -19,7 +22,11 @@ class ThreadController extends Controller
             ->orderByDesc('last_client_message_at')
             ->paginate(50);
 
-        return ThreadResource::collection($threads);
+        return $this->okPaginated(
+            $threads,
+            ThreadResource::collection($threads->items()),
+            'Threads fetched successfully.'
+        );
     }
 
     public function show(Request $request, Thread $thread)
@@ -28,7 +35,7 @@ class ThreadController extends Controller
 
         $thread->load(['proposal.bid']);
 
-        return new ThreadResource($thread);
+        return $this->ok(new ThreadResource($thread), 'Thread fetched successfully.');
     }
 
     public function block(Request $request, Thread $thread)
@@ -38,7 +45,7 @@ class ThreadController extends Controller
         $thread->blocked = true;
         $thread->save();
 
-        return response()->json(['blocked' => true]);
+        return $this->ok(['blocked' => true], 'Thread blocked.');
     }
 
     public function unblock(Request $request, Thread $thread)
@@ -48,7 +55,7 @@ class ThreadController extends Controller
         $thread->blocked = false;
         $thread->save();
 
-        return response()->json(['blocked' => false]);
+        return $this->ok(['blocked' => false], 'Thread unblocked.');
     }
 
     public function assign(Request $request, Thread $thread, ThreadAssigner $assigner)
@@ -62,15 +69,17 @@ class ThreadController extends Controller
         $target = User::find($validated['user_id']);
 
         if (! $target->isMobile() || $target->id === $request->user()->id) {
-            return response()->json([
-                'message' => 'Target must be another mobile user.',
-                'errors' => ['user_id' => ['Target must be another mobile user.']],
-            ], 422);
+            return $this->fail('Target must be another mobile user.', 422, [
+                'user_id' => ['Target must be another mobile user.'],
+            ]);
         }
 
         $assigner->assign($thread, $target, ThreadAssigner::TYPE_MANUAL, $request->user());
 
-        return new ThreadResource($thread->fresh()->load('proposal.bid'));
+        return $this->ok(
+            new ThreadResource($thread->fresh()->load('proposal.bid')),
+            'Thread assigned successfully.'
+        );
     }
 
     private function authorizeThread(Request $request, Thread $thread): void
