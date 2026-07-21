@@ -64,3 +64,46 @@ test('total on junk: undefined, nulls, primitives, cycles', () => {
   assert.doesNotThrow(() => matchResponse([null, {}, cap('u', null), cap('u', cyclic), 'x'], ['userStats']))
   assert.equal(matchResponse(undefined, ['userStats']).strategy, null)
 })
+
+test('throwing-getter-under-requireArray does not throw and returns no match', () => {
+  const throwing = {
+    get bids() {
+      throw new Error('boom')
+    },
+  }
+
+  let r
+  assert.doesNotThrow(() => {
+    r = matchResponse([cap('u', throwing)], ['bids', 'bidList', 'projects', 'items'], { requireArray: true })
+  })
+  assert.equal(r.strategy, null)
+})
+
+test('the real projects list beats a nested attachments.items array', () => {
+  const projects = [
+    { id: 1, title: 'Build a website', attachments: { items: [{ id: 'a1', name: 'spec.pdf' }], count: 1 } },
+    { id: 2, title: 'Fix a bug' },
+    { id: 3, title: 'Design a logo' },
+  ]
+  const captured = [cap('u', { projects })]
+
+  const r = matchResponse(captured, ['bids', 'bidList', 'projects', 'items'], { requireArray: true })
+
+  assert.equal(r.strategy, 'xhr u')
+  assert.deepEqual(r.data, { projects })
+})
+
+test('the real projects list beats a shallow empty items: []', () => {
+  const projects = [
+    { id: 1, title: 'Build a website' },
+    { id: 2, title: 'Fix a bug' },
+  ]
+  // `items: []` sits at the top level (depth 0, but empty); the real list is
+  // nested one level deeper (depth 1). Depth must not outrank array size.
+  const captured = [cap('u', { items: [], result: { projects } })]
+
+  const r = matchResponse(captured, ['bids', 'bidList', 'projects', 'items'], { requireArray: true })
+
+  assert.equal(r.strategy, 'xhr u')
+  assert.deepEqual(r.data, { projects })
+})
