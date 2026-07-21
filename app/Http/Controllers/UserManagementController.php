@@ -13,7 +13,8 @@ class UserManagementController extends Controller
         $users = User::orderByRaw("role = 'mobile'")
             ->orderBy('escalation_ladder')
             ->orderBy('name')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $usedLadders = User::whereNotNull('escalation_ladder')
             ->pluck('escalation_ladder')
@@ -30,21 +31,31 @@ class UserManagementController extends Controller
 
     public function store(Request $request)
     {
+        // Admins can only be seeded manually — never created from this form.
+        $request->merge(['role' => $request->input('role', 'mobile')]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'profile_prompt' => ['required', 'string'],
-            'escalation_ladder' => ['required', 'integer', 'between:1,10', 'unique:users,escalation_ladder'],
+            'role' => ['required', 'in:mobile,team'],
+            'profile_prompt' => ['required_if:role,mobile', 'nullable', 'string'],
+            'escalation_ladder' => [
+                'required_if:role,mobile', 'nullable', 'integer', 'between:1,10',
+                'unique:users,escalation_ladder',
+            ],
         ]);
+
+        $role = $validated['role'] ?? 'mobile';
 
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'profile_prompt' => $validated['profile_prompt'],
-            'escalation_ladder' => $validated['escalation_ladder'],
-            'role' => 'mobile',
+            'role' => $role,
+            // Team users take no part in chat routing/escalation.
+            'profile_prompt' => $role === 'mobile' ? ($validated['profile_prompt'] ?? null) : null,
+            'escalation_ladder' => $role === 'mobile' ? ($validated['escalation_ladder'] ?? null) : null,
         ]);
 
         return redirect()->route('users')->with('status', 'User created.');
