@@ -61,8 +61,6 @@ class ProposalQualifier
             }
         }
 
-        Log::info('ProposalQualifier: no clear verdict after retries → skipping proposal (fail-closed)');
-
         return ['qualified' => false, 'reason' => ''];
     }
 
