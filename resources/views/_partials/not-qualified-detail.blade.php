@@ -27,7 +27,7 @@
     @endif
 
     <div class="mt-4">
-        <a href="https://www.freelancer.com/projects/{{ $proposal->project_id }}" target="_blank" rel="noopener"
+        <a href="{{ rtrim(config('variables.flBase'), '/') }}/projects/{{ $proposal->project_id }}" target="_blank" rel="noopener"
            class="btn btn-primary w-100">
             View on Freelancer
         </a>

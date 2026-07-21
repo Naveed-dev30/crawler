@@ -52,7 +52,7 @@ class BidNowJob implements ShouldQueue
             $this->bid->bid_status = "Started";
 
             // Make the HTTP POST request to place the bid
-            $url = "https://www.freelancer.com/api/projects/0.1/bids/?compact=";
+            $url = rtrim(config('variables.flBase'), '/') . "/api/projects/0.1/bids/?compact=";
             $response = Http::timeout(120)
                 ->withHeaders($headers)
                 ->post($url, $data);
