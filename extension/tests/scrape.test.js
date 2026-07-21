@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { scrapeGamification, scrapeInsights } from '../lib/scrape.js'
+import gamificationCapture from '../captures/gamification.js'
 
 const read = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8')
 const AT = '2026-07-21T05:39:09.018Z'
@@ -70,4 +71,37 @@ test('insights: earnings per skill pairs', () => {
 
 test('insights: empty on unrecognizable text', () => {
   assert.equal(scrapeInsights('just some navigation text', AT).__empty, true)
+})
+
+test('insights: a missing proficiency value does not steal the next section number', () => {
+  const text = [
+    'Job proficiency',
+    'COMPLETED JOBS', '99%', '99%',
+    'ON TIME JOBS', '95%', '95%',
+    'ON BUDGET JOBS',           // <-- no value line for On Budget
+    'REHIRE RATE', '24%', '24%',
+  ].join('\n')
+  const out = scrapeInsights(text, 'T')
+  const onBudget = out.userStats.jobProficiency.find((p) => p.label === 'On Budget Jobs')
+  assert.equal(onBudget, undefined, 'On Budget must be absent, not stolen from Rehire Rate')
+  const rehire = out.userStats.jobProficiency.find((p) => p.label === 'Rehire Rate')
+  assert.equal(rehire.value, '24%')
+})
+
+test('insights: not empty when only job proficiency rendered', () => {
+  const text = ['Job proficiency', 'COMPLETED JOBS', '99%', '99%'].join('\n')
+  assert.equal(scrapeInsights(text, 'T').__empty, false)
+})
+
+test('gamification: warns when no leaderboard row matches the profile', () => {
+  const text = [
+    'Someone Else',
+    'Level 20 Colt',
+    'Leaderboard', 'Rank\tUsername\tLevel\tScore',
+    '1\tAlice A.\tLevel 20\t100',
+    '268\tBob B.\tLevel 20\t50',
+  ].join('\n')
+  const body = gamificationCapture.scrape(text, 'T')
+  const warnings = gamificationCapture.warnings(body)
+  assert.ok(warnings.length >= 1, 'must warn when self is not found in the leaderboard')
 })

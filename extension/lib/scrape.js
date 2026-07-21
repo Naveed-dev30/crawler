@@ -61,6 +61,11 @@ export function scrapeGamification(text, scrapedAt) {
 
 const MONEY = /^\$[\d,]+\.\d{2}$/
 
+// An all-caps label line (section/metric heading), e.g. "REHIRE RATE",
+// "YOUR TOTAL EARNINGS SINCE JOINING FREELANCER". Used as a scan boundary so a
+// missing value never steals a neighbouring metric's number.
+const isLabelLine = (l) => typeof l === 'string' && /^[A-Z][A-Z0-9 /&.-]+$/.test(l) && l.length > 2
+
 export function scrapeInsights(text, scrapedAt) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim())
   const indexOf = (label) => lines.findIndex((l) => l === label)
@@ -71,6 +76,7 @@ export function scrapeInsights(text, scrapedAt) {
     if (i < 0) return null
     for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
       if (re.test(lines[j])) return lines[j]
+      if (lines[j] !== label && isLabelLine(lines[j])) return null
     }
     return null
   }
@@ -80,6 +86,7 @@ export function scrapeInsights(text, scrapedAt) {
     if (i < 0) return null
     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
       if (re.test(lines[j])) return lines[j]
+      if (lines[j] !== label && isLabelLine(lines[j])) return null
     }
     return null
   }
@@ -121,7 +128,7 @@ export function scrapeInsights(text, scrapedAt) {
   }
 
   return {
-    __empty: !total && !bidsRemaining && earningsPerSkill.length === 0,
+    __empty: !total && !bidsRemaining && earningsPerSkill.length === 0 && jobProficiency.length === 0,
     scraped_at: scrapedAt,
     userStats,
     marketplaceStats: null,

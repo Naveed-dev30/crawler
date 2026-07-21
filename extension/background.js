@@ -147,7 +147,7 @@ async function runScrape(capture) {
   let tab = null
   try {
     tab = await chrome.tabs.create({ url: capture.url, active: capture.activeTab === true })
-    await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
+    const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
     // Charts/tables render after load; give them a moment.
     await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
 
@@ -169,7 +169,7 @@ async function runScrape(capture) {
     if (!body || body.__empty) {
       const error = new Error(`${capture.source}: nothing scraped from the page`)
       error.fatal = true
-      error.diagnostics = { textSample: String(page.text || '').slice(0, 1500) }
+      error.diagnostics = { textSample: String(page.text || '').slice(0, 1500), loadTimedOut }
       throw error
     }
     delete body.__empty
@@ -184,6 +184,7 @@ async function runScrape(capture) {
 
     const warnings = capture.warnings ? capture.warnings(body) : []
     const outcome = { strategy: 'scrape', status: response.status, id: response.data?.id ?? null }
+    if (loadTimedOut) outcome.loadTimedOut = true
     if (warnings.length) outcome.warnings = warnings
     return outcome
   } finally {
