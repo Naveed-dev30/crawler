@@ -80,31 +80,28 @@ class FreelancerMessenger
     {
         try {
             $request = $this->client();
+            $url = $this->base() . "/threads/{$flThreadId}/messages/";
 
             if ($attachments !== []) {
+                // Multipart: file parts plus one attachments[] name field per
+                // file, mirroring the official SDK's post_attachment().
                 foreach ($attachments as $file) {
+                    // Stream, not string: an empty-string body would be dropped
+                    // by the multipart builder and Guzzle rejects the part.
                     $request = $request->attach(
                         'files[]',
-                        file_get_contents($file->getRealPath()),
+                        fopen($file->getRealPath(), 'r'),
                         $file->getClientOriginalName()
                     );
+                    $request = $request->attach('attachments[]', $file->getClientOriginalName());
                 }
+                if ($text !== null && $text !== '') {
+                    $request = $request->attach('message', $text);
+                }
+                $response = $request->post($url);
             } else {
-                $request = $request->asForm();
+                $response = $request->asForm()->post($url, ['message' => (string) $text]);
             }
-
-            $payload = [];
-            if ($text !== null && $text !== '') {
-                $payload['message'] = $text;
-            }
-            if ($attachments !== []) {
-                $payload['attachments[]'] = array_map(
-                    fn ($file) => $file->getClientOriginalName(),
-                    $attachments
-                );
-            }
-
-            $response = $request->post($this->base() . "/threads/{$flThreadId}/messages/", $payload);
 
             if (!$response->successful()) {
                 Log::warning('FreelancerMessenger send: HTTP ' . $response->status() . ' ' . $response->body());
