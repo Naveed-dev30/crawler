@@ -126,12 +126,8 @@
             </table>
         </div>
         @if ($users->hasPages())
-            <div class="card-footer d-flex justify-content-between align-items-center gap-3">
-                <span class="text-muted">
-                    Showing <strong>{{ $users->firstItem() }}</strong> to <strong>{{ $users->lastItem() }}</strong>
-                    of <strong>{{ $users->total() }}</strong> results
-                </span>
-                {{ $users->links('vendor.pagination.bootstrap-5-pager') }}
+            <div class="card-footer">
+                {{ $users->links('vendor.pagination.bootstrap-5') }}
             </div>
         @endif
     </div>
