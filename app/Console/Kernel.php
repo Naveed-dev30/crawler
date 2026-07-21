@@ -3,7 +3,6 @@
 namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
-use App\Http\Controllers\ProposalController;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -13,18 +12,17 @@ class Kernel extends ConsoleKernel
    */
   protected function schedule(Schedule $schedule): void
   {
-    $schedule
-      ->call(function () {
-        $proposalController = new ProposalController();
-        $proposalController->getProposals(); // Replace with your actual method name
-      })
-      ->everyMinute();
+    // Both run in background so a long proposal fetch (sync OpenAI calls) never
+    // blocks the scheduler tick — otherwise the :00/:30 award check gets skipped.
+    $schedule->command('proposals:fetch')
+      ->everyMinute()
+      ->runInBackground()
+      ->withoutOverlapping(10);
 
-    $schedule
-      ->call(function () {
-        (new \App\Services\BidAwardChecker())->run();
-      })
-      ->everyThirtyMinutes();
+    $schedule->command('bids:check-awards')
+      ->everyThirtyMinutes()
+      ->runInBackground()
+      ->withoutOverlapping(25);
   }
 
   /**
