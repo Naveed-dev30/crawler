@@ -75,11 +75,6 @@
                         <option value="team"@selected(request('role') === 'team')>Team</option>
                         <option value="mobile"@selected(request('role') === 'mobile')>Mobile</option>
                     </select>
-                    @if (request('search') || request('role'))
-                        <a href="{{ route('users') }}" class="btn btn-outline-secondary" title="Clear filters">
-                            <i class="bx bx-x"></i>
-                        </a>
-                    @endif
                 </form>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
                     <i class="bx bx-plus me-1"></i>Add User
