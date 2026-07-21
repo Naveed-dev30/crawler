@@ -28,13 +28,12 @@
             const toggleMobileFields = () => {
                 const isMobile = roleSelect.value === 'mobile';
                 mobileFields.style.display = isMobile ? '' : 'none';
+                // Only visibility + required. No disabled toggle / selectpicker
+                // refresh — refresh on a hidden select duplicates its options,
+                // and the server already nulls these fields for team users.
                 mobileFields.querySelectorAll('textarea, select').forEach(el => {
                     el.toggleAttribute('required', isMobile);
-                    el.toggleAttribute('disabled', !isMobile);
                 });
-                if (window.jQuery && jQuery.fn.selectpicker) {
-                    jQuery('#user-ladder').selectpicker('refresh');
-                }
             };
             roleSelect.addEventListener('change', toggleMobileFields);
             toggleMobileFields();
