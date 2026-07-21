@@ -18,7 +18,15 @@ test('every module has the required interface', () => {
     assert.equal(typeof c.path, 'string')
     assert.ok(Array.isArray(c.requiredKeys) && c.requiredKeys.length > 0)
     assert.equal(typeof c.normalize, 'function')
+    assert.equal(typeof c.matchPattern, 'string')
+    assert.ok(c.matchPattern.length > 0)
   }
+})
+
+test('modules declare the content-script match pattern the interceptor registers against', () => {
+  assert.equal(gamification.matchPattern, 'https://www.freelancer.com/users/game/*')
+  assert.equal(insights.matchPattern, 'https://www.freelancer.com/insights/*')
+  assert.equal(insightsBids.matchPattern, 'https://www.freelancer.com/insights/bids*')
 })
 
 test('modules target the endpoints main actually exposes', () => {
