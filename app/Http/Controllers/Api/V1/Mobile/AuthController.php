@@ -41,4 +41,17 @@ class AuthController extends Controller
             'user' => new UserResource($user),
         ]);
     }
+
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+
+        // Device is signing out — stop pushing to it until the next login.
+        $user->fcm_token = null;
+        $user->save();
+
+        $user->currentAccessToken()->delete();
+
+        return response()->noContent();
+    }
 }
