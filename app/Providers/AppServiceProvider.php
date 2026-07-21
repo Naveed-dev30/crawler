@@ -13,6 +13,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind('bidnowjob', BidNowJob::class);
+
+        // FL_FAKE=true (dev only): serve fabricated Freelancer threads and
+        // swallow outbound messages — no network traffic either way.
+        if (config('variables.flFake')) {
+            $this->app->bind(
+                \App\Services\FreelancerMessenger::class,
+                \App\Services\Fake\FakeFreelancerMessenger::class
+            );
+        }
     }
 
     /**

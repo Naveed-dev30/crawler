@@ -49,7 +49,7 @@
     <span class="fw-light">{{ $bid->cover_letter }}</span>
 
     <div class="mt-4">
-        <a href="https://www.freelancer.com/projects/{{ $bid->proposal->project_id }}" target="_blank" class="btn btn-primary w-100">
+        <a href="{{ rtrim(config('variables.flBase'), '/') }}/projects/{{ $bid->proposal->project_id }}" target="_blank" class="btn btn-primary w-100">
             View on Freelancer
         </a>
     </div>

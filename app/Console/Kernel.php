@@ -23,6 +23,11 @@ class Kernel extends ConsoleKernel
       ->everyThirtyMinutes()
       ->runInBackground()
       ->withoutOverlapping(25);
+
+    $schedule->command('threads:escalate')
+      ->everyTwoMinutes()
+      ->runInBackground()
+      ->withoutOverlapping(5);
   }
 
   /**
