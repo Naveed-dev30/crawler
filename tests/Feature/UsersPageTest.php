@@ -178,4 +178,40 @@ class UsersPageTest extends TestCase
             ])
             ->assertSessionHasErrors(['profile_prompt', 'escalation_ladder']);
     }
+
+    public function test_search_filters_by_name_or_email(): void
+    {
+        User::factory()->create(['role' => 'team', 'name' => 'Zulfiqar Khan', 'email' => 'zk@example.com']);
+        User::factory()->create(['role' => 'team', 'name' => 'Other Person', 'email' => 'findme@example.com']);
+        User::factory()->create(['role' => 'team', 'name' => 'Nobody', 'email' => 'nobody@example.com']);
+
+        $byName = $this->actingAs($this->admin())->get('/users?search=Zulfiqar');
+        $this->assertCount(1, $byName->viewData('users'));
+        $this->assertSame('Zulfiqar Khan', $byName->viewData('users')->first()->name);
+
+        $byEmail = $this->actingAs(User::where('role', 'admin')->first())->get('/users?search=findme');
+        $this->assertCount(1, $byEmail->viewData('users'));
+        $this->assertSame('findme@example.com', $byEmail->viewData('users')->first()->email);
+    }
+
+    public function test_role_filter_limits_results(): void
+    {
+        User::factory()->create(['role' => 'team', 'name' => 'Team Guy']);
+        User::factory()->create(['role' => 'mobile', 'name' => 'Mobile Guy', 'escalation_ladder' => 1]);
+
+        $response = $this->actingAs($this->admin())->get('/users?role=mobile');
+
+        $this->assertCount(1, $response->viewData('users'));
+        $this->assertSame('Mobile Guy', $response->viewData('users')->first()->name);
+    }
+
+    public function test_filters_survive_pagination_links(): void
+    {
+        User::factory()->count(12)->create(['role' => 'team']);
+
+        $response = $this->actingAs($this->admin())->get('/users?role=team&page=2');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->viewData('users'));
+    }
 }

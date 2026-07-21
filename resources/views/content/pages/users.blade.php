@@ -52,11 +52,30 @@
     @endif
 
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h5 class="mb-0">Users</h5>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                <i class="bx bx-plus me-1"></i>Add User
-            </button>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <form method="GET" action="{{ route('users') }}" class="d-flex align-items-center gap-2">
+                    <input type="search" class="form-control" name="search" placeholder="Search name or email…"
+                           value="{{ request('search') }}" style="min-width: 220px;">
+                    <select class="form-select" name="role" style="min-width: 140px;"
+                            onchange="this.form.submit()">
+                        <option value="">All roles</option>
+                        <option value="admin"@selected(request('role') === 'admin')>Admin</option>
+                        <option value="team"@selected(request('role') === 'team')>Team</option>
+                        <option value="mobile"@selected(request('role') === 'mobile')>Mobile</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+                    @if (request('search') || request('role'))
+                        <a href="{{ route('users') }}" class="btn btn-outline-secondary" title="Clear filters">
+                            <i class="bx bx-x"></i>
+                        </a>
+                    @endif
+                </form>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="bx bx-plus me-1"></i>Add User
+                </button>
+            </div>
         </div>
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
