@@ -4,8 +4,12 @@ import { postCapture, MissingConfigError } from './lib/http.js'
 import { assertLoggedIn, LoggedOutError } from './lib/session.js'
 import { withRetry } from './lib/retry.js'
 
-const ALARM = 'capture-all'
-const PERIOD_MINUTES = 24 * 60
+// Two cadences: fast-changing bid activity hourly, everything else daily.
+// A capture's `cadence` field ('hourly' | 'daily') routes it; default is daily.
+const DAILY_ALARM = 'capture-daily'
+const HOURLY_ALARM = 'capture-hourly'
+const DAILY_MINUTES = 24 * 60
+const HOURLY_MINUTES = 60
 // A stalled navigation or redirect loop must never hang the run forever —
 // silence is the worst possible outcome for a system whose whole point is to
 // report back what happened on the first real click.
@@ -18,13 +22,16 @@ const POLL_INTERVAL_MS = 1500
 const SCRAPE_SETTLE_MS = 4000  // charts/tables render after load; give them a moment
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create(ALARM, { periodInMinutes: PERIOD_MINUTES, delayInMinutes: 1 })
+  chrome.alarms.create(DAILY_ALARM, { periodInMinutes: DAILY_MINUTES, delayInMinutes: 1 })
+  chrome.alarms.create(HOURLY_ALARM, { periodInMinutes: HOURLY_MINUTES, delayInMinutes: 1 })
 })
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM) captureAll()
+  if (alarm.name === DAILY_ALARM) captureAll((c) => c.cadence !== 'hourly')
+  else if (alarm.name === HOURLY_ALARM) captureAll((c) => c.cadence === 'hourly')
 })
 
+// A manual click captures everything, regardless of cadence.
 chrome.action.onClicked.addListener(() => captureAll())
 
 // Resolves once the tab reports status:'complete', or after `timeoutMs`,
@@ -243,15 +250,26 @@ async function runIntercept(capture) {
 // finishes last silently winning.
 let running = false
 
-async function captureAll() {
+async function captureAll(filter = () => true) {
   if (running) return
   running = true
 
   try {
+    const captures = CAPTURES.filter(filter)
     await setBadge('...', '#666666')
-    const report = { startedAt: new Date().toISOString(), results: {} }
 
-    for (const capture of CAPTURES) {
+    // Merge into the previous run's results rather than overwrite: an hourly
+    // bid run must not erase the last daily gamification/insights results from
+    // the report the options page shows.
+    const prev = (await chrome.storage.local.get({ lastRun: null })).lastRun
+    const report = {
+      startedAt: new Date().toISOString(),
+      results: { ...(prev && prev.results ? prev.results : {}) },
+    }
+    const ranSources = []
+
+    for (const capture of captures) {
+      ranSources.push(capture.source)
       try {
         const outcome = await withRetry(() => runOne(capture))
         report.results[capture.source] = { ok: true, ...outcome }
@@ -271,27 +289,32 @@ async function captureAll() {
     report.finishedAt = new Date().toISOString()
     await chrome.storage.local.set({ lastRun: report })
 
-    const results = Object.values(report.results)
-    const failed = results.filter((r) => !r.ok)
-    const warned = results.filter((r) => r.ok && r.warnings?.length)
+    // Badge and notification reflect only the captures that ran this cycle.
+    const thisRun = ranSources.map((s) => report.results[s])
+    const failed = thisRun.filter((r) => !r.ok)
+    const warned = thisRun.filter((r) => r.ok && r.warnings?.length)
     await setBadge(failed.length ? String(failed.length) : 'ok', failed.length ? '#CC0000' : '#0A7F27')
 
-    const titleParts = [failed.length ? `${failed.length}/${CAPTURES.length} captures failed` : 'All captures posted']
+    const titleParts = [failed.length ? `${failed.length}/${ranSources.length} captures failed` : 'All captures posted']
     if (warned.length) titleParts.push(`${warned.length} with warnings`)
 
-    notify(titleParts.join(', '), summarize(report))
+    notify(titleParts.join(', '), summarize(report, ranSources))
   } finally {
     running = false
   }
 }
 
-function summarize(report) {
-  return Object.entries(report.results)
-    .map(([source, r]) => {
+function summarize(report, sources) {
+  const keys = sources ?? Object.keys(report.results)
+  return keys
+    .map((source) => {
+      const r = report.results[source]
+      if (!r) return null
       if (!r.ok) return `${source}: ${r.kind}`
       const warn = r.warnings?.length ? ` (warnings: ${r.warnings.length})` : ''
       return `${source}: ok via ${r.strategy}${warn}`
     })
+    .filter(Boolean)
     .join('\n')
 }
 

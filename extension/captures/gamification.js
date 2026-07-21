@@ -5,6 +5,7 @@ export default {
   url: 'https://www.freelancer.com/users/game/',
   path: '/api/gamification/ingest',
   mode: 'scrape',
+  cadence: 'daily',
   scrape: scrapeGamification,
 
   warnings(body) {

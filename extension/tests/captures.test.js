@@ -17,6 +17,7 @@ test('every module has the required interface', () => {
     assert.equal(typeof c.source, 'string')
     assert.equal(typeof c.url, 'string')
     assert.equal(typeof c.path, 'string')
+    assert.ok(['hourly', 'daily'].includes(c.cadence), `${c.source} must declare an hourly/daily cadence`)
 
     if (c.mode === 'scrape') {
       assert.equal(typeof c.scrape, 'function')
@@ -27,6 +28,12 @@ test('every module has the required interface', () => {
       assert.ok(c.matchPattern.length > 0)
     }
   }
+})
+
+test('bid activity is hourly; gamification and insights are daily', () => {
+  assert.equal(insightsBids.cadence, 'hourly')
+  assert.equal(gamification.cadence, 'daily')
+  assert.equal(insights.cadence, 'daily')
 })
 
 test('gamification and insights are scrape-mode captures delegating to lib/scrape.js', () => {
