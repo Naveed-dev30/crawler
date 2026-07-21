@@ -4,6 +4,9 @@ export default {
   source: 'insights_bids',
   url: 'https://www.freelancer.com/insights/bids',
   path: '/api/insights/bids/ingest',
+  // Bid activity changes fast; capture it hourly. It intercepts a background
+  // request, so an hourly run never steals focus.
+  cadence: 'hourly',
   requiredKeys: LIST_KEYS,
   matchPattern: 'https://www.freelancer.com/insights/bids*',
   // requiredKeys here are generic enough ('items', 'projects'...) that plain
