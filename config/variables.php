@@ -29,6 +29,8 @@ return [
     "flUserId" => env("FL_USER_ID"),
     // Freelancer API base — point at https://www.freelancer-sandbox.com in dev.
     "flBase" => env("FL_BASE_URL", "https://www.freelancer.com"),
+    // Dev-only: fabricate Freelancer chat data locally (no network in or out).
+    "flFake" => env("FL_FAKE", false),
     "openAIKey" => env('OPENAI_API_KEY'),
     "gamificationIngestToken" => env('GAMIFICATION_INGEST_TOKEN'),
     "ingestToken" => env('INGEST_TOKEN', env('GAMIFICATION_INGEST_TOKEN')),
