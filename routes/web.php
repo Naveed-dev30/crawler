@@ -56,6 +56,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
         Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+        Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
+        Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');
