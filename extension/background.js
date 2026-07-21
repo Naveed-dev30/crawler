@@ -13,7 +13,7 @@ const LOAD_TIMEOUT_MS = 30000
 // A login page's <head> (analytics bootstrapping, inline bundles) can run
 // well past a few KB; truncating too early lets a login page evade the guard.
 const LOGIN_GUARD_HTML_LIMIT = 50000
-const CAPTURE_WINDOW_MS = 20000  // how long to wait for the SPA's data XHR
+const CAPTURE_WINDOW_MS = 25000  // how long to wait for the SPA's data XHR
 const POLL_INTERVAL_MS = 1500
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -90,7 +90,9 @@ async function openAndCapture(capture) {
   let tab = null
 
   try {
-    tab = await chrome.tabs.create({ url: capture.url, active: false })
+    // Some captures (chart-heavy dashboards) only fetch their data when the tab
+    // is visible, so honor a per-capture activeTab flag; the rest stay background.
+    tab = await chrome.tabs.create({ url: capture.url, active: capture.activeTab === true })
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
 
     const [{ result: pageInfo }] = await chrome.scripting.executeScript({
