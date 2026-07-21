@@ -34,6 +34,14 @@
                 mobileFields.querySelectorAll('textarea, select').forEach(el => {
                     el.toggleAttribute('required', isMobile);
                 });
+                if (!isMobile) {
+                    document.getElementById('user-profile-prompt').value = '';
+                    if (window.jQuery && jQuery.fn.selectpicker) {
+                        jQuery('#user-ladder').selectpicker('val', '');
+                    } else {
+                        document.getElementById('user-ladder').value = '';
+                    }
+                }
             };
             roleSelect.addEventListener('change', toggleMobileFields);
             toggleMobileFields();
