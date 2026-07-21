@@ -64,5 +64,19 @@ Route::prefix('v1')->group(function () {
     // Mobile chat app
     Route::prefix('mobile')->group(function () {
         Route::post('login', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'login']);
+
+        Route::middleware(['auth:sanctum', 'mobile'])->group(function () {
+            Route::get('threads', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'index']);
+            Route::get('threads/{thread}', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'show']);
+            Route::post('threads/{thread}/block', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'block']);
+            Route::post('threads/{thread}/unblock', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'unblock']);
+            Route::post('threads/{thread}/assign', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'assign']);
+            Route::get('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'index']);
+            Route::post('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'store']);
+            Route::get('logs', [\App\Http\Controllers\Api\V1\Mobile\LogController::class, 'index']);
+            Route::get('notifications', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'index']);
+            Route::post('notifications/{notification}/read', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'markRead']);
+            Route::get('users', [\App\Http\Controllers\Api\V1\Mobile\UserController::class, 'index']);
+        });
     });
 });
