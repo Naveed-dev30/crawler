@@ -44,6 +44,7 @@ class MobileThreadsApiTest extends TestCase
 
         $this->actAsMe();
         $response = $this->getJson('/api/v1/mobile/threads')->assertOk();
+        $response->assertJsonPath('success', true);
 
         $ids = collect($response->json('data'))->pluck('id');
         $this->assertSame([$mine->id], $ids->all());

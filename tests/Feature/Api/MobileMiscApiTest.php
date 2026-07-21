@@ -32,6 +32,7 @@ class MobileMiscApiTest extends TestCase
         ActivityLog::factory()->create(['from_user_id' => $other->id, 'to_user_id' => $third->id]);
 
         $response = $this->getJson('/api/v1/mobile/logs')->assertOk();
+        $response->assertJsonPath('success', true);
 
         $ids = collect($response->json('data'))->pluck('id')->sort()->values()->all();
         $this->assertSame([$from->id, $to->id], $ids);
@@ -46,7 +47,7 @@ class MobileMiscApiTest extends TestCase
         $response = $this->getJson('/api/v1/mobile/notifications')->assertOk();
         $this->assertSame([$mine->id], collect($response->json('data'))->pluck('id')->all());
 
-        $this->postJson("/api/v1/mobile/notifications/{$mine->id}/read")->assertOk();
+        $this->postJson("/api/v1/mobile/notifications/{$mine->id}/read")->assertOk()->assertJsonPath('success', true);
         $this->assertNotNull($mine->fresh()->read_at);
     }
 

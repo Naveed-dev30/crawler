@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Api\V1\Mobile;
 
+use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Models\MobileNotification;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    use RespondsMobile;
+
     public function index(Request $request)
     {
         $notifications = MobileNotification::where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
             ->paginate(50);
 
-        return response()->json($notifications);
+        return $this->okPaginated($notifications, $notifications->items(), 'Notifications fetched successfully.');
     }
 
     public function markRead(Request $request, MobileNotification $notification)
@@ -24,6 +27,6 @@ class NotificationController extends Controller
         $notification->read_at = now();
         $notification->save();
 
-        return response()->json(['read' => true]);
+        return $this->ok(['read' => true], 'Notification marked as read.');
     }
 }

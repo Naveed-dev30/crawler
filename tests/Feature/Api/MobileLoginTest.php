@@ -30,7 +30,9 @@ class MobileLoginTest extends TestCase
             'device_name' => 'pixel-8',
         ]);
 
-        $response->assertOk()->assertJsonStructure(['token', 'user' => ['id', 'name', 'email']]);
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['success', 'message', 'data' => ['token', 'user' => ['id', 'name', 'email']]]);
         $this->assertSame('fcm-abc-123', $user->fresh()->fcm_token);
     }
 
@@ -60,7 +62,7 @@ class MobileLoginTest extends TestCase
             'password' => 'secret123',
             'fcm_token' => 'fcm-abc',
             'device_name' => 'pixel-8',
-        ])->assertForbidden();
+        ])->assertForbidden()->assertJsonPath('success', false);
 
         $this->assertNull($admin->fresh()->fcm_token);
     }
@@ -74,7 +76,7 @@ class MobileLoginTest extends TestCase
             'password' => 'wrong-pass',
             'fcm_token' => 'fcm-abc',
             'device_name' => 'pixel-8',
-        ])->assertUnauthorized();
+        ])->assertUnauthorized()->assertJsonPath('success', false);
     }
 
     public function test_fcm_token_is_required(): void
@@ -85,7 +87,9 @@ class MobileLoginTest extends TestCase
             'email' => $user->email,
             'password' => 'secret123',
             'device_name' => 'pixel-8',
-        ])->assertUnprocessable()->assertJsonValidationErrors('fcm_token');
+        ])->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonValidationErrors('fcm_token');
     }
 
     public function test_logout_revokes_token_and_clears_fcm_token(): void
@@ -95,7 +99,7 @@ class MobileLoginTest extends TestCase
 
         $this->postJson('/api/v1/mobile/logout', [], [
             'Authorization' => "Bearer {$token}",
-        ])->assertNoContent();
+        ])->assertOk()->assertJsonPath('success', true);
 
         $fresh = $user->fresh();
         $this->assertNull($fresh->fcm_token);
@@ -115,8 +119,9 @@ class MobileLoginTest extends TestCase
         $this->getJson('/api/v1/mobile/user', [
             'Authorization' => "Bearer {$token}",
         ])->assertOk()
-            ->assertJsonPath('user.id', $user->id)
-            ->assertJsonPath('user.email', $user->email);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', $user->email);
     }
 
     public function test_user_endpoint_rejects_non_mobile_role(): void

@@ -28,10 +28,10 @@ class MobileThreadActionsApiTest extends TestCase
 
     public function test_block_and_unblock(): void
     {
-        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/block")->assertOk();
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/block")->assertOk()->assertJsonPath('success', true)->assertJsonPath('data.blocked', true);
         $this->assertTrue($this->thread->fresh()->blocked);
 
-        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/unblock")->assertOk();
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/unblock")->assertOk()->assertJsonPath('data.blocked', false);
         $this->assertFalse($this->thread->fresh()->blocked);
     }
 
@@ -42,7 +42,7 @@ class MobileThreadActionsApiTest extends TestCase
 
         $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/assign", [
             'user_id' => $target->id,
-        ])->assertOk();
+        ])->assertOk()->assertJsonPath('success', true);
 
         $this->assertSame($target->id, (int) $this->thread->fresh()->assigned_user_id);
 
