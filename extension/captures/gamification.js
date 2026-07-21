@@ -18,7 +18,12 @@ export default {
   source: 'gamification',
   url: URL,
   path: '/api/gamification/ingest',
-  requiredKeys: ['leaderboard', 'level'],
+  // 'level' was too generic: every skill badge on the page has a `level` field,
+  // so the matcher grabbed a badge instead of the leaderboard. Discriminate on
+  // the distinctive `leaderboard` key only. If the real leaderboard response
+  // doesn't carry that key either, the run no-matches and the diagnostics reveal
+  // the actual endpoint shapes.
+  requiredKeys: ['leaderboard'],
   matchPattern: 'https://www.freelancer.com/users/game/*',
 
   normalize(raw, scrapedAt) {
