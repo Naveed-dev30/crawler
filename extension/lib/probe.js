@@ -99,7 +99,7 @@ export function matchResponse(captured, requiredKeys, options = {}) {
       requireArray,
       capturedCount: list.length,
       // A miss hands us the discovery: every endpoint the SPA called + its keys.
-      endpoints: list.slice(0, 40).map((e) => ({ url: e.url, keys: keysOf(e.body) })),
+      endpoints: list.slice(0, 120).map((e) => ({ url: e.url, keys: keysOf(e.body) })),
     },
   }
 }
