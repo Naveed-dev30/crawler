@@ -96,11 +96,14 @@ class BidController extends Controller
         $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
       }
 
+      $lastUpdated = \App\Models\Proposal::max('updated_at');
+
       return response()->json([
         'cards' => $cards,
         'statusCounts' => $statusCounts,
         'rowsHtml' => $rowsHtml,
         'paginationHtml' => $proposals->links('vendor.pagination.bootstrap-5')->render(),
+        'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
       ]);
     }
 
@@ -109,8 +112,21 @@ class BidController extends Controller
       : 'completed';
     $isCompleted = $tab === 'completed';
 
+    // Bids Placed sub-tabs: all / Correct / Incorrect review states
+    $checkTab = in_array($request->query('check'), ['Correct', 'Incorrect'], true)
+      ? $request->query('check')
+      : 'all';
+
+    // Skills Not Matched sub-tabs: all / Interested / Not Interested
+    $interestTab = in_array($request->query('interest'), ['Interested', 'Not Interested'], true)
+      ? $request->query('interest')
+      : 'all';
+    $isSkillTab = $tab === 'skill-not-matched';
+
     $bids = (clone $base)
       ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
+      ->when($isCompleted && $checkTab !== 'all', fn ($q) => $q->where('bids.check', $checkTab))
+      ->when($isSkillTab && $interestTab !== 'all', fn ($q) => $q->where('bids.interest', $interestTab))
       ->when($tab === 'skill-not-matched', fn ($q) => $q
         ->whereIn('bids.bid_status', $failed)
         ->where('bids.error_message', 'like', '%skill%'))
@@ -127,18 +143,27 @@ class BidController extends Controller
 
     $rowsHtml = '';
     foreach ($bids as $bid) {
-      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid, 'completed' => $isCompleted])->render();
+      $rowsHtml .= view('_partials.bid-row', [
+        'bid' => $bid,
+        'completed' => $isCompleted,
+        'checkTab' => $checkTab,
+        'skillTab' => $isSkillTab,
+        'interestTab' => $interestTab,
+      ])->render();
     }
     if ($bids->isEmpty()) {
       $colspan = $isCompleted ? 9 : 7;
       $rowsHtml = '<tr><td colspan="' . $colspan . '" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
     }
 
+    $lastUpdated = Bid::max('updated_at');
+
     return response()->json([
       'cards' => $cards,
       'statusCounts' => $statusCounts,
       'rowsHtml' => $rowsHtml,
       'paginationHtml' => $bids->links('vendor.pagination.bootstrap-5')->render(),
+      'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
     ]);
   }
 
@@ -332,5 +357,23 @@ class BidController extends Controller
     $bid->save();
 
     return response()->json(['success' => true, 'check' => $bid->check]);
+  }
+
+  public function updateBidInterest(Request $request)
+  {
+    $bid = Bid::find($request->bid_id);
+
+    if (!$bid) {
+      return response()->json(['success' => false, 'message' => 'Bid not found.'], 404);
+    }
+
+    if (!in_array($request->interest, ['Interested', 'Not Interested'], true)) {
+      return response()->json(['success' => false, 'message' => 'Invalid interest value.'], 422);
+    }
+
+    $bid->interest = $request->interest;
+    $bid->save();
+
+    return response()->json(['success' => true, 'interest' => $bid->interest]);
   }
 }

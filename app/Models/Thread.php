@@ -42,6 +42,11 @@ class Thread extends Model
         return $this->hasMany(ThreadMessage::class);
     }
 
+    public function logs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
     // No scopeFresh: it would collide with Eloquent's Model::fresh().
     public function scopeUnblocked($query)
     {

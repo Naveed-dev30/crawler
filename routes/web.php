@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stats/countries', [StatisticsController::class, 'countries'])->name('stats.countries');
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');
+    Route::get('/stats/overview', [StatisticsController::class, 'overview'])->name('stats.overview');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
@@ -59,6 +60,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
+        Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
+        Route::get('/chats/{thread}/detail', [\App\Http\Controllers\ChatController::class, 'detail'])->name('chats.detail');
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');
@@ -66,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/proposals/{proposal}/nq-detail', [ProposalController::class, 'nqDetail'])->name('proposals.nq-detail');
     Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
+    Route::post('/updateBidInterest', [BidController::class, 'updateBidInterest'])->name('updateBidInterest');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
     Route::get('/review', [ReviewController::class, 'index'])->name('review');
     Route::post('/review/feedback', [ReviewController::class, 'storeFeedback'])->name('review.feedback');
