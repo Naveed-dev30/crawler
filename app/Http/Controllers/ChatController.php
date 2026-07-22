@@ -34,4 +34,26 @@ class ChatController extends Controller
 
         return view('content.pages.chats', ['threads' => $threads]);
     }
+
+    public function detail(Thread $thread)
+    {
+        $thread->load([
+            'assignedUser',
+            'proposal',
+            'messages' => fn ($q) => $q->orderBy('message_time'),
+            'messages.sender',
+            'messages.attachments',
+            'logs' => fn ($q) => $q->orderBy('created_at'),
+            'logs.fromUser',
+            'logs.toUser',
+        ]);
+
+        // AI matches are never logged; reconstruct the first assignee.
+        $firstAssignee = $thread->logs->first()?->fromUser ?? $thread->assignedUser;
+
+        return view('_partials.chat-thread-detail', [
+            'thread' => $thread,
+            'firstAssignee' => $firstAssignee,
+        ]);
+    }
 }
