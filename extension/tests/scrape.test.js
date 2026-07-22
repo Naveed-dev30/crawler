@@ -67,6 +67,26 @@ test('insights: earnings per skill pairs', () => {
   assert.ok(out.earningsPerSkill.length >= 5)
 })
 
+test('insights: rating per skill captures the skill list (ratings are star icons, not text)', () => {
+  const out = scrapeUserStats(read('insights-page.txt'))
+
+  assert.deepEqual(out.ratingPerSkill, [
+    { name: 'WooCommerce' },
+    { name: 'WordPress Plugin' },
+    { name: 'After Effects' },
+  ])
+})
+
+test('insights: rating per skill is bounded — a missing end heading yields none', () => {
+  // '51'/'BIDS REMAINING' keeps userStats non-empty; the rating section has no
+  // 'Bid conversion' end heading, so it must not pull in the footer that follows.
+  const text = ['51', 'BIDS REMAINING', 'Rating per skill', 'WooCommerce', 'Network', 'Privacy Policy'].join('\n')
+  const out = scrapeUserStats(text)
+
+  assert.notEqual(out, null)
+  assert.deepEqual(out.ratingPerSkill, [])
+})
+
 test('insights: empty on unrecognizable text', () => {
   assert.equal(scrapeUserStats('just some navigation text'), null)
 })
