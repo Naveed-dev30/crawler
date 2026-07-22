@@ -146,6 +146,24 @@ test('marketplace: empty on unrecognizable text', () => {
   assert.equal(scrapeMarketplace('just navigation text'), null)
 })
 
+test('marketplace: profile-view chart data from the worker is passed through', () => {
+  const dom = {
+    profileViewCountPastWeek: { labels: ['Mon', 'Tue'], values: [3, 5] },
+    profileViewCountPastYear: { labels: ['Jan'], values: [42] },
+  }
+  const out = scrapeMarketplace(read('marketplace-page.txt'), dom)
+
+  assert.deepEqual(out.profileViewCountPastWeek, { labels: ['Mon', 'Tue'], values: [3, 5] })
+  assert.deepEqual(out.profileViewCountPastYear, { labels: ['Jan'], values: [42] })
+})
+
+test('marketplace: profile-view counts are null when the worker supplies no chart data', () => {
+  const out = scrapeMarketplace(read('marketplace-page.txt'))
+
+  assert.equal(out.profileViewCountPastWeek, null)
+  assert.equal(out.profileViewCountPastYear, null)
+})
+
 test('marketplace: trending skills does not swallow the footer if the end heading is missing', () => {
   // No 'Overall ranking' heading, so trending cannot be bounded. It must come
   // back empty rather than pulling nav/footer lines into trendingSkills.

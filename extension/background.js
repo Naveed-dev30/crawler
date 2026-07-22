@@ -151,13 +151,16 @@ async function runOne(capture) {
 }
 
 async function readPage(tabId) {
+  // MAIN world so the reader can reach page globals (window.Chart) for the
+  // canvas charts; the DOM (innerText, attributes) is shared across worlds, so
+  // the text and attribute reads work here too.
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
+    world: 'MAIN',
     func: (limit) => {
-      // Some values render only as DOM attributes, not as page text. The
-      // "Rating per skill" card stores each rating in `data-star_rating`, so
-      // pull those out here alongside the innerText. Guarded so a markup change
-      // degrades to an empty list rather than breaking the whole read.
+      // "Rating per skill" stores each rating in a `data-star_rating` DOM
+      // attribute (not page text). Guarded so a markup change yields [] rather
+      // than breaking the read.
       let ratingPerSkill = []
       try {
         const card = Array.from(document.querySelectorAll('.StatCard')).find((c) => {
@@ -177,11 +180,42 @@ async function readPage(tabId) {
       } catch (e) {
         ratingPerSkill = []
       }
+
+      // Profile-view counts are Chart.js line charts on a <canvas>; their data
+      // lives in the chart instance, not the DOM. Read it by canvas id, handling
+      // both Chart.js v2 (Chart.instances) and v3+ (Chart.getChart). Returns
+      // { labels, values } or null if the chart isn't reachable.
+      const chartData = (canvasId) => {
+        try {
+          const canvas = document.getElementById(canvasId)
+          if (!canvas) return null
+          let chart = null
+          const C = window.Chart
+          if (C) {
+            if (typeof C.getChart === 'function') chart = C.getChart(canvas)
+            if (!chart && C.instances) {
+              chart = Object.values(C.instances).find((x) => x && (x.canvas === canvas || (x.chart && x.chart.canvas === canvas)))
+            }
+          }
+          if (!chart && canvas.chart) chart = canvas.chart
+          const data = chart && (chart.data || (chart.chart && chart.chart.data))
+          if (!data) return null
+          const ds = (data.datasets || [])[0]
+          return { labels: data.labels || [], values: ds ? (ds.data || []) : [] }
+        } catch (e) {
+          return null
+        }
+      }
+
       return {
         url: location.href,
         text: document.body ? document.body.innerText : '',
         html: document.documentElement.outerHTML.slice(0, limit),
-        dom: { ratingPerSkill },
+        dom: {
+          ratingPerSkill,
+          profileViewCountPastWeek: chartData('profileViewCountPastWeek-chart'),
+          profileViewCountPastYear: chartData('profileViewCountPastYear-chart'),
+        },
       }
     },
     args: [LOGIN_GUARD_HTML_LIMIT],
