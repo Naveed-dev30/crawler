@@ -100,6 +100,17 @@
         <div class="offcanvas-body" id="chatOffcanvasContent">
             <p class="text-muted">Loading…</p>
         </div>
+        {{-- Long conversations: jump to top / latest without manual scrolling --}}
+        <div class="position-absolute d-flex flex-column gap-2" style="right: 1.25rem; bottom: 1.25rem; z-index: 5;">
+            <button type="button" class="btn btn-primary btn-icon rounded-circle shadow d-none" id="chatScrollTop"
+                    title="Back to top" aria-label="Scroll to top">
+                <i class="bx bx-chevrons-up"></i>
+            </button>
+            <button type="button" class="btn btn-primary btn-icon rounded-circle shadow d-none" id="chatScrollBottom"
+                    title="Latest messages" aria-label="Scroll to latest messages">
+                <i class="bx bx-chevrons-down"></i>
+            </button>
+        </div>
     </div>
 @endsection
 
@@ -113,12 +124,29 @@
                 timer = setTimeout(() => document.getElementById('chats-filter-form').submit(), 400);
             });
 
+            const ocBody = document.getElementById('chatOffcanvasContent');
+            const topBtn = document.getElementById('chatScrollTop');
+            const bottomBtn = document.getElementById('chatScrollBottom');
+
+            // One button at a time: lower half of the scroll → jump up, upper half → jump down.
+            const updateScrollButtons = () => {
+                const max = ocBody.scrollHeight - ocBody.clientHeight;
+                const canScroll = max > 50;
+                const showUp = canScroll && ocBody.scrollTop > max / 2;
+                topBtn.classList.toggle('d-none', !showUp);
+                bottomBtn.classList.toggle('d-none', !canScroll || showUp);
+            };
+            ocBody.addEventListener('scroll', updateScrollButtons);
+            topBtn.addEventListener('click', () => ocBody.scrollTo({ top: 0, behavior: 'smooth' }));
+            bottomBtn.addEventListener('click', () => ocBody.scrollTo({ top: ocBody.scrollHeight, behavior: 'smooth' }));
+
             document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
-                const body = document.getElementById('chatOffcanvasContent');
-                body.innerHTML = '<p class="text-muted">Loading…</p>';
+                ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
                 bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
                 const res = await fetch('/chats/' + btn.dataset.threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                body.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                ocBody.scrollTop = 0;
+                updateScrollButtons();
             }));
         });
     </script>
