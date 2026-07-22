@@ -326,10 +326,10 @@
             const OUTCOME_COLORS = ['#399cff', '#28c76f', '#ea5455'];
 
             const STATUS_COLORS = {
-                Completed: '#28c76f',
-                Pending: '#ff9f43',
-                Failed: '#ea5455',
-                Expired: '#82868b',
+                'Bids Placed': '#28c76f',
+                'Failed': '#ea5455',
+                'Skills Not Matched': '#ffab00',
+                'Not Qualified': '#00cfe8',
             };
 
             function renderDonut(elId, rows) {

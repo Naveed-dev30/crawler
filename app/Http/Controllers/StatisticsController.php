@@ -302,36 +302,54 @@ class StatisticsController extends Controller
     {
         [$from, $to] = $this->resolveRange($request);
 
-        $statuses = ['pending', 'completed', 'expired', 'failed'];
-
         $rows = Bid::query()
             ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
             ->whereBetween('bids.created_at', [$from, $to])
-            ->whereIn('bids.bid_status', $statuses)
+            ->whereIn('bids.bid_status', ['pending', 'completed', 'expired', 'failed'])
             ->select(
                 'bids.bid_status as bid_status',
+                'bids.error_message as error_message',
                 'proposals.min_budget as min_budget',
                 'proposals.type as type',
                 'proposals.exchange_rate as exchange_rate'
             )
             ->get();
 
-        $out = [];
-        foreach ($statuses as $s) {
-            $out[$s] = ['status' => ucfirst($s), 'count' => 0, 'amount_usd' => 0];
-        }
+        $out = [
+            'placed' => ['status' => 'Bids Placed', 'count' => 0, 'amount_usd' => 0],
+            'failed' => ['status' => 'Failed', 'count' => 0, 'amount_usd' => 0],
+            'skills' => ['status' => 'Skills Not Matched', 'count' => 0, 'amount_usd' => 0],
+            'nq' => ['status' => 'Not Qualified', 'count' => 0, 'amount_usd' => 0],
+        ];
+
+        $usdFor = function ($minBudget, $exchangeRate, $type) {
+            $usd = ($minBudget ?? 0) * ($exchangeRate ?? 1);
+
+            return $type === 'hourly' ? $usd * 10 : $usd;
+        };
 
         foreach ($rows as $row) {
-            $usd = ($row->min_budget ?? 0) * ($row->exchange_rate ?? 1);
-            if ($row->type === 'hourly') {
-                $usd *= 10;
-            }
             // bid_status casing is inconsistent in the DB (e.g. BidNowJob writes
             // "Failed"); MySQL matches case-insensitively but PHP keys don't.
             $status = strtolower($row->bid_status);
-            $out[$status]['count']++;
-            $out[$status]['amount_usd'] += $usd;
+            if (in_array($status, ['pending', 'completed'], true)) {
+                $key = 'placed';
+            } elseif (str_contains(strtolower((string) $row->error_message), 'skill')) {
+                $key = 'skills';
+            } else {
+                $key = 'failed';
+            }
+            $out[$key]['count']++;
+            $out[$key]['amount_usd'] += $usdFor($row->min_budget, $row->exchange_rate, $row->type);
         }
+
+        Proposal::notQualified()
+            ->whereBetween('created_at', [$from, $to])
+            ->get(['min_budget', 'type', 'exchange_rate'])
+            ->each(function ($p) use (&$out, $usdFor) {
+                $out['nq']['count']++;
+                $out['nq']['amount_usd'] += $usdFor($p->min_budget, $p->exchange_rate, $p->type);
+            });
 
         foreach ($out as $k => $row) {
             $out[$k]['amount_usd'] = round($row['amount_usd'], 2);
