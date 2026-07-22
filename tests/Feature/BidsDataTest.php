@@ -56,6 +56,116 @@ class BidsDataTest extends TestCase
         $this->assertStringNotContainsString('expired', $res->json('rowsHtml'));
     }
 
+    public function test_check_sub_tab_filters_and_toggles_buttons(): void
+    {
+        $p = Proposal::factory()->create(['type' => 'fixed', 'title' => 'Check filter', 'project_id' => 424242, 'country' => 'US']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 111, 'check' => 'Correct']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 222, 'check' => 'Incorrect']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 333, 'check' => 'Unreviewed']);
+
+        $user = User::factory()->create();
+
+        // All: every row, both buttons rendered
+        $all = $this->actingAs($user)->getJson('/bids/data?tab=completed')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $all);
+        $this->assertStringContainsString('222', $all);
+        $this->assertStringContainsString('333', $all);
+        $this->assertStringContainsString('data-check="Correct"', $all);
+        $this->assertStringContainsString('data-check="Incorrect"', $all);
+
+        // Correct: only the Correct row; only the Incorrect (shift) button
+        $correct = $this->actingAs($user)->getJson('/bids/data?tab=completed&check=Correct')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $correct);
+        $this->assertStringNotContainsString('222', $correct);
+        $this->assertStringNotContainsString('333', $correct);
+        $this->assertStringNotContainsString('data-check="Correct"', $correct);
+        $this->assertStringContainsString('data-check="Incorrect"', $correct);
+
+        // Incorrect: only the Incorrect row; only the Correct (shift) button
+        $incorrect = $this->actingAs($user)->getJson('/bids/data?tab=completed&check=Incorrect')->assertOk()->json('rowsHtml');
+        $this->assertStringNotContainsString('111', $incorrect);
+        $this->assertStringContainsString('222', $incorrect);
+        $this->assertStringContainsString('data-check="Correct"', $incorrect);
+        $this->assertStringNotContainsString('data-check="Incorrect"', $incorrect);
+    }
+
+    public function test_interest_sub_tab_filters_skill_not_matched_rows(): void
+    {
+        $p = Proposal::factory()->create([
+            'type' => 'fixed', 'title' => 'Skill row', 'project_id' => 515151, 'country' => 'US',
+            'skills' => ['PHP', 'Laravel'],
+        ]);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 111, 'error_message' => 'skill mismatch', 'interest' => 'Interested']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 222, 'error_message' => 'skill mismatch', 'interest' => 'Not Interested']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 333, 'error_message' => 'skill mismatch', 'interest' => 'Unreviewed']);
+
+        $user = User::factory()->create();
+
+        // All: every row, both buttons, skills bubbles
+        $all = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $all);
+        $this->assertStringContainsString('222', $all);
+        $this->assertStringContainsString('333', $all);
+        $this->assertStringContainsString('data-interest="Interested"', $all);
+        $this->assertStringContainsString('data-interest="Not Interested"', $all);
+        $this->assertStringContainsString('Laravel</span>', $all);
+
+        // Interested: only that row; only the Not Interested (shift) button
+        $interested = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest=Interested')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $interested);
+        $this->assertStringNotContainsString('222', $interested);
+        $this->assertStringNotContainsString('data-interest="Interested"', $interested);
+        $this->assertStringContainsString('data-interest="Not Interested"', $interested);
+
+        // Not Interested: only that row; only the Interested (shift) button
+        $not = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest=' . urlencode('Not Interested'))->assertOk()->json('rowsHtml');
+        $this->assertStringNotContainsString('111', $not);
+        $this->assertStringContainsString('222', $not);
+        $this->assertStringContainsString('data-interest="Interested"', $not);
+        $this->assertStringNotContainsString('data-interest="Not Interested"', $not);
+    }
+
+    public function test_update_bid_interest_endpoint(): void
+    {
+        $p = Proposal::factory()->create(['project_id' => 616161]);
+        $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'error_message' => 'skill mismatch']);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => $bid->id, 'interest' => 'Interested'])
+            ->assertOk()->assertJson(['success' => true, 'interest' => 'Interested']);
+        $this->assertSame('Interested', $bid->fresh()->interest);
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => $bid->id, 'interest' => 'bogus'])
+            ->assertStatus(422);
+        $this->assertSame('Interested', $bid->fresh()->interest);
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => 999999, 'interest' => 'Interested'])
+            ->assertStatus(404);
+    }
+
+    public function test_stats_overview_lifetime_and_daily(): void
+    {
+        $this->seedBids();
+        // One bid created "today" (test now frozen at 2026-07-15 12:00)
+        $p = Proposal::factory()->create(['project_id' => 999111]);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'created_at' => '2026-07-15 08:00:00']);
+
+        $res = $this->actingAs(User::factory()->create())->getJson('/stats/overview')->assertOk();
+
+        $this->assertSame(3, $res->json('lifetime.placed'));          // pending + completed + today's
+        $this->assertSame(1, $res->json('lifetime.failed'));          // expired (non-skill)
+        $this->assertSame(1, $res->json('lifetime.skillNotMatched'));
+        $this->assertIsInt($res->json('lifetime.placedCorrect'));
+        $this->assertIsInt($res->json('lifetime.placedIncorrect'));
+        $this->assertIsInt($res->json('lifetime.skillsInterested'));
+        $this->assertIsInt($res->json('lifetime.skillsNotInterested'));
+        $this->assertIsInt($res->json('lifetime.notQualified'));
+        $this->assertSame(1, $res->json('daily.placed'));             // only today's bid
+        $this->assertSame(0, $res->json('daily.failed'));
+        $this->assertSame(0, $res->json('daily.skillNotMatched'));
+    }
+
     public function test_failed_tab_excludes_skill_errors(): void
     {
         $this->seedBids();

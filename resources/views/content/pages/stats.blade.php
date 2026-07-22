@@ -7,23 +7,126 @@
 @endsection
 
 @section('content')
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <h4 class="page-title mb-0">Statistics</h4>
-        <div class="d-flex flex-wrap align-items-end gap-2" id="date-range">
-            <div>
-                <label class="form-label small text-muted mb-1" for="range-from">From</label>
-                <input type="date" class="form-control form-control-sm" id="range-from">
+    <h4 class="page-title mb-4">Statistics</h4>
+
+    {{-- Lifetime + today overview — not affected by the date range below --}}
+    <div class="row gy-4 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100"><div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted small text-uppercase fw-semibold">Lifetime</span>
+                    <span class="badge bg-label-primary rounded p-2 lh-1"><i class="bx bx-infinite"></i></span>
+                </div>
+                <div class="row text-center g-0 align-items-start">
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h3>
+                            <small class="text-muted d-block mb-1">Bids Placed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-life-placed-correct">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-life-placed-incorrect">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h3>
+                            <small class="text-muted d-block mb-1">Failed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h3>
+                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-life-skills-int">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-life-skills-notint">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h3>
+                            <small class="text-muted d-block mb-1">Not Qualified</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100"><div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted small text-uppercase fw-semibold">Today</span>
+                    <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
+                </div>
+                <div class="row text-center g-0 align-items-start">
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h3>
+                            <small class="text-muted d-block mb-1">Bids Placed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-day-placed-correct">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-day-placed-incorrect">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h3>
+                            <small class="text-muted d-block mb-1">Failed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h3>
+                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-day-skills-int">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-day-skills-notint">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h3>
+                            <small class="text-muted d-block mb-1">Not Qualified</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+
+    {{-- Date range filter (applies to the sections below only) --}}
+    <div class="card mb-4">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span class="text-muted small text-uppercase fw-semibold d-inline-flex align-items-center">
+                <i class="bx bx-calendar me-2"></i>Date Range
+            </span>
+            <div class="d-flex flex-wrap align-items-end gap-2" id="date-range">
+                <div>
+                    <label class="form-label small text-muted mb-1" for="range-from">From</label>
+                    <input type="date" class="form-control form-control-sm" id="range-from">
+                </div>
+                <div>
+                    <label class="form-label small text-muted mb-1" for="range-to">To</label>
+                    <input type="date" class="form-control form-control-sm" id="range-to">
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
+                    <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
+                    <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
+                    <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
+                </div>
+                <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
             </div>
-            <div>
-                <label class="form-label small text-muted mb-1" for="range-to">To</label>
-                <input type="date" class="form-control form-control-sm" id="range-to">
-            </div>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
-                <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
-                <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
-                <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
-            </div>
-            <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
         </div>
     </div>
 
@@ -148,6 +251,31 @@
             const fromEl = document.querySelector('#range-from');
             const toEl = document.querySelector('#range-to');
 
+            // Lifetime/today overview — loaded once, independent of the date range
+            fetch('/stats/overview', { headers: { 'Accept': 'application/json' } })
+                .then(res => res.ok ? res.json() : null)
+                .then(o => {
+                    if (!o) return;
+                    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+                    set('ov-life-placed', o.lifetime.placed);
+                    set('ov-life-placed-correct', o.lifetime.placedCorrect);
+                    set('ov-life-placed-incorrect', o.lifetime.placedIncorrect);
+                    set('ov-life-skills-int', o.lifetime.skillsInterested);
+                    set('ov-life-skills-notint', o.lifetime.skillsNotInterested);
+                    set('ov-day-placed-correct', o.daily.placedCorrect);
+                    set('ov-day-placed-incorrect', o.daily.placedIncorrect);
+                    set('ov-day-skills-int', o.daily.skillsInterested);
+                    set('ov-day-skills-notint', o.daily.skillsNotInterested);
+                    set('ov-life-failed', o.lifetime.failed);
+                    set('ov-life-skills', o.lifetime.skillNotMatched);
+                    set('ov-life-nq', o.lifetime.notQualified);
+                    set('ov-day-placed', o.daily.placed);
+                    set('ov-day-failed', o.daily.failed);
+                    set('ov-day-skills', o.daily.skillNotMatched);
+                    set('ov-day-nq', o.daily.notQualified);
+                })
+                .catch(() => {});
+
             function ymd(d) {
                 return d.getFullYear() + '-'
                     + String(d.getMonth() + 1).padStart(2, '0') + '-'
@@ -198,10 +326,10 @@
             const OUTCOME_COLORS = ['#399cff', '#28c76f', '#ea5455'];
 
             const STATUS_COLORS = {
-                Completed: '#28c76f',
-                Pending: '#ff9f43',
-                Failed: '#ea5455',
-                Expired: '#82868b',
+                'Bids Placed': '#28c76f',
+                'Failed': '#ea5455',
+                'Skills Not Matched': '#ffab00',
+                'Not Qualified': '#00cfe8',
             };
 
             function renderDonut(elId, rows) {

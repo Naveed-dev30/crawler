@@ -10,9 +10,23 @@
 <div class="offcanvas-body" data-bid-id="{{ $bid->id }}">
     <div class="d-flex justify-content-between align-items-center gap-2">
         <span class="badge {{ $checkBadge }}" data-check-badge>{{ $bid->check }}</span>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-success bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
-            <button type="button" class="btn btn-sm btn-outline-danger bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+        <div class="d-flex gap-1">
+            @if ($bid->check !== 'Correct')
+                <button type="button"
+                        class="btn rounded-pill d-inline-flex align-items-center btn-outline-success bid-check-btn"
+                        style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                        data-bid-id="{{ $bid->id }}" data-check="Correct">
+                    <i class="bx bx-check me-1"></i>Correct
+                </button>
+            @endif
+            @if ($bid->check !== 'Incorrect')
+                <button type="button"
+                        class="btn rounded-pill d-inline-flex align-items-center btn-outline-danger bid-check-btn"
+                        style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                        data-bid-id="{{ $bid->id }}" data-check="Incorrect">
+                    <i class="bx bx-x me-1"></i>Incorrect
+                </button>
+            @endif
         </div>
     </div>
 
