@@ -17,30 +17,42 @@
                     <span class="text-muted small text-uppercase fw-semibold">Lifetime</span>
                     <span class="badge bg-label-primary rounded p-2 lh-1"><i class="bx bx-infinite"></i></span>
                 </div>
-                <div class="row text-center g-2">
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h4>
-                        <small class="text-muted d-block">Bids Placed</small>
-                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
-                            <span class="badge bg-label-success">✓ <span id="ov-life-placed-correct">—</span></span>
-                            <span class="badge bg-label-danger">✕ <span id="ov-life-placed-incorrect">—</span></span>
+                <div class="row text-center g-0 align-items-start">
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h3>
+                            <small class="text-muted d-block mb-1">Bids Placed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-life-placed-correct">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-life-placed-incorrect">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h3>
+                            <small class="text-muted d-block mb-1">Failed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h3>
+                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-life-skills-int">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-life-skills-notint">—</span></span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h4>
-                        <small class="text-muted">Failed</small>
-                    </div>
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h4>
-                        <small class="text-muted d-block">Skills Not Matched</small>
-                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
-                            <span class="badge bg-label-success">✓ <span id="ov-life-skills-int">—</span></span>
-                            <span class="badge bg-label-danger">✕ <span id="ov-life-skills-notint">—</span></span>
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h3>
+                            <small class="text-muted d-block mb-1">Not Qualified</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h4>
-                        <small class="text-muted">Not Qualified</small>
                     </div>
                 </div>
             </div></div>
@@ -51,30 +63,42 @@
                     <span class="text-muted small text-uppercase fw-semibold">Today</span>
                     <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
                 </div>
-                <div class="row text-center g-2">
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h4>
-                        <small class="text-muted d-block">Bids Placed</small>
-                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
-                            <span class="badge bg-label-success">✓ <span id="ov-day-placed-correct">—</span></span>
-                            <span class="badge bg-label-danger">✕ <span id="ov-day-placed-incorrect">—</span></span>
+                <div class="row text-center g-0 align-items-start">
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h3>
+                            <small class="text-muted d-block mb-1">Bids Placed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-day-placed-correct">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-day-placed-incorrect">—</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h3>
+                            <small class="text-muted d-block mb-1">Failed</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-3 border-end">
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h3>
+                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-day-skills-int">—</span></span>
+                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-day-skills-notint">—</span></span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h4>
-                        <small class="text-muted">Failed</small>
-                    </div>
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h4>
-                        <small class="text-muted d-block">Skills Not Matched</small>
-                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
-                            <span class="badge bg-label-success">✓ <span id="ov-day-skills-int">—</span></span>
-                            <span class="badge bg-label-danger">✕ <span id="ov-day-skills-notint">—</span></span>
+                        <div class="px-1">
+                            <h3 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h3>
+                            <small class="text-muted d-block mb-1">Not Qualified</small>
+                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-3">
-                        <h4 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h4>
-                        <small class="text-muted">Not Qualified</small>
                     </div>
                 </div>
             </div></div>
