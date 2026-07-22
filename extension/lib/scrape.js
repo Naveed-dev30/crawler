@@ -66,7 +66,7 @@ const MONEY = /^\$[\d,]+\.\d{2}$/
 // missing value never steals a neighbouring metric's number.
 const isLabelLine = (l) => typeof l === 'string' && /^[A-Z][A-Z0-9 /&.-]+$/.test(l) && l.length > 2
 
-export function scrapeUserStats(text) {
+export function scrapeUserStats(text, dom) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim())
   const indexOf = (label) => lines.findIndex((l) => l === label)
 
@@ -120,15 +120,17 @@ export function scrapeUserStats(text) {
     }
   }
 
-  // Rating per skill: skill names only. The ratings themselves are star icons,
-  // which do not appear in the page text, so only the skill list is captured.
-  // Require the 'Bid conversion' end boundary so a missing heading doesn't pull
-  // the rest of the page in.
+  // Rating per skill: the star values live in a `data-star_rating` DOM attribute,
+  // NOT in the page text — so prefer the DOM-extracted [{name, value}] the worker
+  // passes in. Fall back to a text-only skill list (bounded by 'Bid conversion')
+  // when no DOM data is available, e.g. in unit tests or if the markup changes.
   const rpStart = indexOf('Rating per skill')
   const rpEnd = indexOf('Bid conversion')
-  const ratingPerSkill = (rpStart >= 0 && rpEnd > rpStart)
+  const ratingNames = (rpStart >= 0 && rpEnd > rpStart)
     ? lines.slice(rpStart + 1, rpEnd).map((name) => ({ name }))
     : []
+  const domRatings = dom && Array.isArray(dom.ratingPerSkill) ? dom.ratingPerSkill : []
+  const ratingPerSkill = domRatings.length ? domRatings : ratingNames
 
   const userStats = {
     totalEarnings: [{ value: total }, { value: last30 }],
