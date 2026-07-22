@@ -85,6 +85,70 @@ class BidInsightsIngestTest extends TestCase
         $this->assertSame(39812345, $bid->raw['project_id']);
     }
 
+    private function liveBidItem(array $overrides = []): array
+    {
+        return array_merge([
+            'id' => 490511112,
+            'project_id' => 40595109,
+            'amount' => 675,
+            'description' => 'Enhancing user experience through geo-targeting…',
+            'rank' => 27,
+            'rating' => 0,
+            'time_submitted' => 1784616134,
+            'project_chats_initiated' => 1,
+            'project_invites' => 0,
+            'action_taken' => ['client_saw_your_bid' => false, 'client_saw_your_profile' => false],
+            'upgrades' => ['highlighted' => true, 'sealed' => false, 'sponsored' => false],
+        ], $overrides);
+    }
+
+    public function test_live_crawler_payload_keys_are_mapped(): void
+    {
+        $this->postWithToken([
+            'scraped_at' => '2026-07-21T06:42:54.273Z',
+            'crawl_type' => 'initial',
+            'bids' => [$this->liveBidItem()],
+        ])->assertOk()->assertJson(['created' => 1, 'skipped' => 0]);
+
+        $bid = BidInsight::where('project_id', 40595109)->firstOrFail();
+        $this->assertSame(490511112, $bid->bid_id);
+        $this->assertSame('675.00', (string) $bid->bid_amount);
+        $this->assertSame(27, $bid->bid_rank);
+        $this->assertSame('2026-07-21 06:42:14', $bid->time_submitted->format('Y-m-d H:i:s'));
+        $this->assertStringStartsWith('Enhancing user experience', $bid->description);
+        $this->assertSame(
+            ['client_saw_your_bid' => false, 'client_saw_your_profile' => false],
+            $bid->actions_taken
+        );
+        $this->assertSame(
+            ['project_chats_initiated' => 1, 'project_invites' => 0],
+            $bid->client_engagement
+        );
+        $this->assertSame(
+            ['highlighted' => true, 'sealed' => false, 'sponsored' => false],
+            $bid->upgrades
+        );
+    }
+
+    public function test_live_payload_recurring_changes_are_audited(): void
+    {
+        $this->postWithToken(['bids' => [$this->liveBidItem()]])->assertOk();
+
+        $this->postWithToken([
+            'bids' => [$this->liveBidItem([
+                'rank' => 31,
+                'action_taken' => ['client_saw_your_bid' => true, 'client_saw_your_profile' => false],
+            ])],
+        ])->assertOk()->assertJson(['updated' => 1, 'changes' => 2]);
+
+        $bid = BidInsight::where('project_id', 40595109)->firstOrFail();
+        $this->assertSame(31, $bid->bid_rank);
+        $this->assertSame(
+            ['actions_taken', 'bid_rank'],
+            $bid->changes()->pluck('field')->sort()->values()->all()
+        );
+    }
+
     public function test_item_without_project_id_is_skipped(): void
     {
         $item = $this->bidItem();
