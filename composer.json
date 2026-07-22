@@ -14,7 +14,6 @@
     "kreait/firebase-php": "^7",
     "laravel/framework": "^10.0",
     "laravel/sanctum": "^3.2",
-    "laravel/slack-notification-channel": "^3.0",
     "laravel/tinker": "^2.8"
   },
   "require-dev": {

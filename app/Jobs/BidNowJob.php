@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Bid;
-use App\Notifications\BidFailed;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -64,9 +63,6 @@ class BidNowJob implements ShouldQueue
                 $this->bid->bid_status = "Failed";
                 $body = json_decode($response->body());
                 $this->bid->error_message = $body->message;
-                if ($body->message != 'You must have the required skills to bid on this project.') {
-                    $this->bid->notify(new BidFailed($this->bid));
-                }
             }
             $this->bid->save();
         } catch (\Exception $e) {
@@ -74,7 +70,6 @@ class BidNowJob implements ShouldQueue
             $this->bid->bid_status = "Failed";
             $this->bid->error_message = "Something went wrong";
             $this->bid->save();
-            $this->bid->notify(new BidFailed($this->bid));
         }
     }
 }

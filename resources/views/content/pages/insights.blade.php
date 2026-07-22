@@ -6,6 +6,29 @@
     <script src="{{ asset('assets/vendor/libs/apex-charts/apexcharts.js') }}"></script>
 @endsection
 
+@section('page-style')
+    <style>
+        .trend-arrow { display: inline-block; }
+        .trend-up {
+            width: 0; height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 11px solid #71dd37;
+        }
+        .trend-down {
+            width: 0; height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-top: 11px solid #ff3e1d;
+        }
+        .trend-even {
+            width: 18px; height: 5px;
+            border-radius: 3px;
+            background: #a1acb8;
+        }
+    </style>
+@endsection
+
 @section('content')
     <h4 class="page-title">Insights</h4>
 
@@ -34,12 +57,14 @@
                     <h3 class="fw-bold mb-0">{{ $latest->bids_remaining ?? '—' }}</h3>
                 </div></div>
             </div>
-            <div class="col-md">
-                <div class="card h-100"><div class="card-body">
-                    <span class="text-muted">Unearned Bids</span>
-                    <h3 class="fw-bold mb-0">{{ $latest->unearned_bids ?? '—' }}</h3>
-                </div></div>
-            </div>
+            @if ($latest->unearned_bids !== null)
+                <div class="col-md">
+                    <div class="card h-100"><div class="card-body">
+                        <span class="text-muted">Unearned Bids</span>
+                        <h3 class="fw-bold mb-0">{{ $latest->unearned_bids }}</h3>
+                    </div></div>
+                </div>
+            @endif
             <div class="col-md">
                 <div class="card h-100"><div class="card-body">
                     <span class="text-muted">Overall Ranking</span>
@@ -79,13 +104,21 @@
                     <h5 class="mb-3">Bids per Milestone</h5>
                     @php
                         $bpm = $latest->bids_per_milestone ?? [];
-                        $bpmMarket = $bpm['marketplace'][0] ?? null;
+                        $bpmMarketRaw = $bpm['marketplace'] ?? null;
+                        $bpmMarket = is_array($bpmMarketRaw)
+                            ? ($bpmMarketRaw[0] ?? null)
+                            : ($bpmMarketRaw !== null ? ['value' => $bpmMarketRaw] : null);
                     @endphp
-                    <p class="mb-2"><span class="text-muted">You:</span>
-                        <span class="fw-bold">{{ $bpm['user'] ?? '—' }}</span></p>
                     @if ($bpmMarket)
-                        <h3 class="fw-bold mb-1">{{ $bpmMarket['value'] ?? '—' }}</h3>
-                        <small class="text-muted">{{ $bpmMarket['label'] ?? '' }}</small>
+                        <div class="text-center py-3">
+                            <h1 class="fw-bold text-primary display-5 mb-2">{{ $bpmMarket['value'] ?? '—' }}</h1>
+                            <p class="text-muted text-uppercase small mb-0">
+                                {{ $bpmMarket['label'] ?? 'How many bids our best freelancers need to make before receiving a milestone' }}
+                            </p>
+                        </div>
+                        @if (($bpm['user'] ?? null) !== null)
+                            <p class="text-center text-muted mb-0">You: <span class="fw-bold">{{ $bpm['user'] }}</span></p>
+                        @endif
                     @else
                         <p class="text-muted mb-0">No marketplace benchmark</p>
                     @endif
@@ -141,9 +174,8 @@
                 $skillTables = [
                     ['title' => 'Earnings per Skill', 'rows' => $latest->earnings_per_skill ?? [], 'col' => 'Earnings', 'value' => fn ($r) => $r['value'] ?? '—'],
                     ['title' => 'Rating per Skill', 'rows' => $latest->rating_per_skill ?? [], 'col' => 'Rating', 'value' => fn ($r) => isset($r['value']) ? number_format((float) $r['value'], 1) : '—'],
-                    ['title' => 'Ranking per Skill', 'rows' => $latest->ranking_per_skill ?? [], 'col' => 'Rank', 'value' => fn ($r) => $r['displayValue'] ?? '—'],
-                    ['title' => 'High Demand Skills', 'rows' => $latest->high_demand_skills ?? [], 'col' => 'Change', 'value' => fn ($r) => $r['displayValue'] ?? '—'],
-                    ['title' => 'Trending Skills', 'rows' => $latest->trending_skills ?? [], 'col' => 'Trend', 'value' => fn ($r) => $r['direction'] ?? '—'],
+                    ['title' => 'Ranking per Skill', 'rows' => $latest->ranking_per_skill ?? [], 'col' => 'Rank', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
+                    ['title' => 'High Demand Skills', 'rows' => $latest->high_demand_skills ?? [], 'col' => 'Change', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
                 ];
             @endphp
             @foreach ($skillTables as $table)
@@ -152,12 +184,19 @@
                         <h5 class="mb-3">{{ $table['title'] }}</h5>
                         @if (count($table['rows']))
                             <table class="table table-sm">
-                                <thead><tr><th>Skill</th><th class="text-end">{{ $table['col'] }}</th></tr></thead>
+                                @if ($table['col'] !== null)
+                                    <thead><tr><th>Skill</th><th class="text-end">{{ $table['col'] }}</th></tr></thead>
+                                @endif
                                 <tbody>
                                     @foreach (array_slice($table['rows'], 0, 20) as $row)
                                         <tr>
-                                            <td>{{ $row['label'] ?? $row['name'] ?? '' }}</td>
-                                            <td class="text-end">{{ $table['value']($row) }}</td>
+                                            <td>
+                                                <span class="badge rounded-pill {{ $loop->first ? 'bg-warning' : 'bg-primary' }} me-2">{{ $loop->iteration }}</span>
+                                                {{ $row['label'] ?? $row['name'] ?? '' }}
+                                            </td>
+                                            @if ($table['col'] !== null)
+                                                <td class="text-end">{{ $table['value']($row) }}</td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -171,6 +210,40 @@
                     </div></div>
                 </div>
             @endforeach
+
+            {{-- Trending skills: numbered list with direction arrows, like Freelancer's widget --}}
+            <div class="col-md-6">
+                <div class="card"><div class="card-body">
+                    <h5 class="mb-3">Trending Skills</h5>
+                    @php $trending = $latest->trending_skills ?? []; @endphp
+                    @if (count($trending))
+                        <ul class="list-group list-group-flush">
+                            @foreach (array_slice($trending, 0, 20) as $i => $row)
+                                @php
+                                    // Crawler omits direction for steady skills; Freelancer shows a dash there.
+                                    $dir = strtolower((string) ($row['direction'] ?? 'even'));
+                                @endphp
+                                <li class="list-group-item d-flex align-items-center px-0">
+                                    <span class="badge rounded-pill {{ $i === 0 ? 'bg-warning' : 'bg-primary' }} me-3">{{ $i + 1 }}</span>
+                                    <span class="flex-grow-1">{{ $row['label'] ?? $row['name'] ?? '' }}</span>
+                                    @if ($dir === 'up')
+                                        <span class="trend-arrow trend-up" title="Trending up"></span>
+                                    @elseif ($dir === 'down')
+                                        <span class="trend-arrow trend-down" title="Trending down"></span>
+                                    @else
+                                        <span class="trend-arrow trend-even" title="Steady"></span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if (count($trending) > 20)
+                            <small class="text-muted">Showing 20 of {{ count($trending) }}</small>
+                        @endif
+                    @else
+                        <p class="text-muted mb-0">No data</p>
+                    @endif
+                </div></div>
+            </div>
         </div>
     @endif
 @endsection
@@ -178,21 +251,31 @@
 @section('page-script')
     <script>
         (function () {
-            function series(section) {
-                return (section && section.datasets ? section.datasets : []).map(function (d) {
-                    return { name: d.label || '', data: (d.data || []).map(Number) };
-                });
+            // Supports both chart shapes: {labels, datasets: [{label, data}]} (old
+            // fixture captures) and {labels, values} (live crawler payloads).
+            function series(section, fallbackName) {
+                if (section && Array.isArray(section.datasets)) {
+                    return section.datasets.map(function (d) {
+                        return { name: d.label || '', data: (d.data || []).map(Number) };
+                    });
+                }
+                if (section && Array.isArray(section.values)) {
+                    return [{ name: fallbackName || '', data: section.values.map(Number) }];
+                }
+                return [];
             }
 
-            function render(elId, type, section, colors) {
+            function render(elId, type, section, colors, fallbackName) {
                 const el = document.querySelector('#' + elId);
                 if (! el || ! section || ! section.labels) { return; }
+                const s = series(section, fallbackName);
+                if (! s.length) { return; }
                 new ApexCharts(el, {
-                    chart: { type: type, height: 300, toolbar: { show: false }, stacked: type === 'bar' && section.datasets.length > 1 },
+                    chart: { type: type, height: 300, toolbar: { show: false }, stacked: type === 'bar' && s.length > 1 },
                     stroke: { curve: 'smooth', width: type === 'line' ? 3 : 0 },
                     colors: colors,
                     dataLabels: { enabled: false },
-                    series: series(section),
+                    series: s,
                     xaxis: { categories: section.labels },
                 }).render();
             }
@@ -204,10 +287,10 @@
                 viewsYear: @json($latest?->profile_views_year),
             };
 
-            render('chart-earnings', 'line', latest.earnings, ['#28c76f']);
-            render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff']);
-            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff']);
-            render('chart-views-year', 'line', latest.viewsYear, ['#696cff']);
+            render('chart-earnings', 'line', latest.earnings, ['#28c76f'], 'Amount Earned');
+            render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff'], 'Bids');
+            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff'], 'Views');
+            render('chart-views-year', 'line', latest.viewsYear, ['#696cff'], 'Views');
 
             const history = @json($history);
             const el = document.querySelector('#chart-history');

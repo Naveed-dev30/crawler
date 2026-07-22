@@ -62,9 +62,9 @@ class InsightsBidsPageTest extends TestCase
             ->assertSee('Sealed');
     }
 
-    public function test_paginates_at_50(): void
+    public function test_paginates_at_20(): void
     {
-        for ($i = 1; $i <= 55; $i++) {
+        for ($i = 1; $i <= 25; $i++) {
             BidInsight::create(['project_id' => $i, 'last_scraped_at' => now()]);
         }
 
