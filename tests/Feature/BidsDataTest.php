@@ -156,6 +156,10 @@ class BidsDataTest extends TestCase
         $this->assertSame(3, $res->json('lifetime.placed'));          // pending + completed + today's
         $this->assertSame(1, $res->json('lifetime.failed'));          // expired (non-skill)
         $this->assertSame(1, $res->json('lifetime.skillNotMatched'));
+        $this->assertIsInt($res->json('lifetime.placedCorrect'));
+        $this->assertIsInt($res->json('lifetime.placedIncorrect'));
+        $this->assertIsInt($res->json('lifetime.skillsInterested'));
+        $this->assertIsInt($res->json('lifetime.skillsNotInterested'));
         $this->assertIsInt($res->json('lifetime.notQualified'));
         $this->assertSame(1, $res->json('daily.placed'));             // only today's bid
         $this->assertSame(0, $res->json('daily.failed'));

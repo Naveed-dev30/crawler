@@ -28,15 +28,19 @@ class StatisticsController extends Controller
 
         $countsFor = function (?array $range) use ($placed, $failed) {
             $bids = fn () => Bid::query()->when($range, fn ($q) => $q->whereBetween('created_at', $range));
+            $skills = fn () => $bids()->whereIn('bid_status', $failed)->where('error_message', 'like', '%skill%');
 
             return [
                 'placed' => $bids()->whereIn('bid_status', $placed)->count(),
+                'placedCorrect' => $bids()->whereIn('bid_status', $placed)->where('check', 'Correct')->count(),
+                'placedIncorrect' => $bids()->whereIn('bid_status', $placed)->where('check', 'Incorrect')->count(),
                 'failed' => $bids()->whereIn('bid_status', $failed)
                     ->where(function ($s) {
                         $s->where('error_message', 'not like', '%skill%')->orWhereNull('error_message');
                     })->count(),
-                'skillNotMatched' => $bids()->whereIn('bid_status', $failed)
-                    ->where('error_message', 'like', '%skill%')->count(),
+                'skillNotMatched' => $skills()->count(),
+                'skillsInterested' => $skills()->where('interest', 'Interested')->count(),
+                'skillsNotInterested' => $skills()->where('interest', 'Not Interested')->count(),
                 'notQualified' => Proposal::notQualified()
                     ->when($range, fn ($q) => $q->whereBetween('created_at', $range))->count(),
             ];
