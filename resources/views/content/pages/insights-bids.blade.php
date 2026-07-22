@@ -81,10 +81,13 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card-body">
+        </div>
+
+        @if ($bids->hasPages())
+            <div class="mt-4 card px-4 pt-3">
                 {{ $bids->links('vendor.pagination.bootstrap-5') }}
             </div>
-        </div>
+        @endif
 
         {{-- Audit log modal --}}
         <div class="modal fade" id="changesModal" tabindex="-1" aria-hidden="true">
