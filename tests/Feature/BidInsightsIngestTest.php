@@ -149,6 +149,21 @@ class BidInsightsIngestTest extends TestCase
         );
     }
 
+    public function test_same_content_different_key_order_is_not_a_change(): void
+    {
+        $this->postWithToken(['bids' => [$this->liveBidItem([
+            'action_taken' => ['client_saw_your_bid' => false, 'client_saw_your_profile' => false],
+        ])]])->assertOk();
+
+        // Same values, reversed key order — must not create audit rows.
+        $this->postWithToken(['bids' => [$this->liveBidItem([
+            'action_taken' => ['client_saw_your_profile' => false, 'client_saw_your_bid' => false],
+        ])]])->assertOk()->assertJson(['updated' => 1, 'changes' => 0]);
+
+        $bid = BidInsight::where('project_id', 40595109)->firstOrFail();
+        $this->assertSame(0, $bid->changes()->count());
+    }
+
     public function test_item_without_project_id_is_skipped(): void
     {
         $item = $this->bidItem();
