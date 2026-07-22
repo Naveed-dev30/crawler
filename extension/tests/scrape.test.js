@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { scrapeGamification, scrapeInsights } from '../lib/scrape.js'
+import { scrapeGamification, scrapeUserStats, scrapeMarketplace } from '../lib/scrape.js'
 import gamificationCapture from '../captures/gamification.js'
 
 const read = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8')
@@ -41,36 +41,34 @@ test('gamification: empty on unrecognizable text', () => {
 })
 
 test('insights: total earnings and 30-day, in the order the controller reads', () => {
-  const out = scrapeInsights(read('insights-page.txt'), AT)
+  const out = scrapeUserStats(read('insights-page.txt'))
 
-  assert.equal(out.__empty, false)
+  assert.notEqual(out, null)
   // InsightsController reads userStats.totalEarnings[0].value and [1].value
-  assert.equal(out.userStats.totalEarnings[0].value, '$363,466.04')
-  assert.equal(out.userStats.totalEarnings[1].value, '$0.00')
-  assert.equal(out.scraped_at, AT)
-  assert.equal(out.marketplaceStats, null)
+  assert.equal(out.totalEarnings[0].value, '$363,466.04')
+  assert.equal(out.totalEarnings[1].value, '$0.00')
 })
 
 test('insights: bid summary and job proficiency', () => {
-  const out = scrapeInsights(read('insights-page.txt'), AT)
+  const out = scrapeUserStats(read('insights-page.txt'))
 
-  const remaining = out.userStats.bidSummary.find((b) => b.label === 'Bids Remaining')
+  const remaining = out.bidSummary.find((b) => b.label === 'Bids Remaining')
   assert.equal(remaining.value, 51)
 
-  const completed = out.userStats.jobProficiency.find((p) => p.label === 'Completed Jobs')
+  const completed = out.jobProficiency.find((p) => p.label === 'Completed Jobs')
   assert.equal(completed.value, '99%')
-  assert.equal(out.userStats.jobProficiency.length, 4)
+  assert.equal(out.jobProficiency.length, 4)
 })
 
 test('insights: earnings per skill pairs', () => {
-  const out = scrapeInsights(read('insights-page.txt'), AT)
+  const out = scrapeUserStats(read('insights-page.txt'))
 
-  assert.deepEqual(out.userStats.earningsPerSkill[0], { name: 'PHP', value: '$264,756.45' })
-  assert.ok(out.userStats.earningsPerSkill.length >= 5)
+  assert.deepEqual(out.earningsPerSkill[0], { name: 'PHP', value: '$264,756.45' })
+  assert.ok(out.earningsPerSkill.length >= 5)
 })
 
 test('insights: empty on unrecognizable text', () => {
-  assert.equal(scrapeInsights('just some navigation text', AT).__empty, true)
+  assert.equal(scrapeUserStats('just some navigation text'), null)
 })
 
 test('insights: a missing proficiency value does not steal the next section number', () => {
@@ -81,16 +79,39 @@ test('insights: a missing proficiency value does not steal the next section numb
     'ON BUDGET JOBS',           // <-- no value line for On Budget
     'REHIRE RATE', '24%', '24%',
   ].join('\n')
-  const out = scrapeInsights(text, 'T')
-  const onBudget = out.userStats.jobProficiency.find((p) => p.label === 'On Budget Jobs')
+  const out = scrapeUserStats(text)
+  const onBudget = out.jobProficiency.find((p) => p.label === 'On Budget Jobs')
   assert.equal(onBudget, undefined, 'On Budget must be absent, not stolen from Rehire Rate')
-  const rehire = out.userStats.jobProficiency.find((p) => p.label === 'Rehire Rate')
+  const rehire = out.jobProficiency.find((p) => p.label === 'Rehire Rate')
   assert.equal(rehire.value, '24%')
 })
 
 test('insights: not empty when only job proficiency rendered', () => {
   const text = ['Job proficiency', 'COMPLETED JOBS', '99%', '99%'].join('\n')
-  assert.equal(scrapeInsights(text, 'T').__empty, false)
+  assert.notEqual(scrapeUserStats(text), null)
+})
+
+test('marketplace: overall ranking, bids per milestone, and list sections', () => {
+  const out = scrapeMarketplace(read('marketplace-page.txt'))
+
+  assert.notEqual(out, null)
+  assert.equal(out.overallRanking[0].value, '25%')
+  assert.equal(out.bidsPerMilestoneMarketplace, '18.50')
+
+  assert.deepEqual(out.rankingPerSkill[0], { name: 'JSON', value: 'Top 9%' })
+  assert.ok(out.rankingPerSkill.length >= 10)
+
+  const photography = out.highDemandSkills.find((s) => s.name === 'Photography')
+  assert.equal(photography.value, '+48%')
+  const contentCreation = out.highDemandSkills.find((s) => s.name === 'Content Creation')
+  assert.equal(contentCreation.value, 'New')
+
+  assert.ok(out.trendingSkills.length >= 15)
+  assert.equal(out.trendingSkills[0].name, 'Graphic Design')
+})
+
+test('marketplace: empty on unrecognizable text', () => {
+  assert.equal(scrapeMarketplace('just navigation text'), null)
 })
 
 test('gamification: warns when no leaderboard row matches the profile', () => {

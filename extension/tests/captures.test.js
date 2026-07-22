@@ -4,7 +4,7 @@ import gamification from '../captures/gamification.js'
 import insights from '../captures/insights.js'
 import insightsBids from '../captures/insights-bids.js'
 import { CAPTURES } from '../captures/index.js'
-import { scrapeGamification, scrapeInsights } from '../lib/scrape.js'
+import { scrapeGamification } from '../lib/scrape.js'
 
 const AT = '2026-07-20T09:00:00.000Z'
 
@@ -20,7 +20,9 @@ test('every module has the required interface', () => {
     assert.ok(['hourly', 'daily'].includes(c.cadence), `${c.source} must declare an hourly/daily cadence`)
 
     if (c.mode === 'scrape') {
-      assert.equal(typeof c.scrape, 'function')
+      const single = typeof c.scrape === 'function'
+      const multi = Array.isArray(c.views) && c.views.length > 0 && typeof c.combine === 'function'
+      assert.ok(single || multi, `${c.source} scrape capture needs scrape() or views+combine`)
     } else {
       assert.ok(Array.isArray(c.requiredKeys) && c.requiredKeys.length > 0)
       assert.equal(typeof c.normalize, 'function')
@@ -42,8 +44,8 @@ test('gamification and insights are scrape-mode captures delegating to lib/scrap
   assert.equal(gamification.scrape, scrapeGamification)
 
   assert.equal(insights.mode, 'scrape')
-  assert.equal(typeof insights.scrape, 'function')
-  assert.equal(insights.scrape, scrapeInsights)
+  assert.equal(insights.views.length, 2)
+  assert.equal(typeof insights.combine, 'function')
 })
 
 test('bids stays on the interception path: path and requiredKeys still present', () => {

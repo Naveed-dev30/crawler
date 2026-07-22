@@ -66,7 +66,7 @@ const MONEY = /^\$[\d,]+\.\d{2}$/
 // missing value never steals a neighbouring metric's number.
 const isLabelLine = (l) => typeof l === 'string' && /^[A-Z][A-Z0-9 /&.-]+$/.test(l) && l.length > 2
 
-export function scrapeInsights(text, scrapedAt) {
+export function scrapeUserStats(text) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim())
   const indexOf = (label) => lines.findIndex((l) => l === label)
 
@@ -126,11 +126,73 @@ export function scrapeInsights(text, scrapedAt) {
     jobProficiency,
     earningsPerSkill,
   }
+  const empty = !total && !bidsRemaining && earningsPerSkill.length === 0 && jobProficiency.length === 0
+  return empty ? null : userStats
+}
+
+const PCT = /^[+-]\d+%$/
+const RANK = /^Top \d+%$/
+
+export function scrapeMarketplace(text) {
+  const lines = String(text ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length)
+  const idx = (label, from = 0) => lines.indexOf(label, from)
+
+  const sliceBetween = (start, end) => {
+    const i = idx(start)
+    if (i < 0) return []
+    const j = idx(end, i + 1)
+    return lines.slice(i + 1, j < 0 ? lines.length : j)
+  }
+
+  // High-demand skills: name then "+27%" / "-3%" / "New".
+  const highDemandSkills = []
+  {
+    let name = null
+    for (const l of sliceBetween('High demand skills', 'Trending skills')) {
+      if (PCT.test(l) || l === 'New') { if (name) { highDemandSkills.push({ name, value: l }); name = null } }
+      else name = l
+    }
+  }
+
+  // Trending skills: names only.
+  const trendingSkills = sliceBetween('Trending skills', 'Overall ranking').map((name) => ({ name }))
+
+  // Overall ranking: first "\d+%" after the heading.
+  let overall = null
+  {
+    const i = idx('Overall ranking')
+    if (i >= 0) for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) { if (/^\d+%$/.test(lines[j])) { overall = lines[j]; break } }
+  }
+
+  // Ranking per skill: name then "Top N%".
+  const rankingPerSkill = []
+  {
+    let name = null
+    for (const l of sliceBetween('Ranking per skill', 'Bids per milestone')) {
+      if (RANK.test(l)) { if (name) { rankingPerSkill.push({ name, value: l }); name = null } }
+      else name = l
+    }
+  }
+
+  // Bids per milestone: number after the heading.
+  let bpm = null
+  {
+    const i = idx('Bids per milestone')
+    if (i >= 0) for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) { if (/^\d+(\.\d+)?$/.test(lines[j])) { bpm = lines[j]; break } }
+  }
+
+  const empty = highDemandSkills.length === 0 && trendingSkills.length === 0 && !overall && rankingPerSkill.length === 0
+  if (empty) return null
 
   return {
-    __empty: !total && !bidsRemaining && earningsPerSkill.length === 0 && jobProficiency.length === 0,
-    scraped_at: scrapedAt,
-    userStats,
-    marketplaceStats: null,
+    overallRanking: overall ? [{ value: overall }] : [],
+    rankingPerSkill,
+    highDemandSkills,
+    trendingSkills,
+    bidsPerMilestoneMarketplace: bpm,
+    // These render without a numeric value on the page; kept null so the shape
+    // matches what InsightsController expects (arrayOrNull → null).
+    profileViewCountPastWeek: null,
+    profileViewCountPastYear: null,
   }
 }
