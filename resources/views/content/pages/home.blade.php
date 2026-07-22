@@ -521,12 +521,12 @@
                     'Bid review saved.',
                     check === 'Correct' ? '#28c76f' : '#ff3e1d'
                 );
-                const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
-                if (badge) {
-                    badge.textContent = check;
-                    badge.className = 'badge ' + (check === 'Correct' ? 'bg-success' : 'bg-danger');
+                // Re-fetch the panel so badge and buttons reflect the new state,
+                // and reload the table so the row buttons flip too.
+                const detail = await fetch('/bids/' + id + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (detail.ok) {
+                    el('bidOffcanvasContent').innerHTML = await detail.text();
                 }
-                // Keep the table's row buttons in sync with the panel
                 loadData();
             });
 
