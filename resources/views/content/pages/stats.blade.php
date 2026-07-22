@@ -7,24 +7,80 @@
 @endsection
 
 @section('content')
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <h4 class="page-title mb-0">Statistics</h4>
-        <div class="d-flex flex-wrap align-items-end gap-2" id="date-range">
-            <div>
-                <label class="form-label small text-muted mb-1" for="range-from">From</label>
-                <input type="date" class="form-control form-control-sm" id="range-from">
-            </div>
-            <div>
-                <label class="form-label small text-muted mb-1" for="range-to">To</label>
-                <input type="date" class="form-control form-control-sm" id="range-to">
-            </div>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
-                <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
-                <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
-                <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
-            </div>
-            <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
+    <h4 class="page-title mb-4">Statistics</h4>
+
+    {{-- Lifetime + today overview — not affected by the date range below --}}
+    <div class="row gy-4 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100"><div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted small text-uppercase fw-semibold">Lifetime</span>
+                    <span class="badge bg-label-primary rounded p-2 lh-1"><i class="bx bx-infinite"></i></span>
+                </div>
+                <div class="row text-center g-2">
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h4>
+                        <small class="text-muted">Bids Placed</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h4>
+                        <small class="text-muted">Failed</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h4>
+                        <small class="text-muted">Skills Not Matched</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h4>
+                        <small class="text-muted">Not Qualified</small>
+                    </div>
+                </div>
+            </div></div>
         </div>
+        <div class="col-md-6">
+            <div class="card h-100"><div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted small text-uppercase fw-semibold">Today <span class="fw-normal text-lowercase">(12:01 am – 11:59 pm)</span></span>
+                    <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
+                </div>
+                <div class="row text-center g-2">
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h4>
+                        <small class="text-muted">Bids Placed</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h4>
+                        <small class="text-muted">Failed</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h4>
+                        <small class="text-muted">Skills Not Matched</small>
+                    </div>
+                    <div class="col-3">
+                        <h4 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h4>
+                        <small class="text-muted">Not Qualified</small>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+
+    {{-- Date range filter (applies to the sections below only) --}}
+    <div class="d-flex flex-wrap justify-content-end align-items-end gap-2 mb-4" id="date-range">
+        <div>
+            <label class="form-label small text-muted mb-1" for="range-from">From</label>
+            <input type="date" class="form-control form-control-sm" id="range-from">
+        </div>
+        <div>
+            <label class="form-label small text-muted mb-1" for="range-to">To</label>
+            <input type="date" class="form-control form-control-sm" id="range-to">
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
+            <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
+            <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
+            <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
     </div>
 
     <!-- 24h snapshot cards -->
@@ -147,6 +203,23 @@
 
             const fromEl = document.querySelector('#range-from');
             const toEl = document.querySelector('#range-to');
+
+            // Lifetime/today overview — loaded once, independent of the date range
+            fetch('/stats/overview', { headers: { 'Accept': 'application/json' } })
+                .then(res => res.ok ? res.json() : null)
+                .then(o => {
+                    if (!o) return;
+                    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+                    set('ov-life-placed', o.lifetime.placed);
+                    set('ov-life-failed', o.lifetime.failed);
+                    set('ov-life-skills', o.lifetime.skillNotMatched);
+                    set('ov-life-nq', o.lifetime.notQualified);
+                    set('ov-day-placed', o.daily.placed);
+                    set('ov-day-failed', o.daily.failed);
+                    set('ov-day-skills', o.daily.skillNotMatched);
+                    set('ov-day-nq', o.daily.notQualified);
+                })
+                .catch(() => {});
 
             function ymd(d) {
                 return d.getFullYear() + '-'

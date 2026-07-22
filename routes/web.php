@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stats/countries', [StatisticsController::class, 'countries'])->name('stats.countries');
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');
+    Route::get('/stats/overview', [StatisticsController::class, 'overview'])->name('stats.overview');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
