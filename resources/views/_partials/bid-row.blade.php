@@ -4,11 +4,41 @@
         : ($bid->bid_status === 'pending' ? 'bg-label-warning' : 'bg-label-danger');
 @endphp
 <tr>
-    @php $checkTab = $checkTab ?? 'all'; @endphp
+    @php
+        $checkTab = $checkTab ?? 'all';
+        $skillTab = $skillTab ?? false;
+        $interestTab = $interestTab ?? 'all';
+        $idColor = '';
+        if (!empty($completed)) {
+            $idColor = $checkTab === 'Correct' ? 'text-success' : ($checkTab === 'Incorrect' ? 'text-danger' : '');
+        } elseif ($skillTab) {
+            $idColor = $interestTab === 'Interested' ? 'text-success' : ($interestTab === 'Not Interested' ? 'text-danger' : '');
+        }
+    @endphp
     <td>
-        <span class="fw-semibold {{ $checkTab === 'Correct' ? 'text-success' : ($checkTab === 'Incorrect' ? 'text-danger' : '') }}">
+        <span class="fw-semibold {{ $idColor }}">
             {{ $bid->proposal->project_id }}
         </span>
+        @if ($skillTab)
+            <div class="d-flex gap-1 mt-2">
+                @if ($interestTab !== 'Interested')
+                    <button type="button"
+                            class="btn rounded-pill d-inline-flex align-items-center bid-interest-btn {{ $bid->interest === 'Interested' ? 'btn-success' : 'btn-outline-success' }}"
+                            style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                            data-bid-id="{{ $bid->id }}" data-interest="Interested">
+                        <i class="bx bx-check me-1"></i>Interested
+                    </button>
+                @endif
+                @if ($interestTab !== 'Not Interested')
+                    <button type="button"
+                            class="btn rounded-pill d-inline-flex align-items-center bid-interest-btn {{ $bid->interest === 'Not Interested' ? 'btn-danger' : 'btn-outline-danger' }}"
+                            style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                            data-bid-id="{{ $bid->id }}" data-interest="Not Interested">
+                        <i class="bx bx-x me-1"></i>Not Interested
+                    </button>
+                @endif
+            </div>
+        @endif
         @if (!empty($completed))
             <div class="d-flex gap-1 mt-2">
                 @if ($checkTab !== 'Correct')
@@ -30,7 +60,16 @@
             </div>
         @endif
     </td>
-    <td>{{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}</td>
+    <td>
+        {{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}
+        @if ($skillTab && is_array($bid->proposal->skills) && count($bid->proposal->skills))
+            <div class="d-flex flex-wrap gap-1 mt-2" style="max-width: 320px;">
+                @foreach ($bid->proposal->skills as $skill)
+                    <span class="badge rounded-pill bg-label-secondary fw-normal">{{ is_array($skill) ? ($skill['name'] ?? '') : $skill }}</span>
+                @endforeach
+            </div>
+        @endif
+    </td>
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
     @php
         $isFailure = in_array(strtolower($bid->bid_status), ['failed', 'expired'], true);
