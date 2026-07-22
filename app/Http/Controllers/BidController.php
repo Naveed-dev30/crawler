@@ -109,8 +109,14 @@ class BidController extends Controller
       : 'completed';
     $isCompleted = $tab === 'completed';
 
+    // Bids Placed sub-tabs: all / Correct / Incorrect review states
+    $checkTab = in_array($request->query('check'), ['Correct', 'Incorrect'], true)
+      ? $request->query('check')
+      : 'all';
+
     $bids = (clone $base)
       ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
+      ->when($isCompleted && $checkTab !== 'all', fn ($q) => $q->where('bids.check', $checkTab))
       ->when($tab === 'skill-not-matched', fn ($q) => $q
         ->whereIn('bids.bid_status', $failed)
         ->where('bids.error_message', 'like', '%skill%'))
@@ -127,7 +133,7 @@ class BidController extends Controller
 
     $rowsHtml = '';
     foreach ($bids as $bid) {
-      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid, 'completed' => $isCompleted])->render();
+      $rowsHtml .= view('_partials.bid-row', ['bid' => $bid, 'completed' => $isCompleted, 'checkTab' => $checkTab])->render();
     }
     if ($bids->isEmpty()) {
       $colspan = $isCompleted ? 9 : 7;

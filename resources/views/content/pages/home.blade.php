@@ -212,6 +212,14 @@
                 <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
         </div>
+        {{-- Bids Placed only: review-state sub-tabs --}}
+        <div class="px-3 py-2 border-bottom" id="bids-check-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Correct">Correct</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Incorrect">Incorrect</button></li>
+            </ul>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
@@ -265,6 +273,7 @@
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             let currentTab = 'completed';
+            let currentCheck = 'all';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -274,6 +283,7 @@
                 const p = new URLSearchParams();
                 p.set('tab', currentTab);
                 p.set('page', currentPage);
+                if (currentTab === 'completed' && currentCheck !== 'all') p.set('check', currentCheck);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
                 const min = el('f-min').value; if (min) p.set('min', min);
@@ -304,6 +314,7 @@
                 el('sub-expired').textContent = sc.expired || 0;
                 document.querySelectorAll('.completed-col').forEach(th =>
                     th.classList.toggle('d-none', currentTab !== 'completed'));
+                el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
                 const nq = currentTab === 'not-qualified';
                 el('thead-bids').classList.toggle('d-none', nq);
                 el('thead-nq').classList.toggle('d-none', !nq);
@@ -353,8 +364,44 @@
                     document.querySelectorAll('#bids-tabs .nav-link').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
+                    // Leaving/entering Bids Placed resets the review sub-tab
+                    currentCheck = 'all';
+                    document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.checkTab === 'all'));
                     reload();
                 });
+            });
+
+            // Review sub-tabs (Bids Placed only)
+            document.querySelectorAll('#bids-check-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCheck = this.dataset.checkTab;
+                    reload();
+                });
+            });
+
+            // Delegated: Correct/Incorrect buttons on table rows
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.bid-check-btn');
+                if (!btn) return;
+                const check = btn.dataset.check;
+                const res = await fetch('/updateBidCheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ bid_id: btn.dataset.bidId, check: check })
+                });
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Bid review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
+                loadData();
             });
 
             // Delegated: pagination links

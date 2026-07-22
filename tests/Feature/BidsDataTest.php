@@ -56,6 +56,39 @@ class BidsDataTest extends TestCase
         $this->assertStringNotContainsString('expired', $res->json('rowsHtml'));
     }
 
+    public function test_check_sub_tab_filters_and_toggles_buttons(): void
+    {
+        $p = Proposal::factory()->create(['type' => 'fixed', 'title' => 'Check filter', 'project_id' => 424242, 'country' => 'US']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 111, 'check' => 'Correct']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 222, 'check' => 'Incorrect']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 333, 'check' => 'Unreviewed']);
+
+        $user = User::factory()->create();
+
+        // All: every row, both buttons rendered
+        $all = $this->actingAs($user)->getJson('/bids/data?tab=completed')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $all);
+        $this->assertStringContainsString('222', $all);
+        $this->assertStringContainsString('333', $all);
+        $this->assertStringContainsString('data-check="Correct"', $all);
+        $this->assertStringContainsString('data-check="Incorrect"', $all);
+
+        // Correct: only the Correct row; only the Incorrect (shift) button
+        $correct = $this->actingAs($user)->getJson('/bids/data?tab=completed&check=Correct')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $correct);
+        $this->assertStringNotContainsString('222', $correct);
+        $this->assertStringNotContainsString('333', $correct);
+        $this->assertStringNotContainsString('data-check="Correct"', $correct);
+        $this->assertStringContainsString('data-check="Incorrect"', $correct);
+
+        // Incorrect: only the Incorrect row; only the Correct (shift) button
+        $incorrect = $this->actingAs($user)->getJson('/bids/data?tab=completed&check=Incorrect')->assertOk()->json('rowsHtml');
+        $this->assertStringNotContainsString('111', $incorrect);
+        $this->assertStringContainsString('222', $incorrect);
+        $this->assertStringContainsString('data-check="Correct"', $incorrect);
+        $this->assertStringNotContainsString('data-check="Incorrect"', $incorrect);
+    }
+
     public function test_failed_tab_excludes_skill_errors(): void
     {
         $this->seedBids();
