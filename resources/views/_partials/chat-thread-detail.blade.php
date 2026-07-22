@@ -71,9 +71,13 @@
                 <div style="white-space: pre-wrap;">{{ $message->message }}</div>
                 @foreach ($message->attachments as $attachment)
                     <div class="mt-2">
-                        <a href="{{ $attachment->url }}" target="_blank" rel="noopener">
-                            <i class="bx bx-paperclip"></i> {{ $attachment->filename }}
-                        </a>
+                        @if (\Illuminate\Support\Str::startsWith((string) $attachment->url, ['http://', 'https://']))
+                            <a href="{{ $attachment->url }}" target="_blank" rel="noopener noreferrer">
+                                <i class="bx bx-paperclip"></i> {{ $attachment->filename }}
+                            </a>
+                        @else
+                            <span class="text-muted"><i class="bx bx-paperclip"></i> {{ $attachment->filename }}</span>
+                        @endif
                     </div>
                 @endforeach
             </div>
