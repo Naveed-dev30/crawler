@@ -3,16 +3,26 @@
 
 @section('title', 'Chats')
 
+@section('vendor-style')
+    <link rel="stylesheet" href="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.css') }}"/>
+@endsection
+
+@section('vendor-script')
+    <script src="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js') }}"></script>
+@endsection
+
 @section('content')
+    <h4 class="page-title">Chats</h4>
+
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <h5 class="mb-0">Chats</h5>
+        <div class="card-header d-flex justify-content-end align-items-center flex-wrap gap-3">
             <form method="GET" action="{{ route('chats') }}" id="chats-filter-form"
                   class="d-flex align-items-center gap-2">
                 <input type="search" class="form-control" name="search" id="chats-search"
                        placeholder="Search project, title or user…" value="{{ request('search') }}"
                        style="min-width: 240px;">
-                <select class="form-select" name="status" style="width: 140px;" onchange="this.form.submit()">
+                <select class="selectpicker" data-style="btn-default" data-width="140px"
+                        name="status" onchange="this.form.submit()">
                     <option value="">All</option>
                     <option value="fresh"@selected(request('status') === 'fresh')>Fresh</option>
                     <option value="answered"@selected(request('status') === 'answered')>Answered</option>
