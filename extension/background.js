@@ -150,33 +150,52 @@ async function runOne(capture) {
   return capture.mode === 'scrape' ? runScrape(capture) : runIntercept(capture)
 }
 
+async function readPage(tabId) {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (limit) => ({
+      url: location.href,
+      text: document.body ? document.body.innerText : '',
+      html: document.documentElement.outerHTML.slice(0, limit),
+    }),
+    args: [LOGIN_GUARD_HTML_LIMIT],
+  })
+  return result
+}
+
 async function runScrape(capture) {
   let tab = null
   try {
-    tab = await chrome.tabs.create({ url: capture.url, active: capture.activeTab === true })
+    const views = capture.views || null
+    tab = await chrome.tabs.create({ url: views ? views[0].url : capture.url, active: capture.activeTab === true })
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
-    // Charts/tables render after load; give them a moment.
-    await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
-
-    const [{ result: page }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (limit) => ({
-        url: location.href,
-        text: document.body ? document.body.innerText : '',
-        html: document.documentElement.outerHTML.slice(0, limit),
-      }),
-      args: [LOGIN_GUARD_HTML_LIMIT],
-    })
-
-    assertLoggedIn({ url: page.url, status: 200 }, page.html)
-
     const scrapedAt = new Date().toISOString()
-    const body = capture.scrape(page.text, scrapedAt)
+
+    let body
+    if (views) {
+      const collected = {}
+      for (let i = 0; i < views.length; i++) {
+        // Subsequent views are hash-route switches on the same SPA — no full
+        // reload fires, so just change the hash and let it render.
+        if (i > 0) await chrome.tabs.update(tab.id, { url: views[i].url })
+        await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
+        const page = await readPage(tab.id)
+        assertLoggedIn({ url: page.url, status: 200 }, page.html)
+        collected[views[i].key] = views[i].scrape(page.text)
+      }
+      body = capture.combine(collected, scrapedAt)
+    } else {
+      // Charts/tables render after load; give them a moment.
+      await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
+      const page = await readPage(tab.id)
+      assertLoggedIn({ url: page.url, status: 200 }, page.html)
+      body = capture.scrape(page.text, scrapedAt)
+    }
 
     if (!body || body.__empty) {
       const error = new Error(`${capture.source}: nothing scraped from the page`)
       error.fatal = true
-      error.diagnostics = { textSample: String(page.text || '').slice(0, 1500), loadTimedOut }
+      error.diagnostics = { loadTimedOut }
       throw error
     }
     delete body.__empty
