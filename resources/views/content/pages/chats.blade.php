@@ -90,7 +90,9 @@
         </div>
     @endif
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="chatOffcanvas" style="width: 480px;">
+    {{-- Left slide-over, bids-page behaviour: no backdrop so the table stays clickable; scrollable body --}}
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="chatOffcanvas" data-bs-backdrop="false" data-bs-scroll="true"
+         style="width: 40rem; max-width: 95vw;">
         <div class="offcanvas-header border-bottom">
             <h5 class="offcanvas-title">Thread Detail</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
