@@ -67,4 +67,43 @@ class ChatsPageTest extends TestCase
             ->assertOk()
             ->assertSee('No chat threads yet');
     }
+
+    public function test_search_matches_project_id_title_and_assignee(): void
+    {
+        $sara = User::factory()->create(['role' => 'mobile', 'name' => 'Sara Malik']);
+        $match = Thread::factory()->create(['project_id' => 777001, 'assigned_user_id' => $sara->id]);
+        Thread::factory()->create(['project_id' => 888002]);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get('/chats?search=777001')
+            ->assertOk()->assertSee('777001')->assertDontSee('888002');
+
+        $this->actingAs($admin)->get('/chats?search=Sara')
+            ->assertOk()->assertSee('777001')->assertDontSee('888002');
+    }
+
+    public function test_status_filter(): void
+    {
+        Thread::factory()->create(['project_id' => 111001, 'status' => 'fresh']);
+        Thread::factory()->create(['project_id' => 222002, 'status' => 'replied']);
+        Thread::factory()->create(['project_id' => 333003, 'blocked' => true]);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get('/chats?status=replied')
+            ->assertOk()->assertSee('222002')->assertDontSee('111001');
+
+        $this->actingAs($admin)->get('/chats?status=blocked')
+            ->assertOk()->assertSee('333003')->assertDontSee('222002');
+    }
+
+    public function test_paginates_at_20(): void
+    {
+        Thread::factory()->count(25)->create();
+
+        $this->actingAs($this->admin())->get('/chats')
+            ->assertOk()
+            ->assertSee('page=2');
+    }
 }
