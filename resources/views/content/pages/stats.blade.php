@@ -106,21 +106,28 @@
     </div>
 
     {{-- Date range filter (applies to the sections below only) --}}
-    <div class="d-flex flex-wrap justify-content-end align-items-end gap-2 mb-4" id="date-range">
-        <div>
-            <label class="form-label small text-muted mb-1" for="range-from">From</label>
-            <input type="date" class="form-control form-control-sm" id="range-from">
+    <div class="card mb-4">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span class="text-muted small text-uppercase fw-semibold d-inline-flex align-items-center">
+                <i class="bx bx-calendar me-2"></i>Date Range
+            </span>
+            <div class="d-flex flex-wrap align-items-end gap-2" id="date-range">
+                <div>
+                    <label class="form-label small text-muted mb-1" for="range-from">From</label>
+                    <input type="date" class="form-control form-control-sm" id="range-from">
+                </div>
+                <div>
+                    <label class="form-label small text-muted mb-1" for="range-to">To</label>
+                    <input type="date" class="form-control form-control-sm" id="range-to">
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
+                    <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
+                    <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
+                    <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
+                </div>
+                <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
+            </div>
         </div>
-        <div>
-            <label class="form-label small text-muted mb-1" for="range-to">To</label>
-            <input type="date" class="form-control form-control-sm" id="range-to">
-        </div>
-        <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
-            <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
-            <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
-            <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
-        </div>
-        <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
     </div>
 
     <!-- 24h snapshot cards -->
