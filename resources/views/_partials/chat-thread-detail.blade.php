@@ -1,5 +1,7 @@
 {{-- resources/views/_partials/chat-thread-detail.blade.php --}}
-@php($title = $thread->proposal->title ?? "Project {$thread->project_id}")
+@php
+    $title = $thread->proposal->title ?? "Project {$thread->project_id}";
+@endphp
 
 <div class="p-1">
     {{-- Header --}}
@@ -43,15 +45,26 @@
             </li>
         @endif
         @foreach ($thread->logs as $log)
+            @php
+                $fromLabel = $log->fromUser
+                    ? $log->fromUser->name . ($log->fromUser->escalation_ladder !== null ? " (ladder {$log->fromUser->escalation_ladder})" : '')
+                    : '—';
+                $toLabel = $log->toUser
+                    ? $log->toUser->name . ($log->toUser->escalation_ladder !== null ? " (ladder {$log->toUser->escalation_ladder})" : '')
+                    : '—';
+            @endphp
             <li class="mb-2">
                 @if ($log->type === 'escalation')
                     <i class="bx bx-up-arrow-alt text-danger me-1"></i>
-                    Escalated: {{ $log->fromUser?->name ?? '—' }} → {{ $log->toUser?->name ?? '—' }}
+                    Escalated: {{ $fromLabel }} → {{ $toLabel }}
+                    <small class="text-muted d-block ms-4">
+                        No reply within the escalation window · {{ $log->created_at?->format('M j, Y H:i') }}
+                    </small>
                 @else
                     <i class="bx bx-transfer text-primary me-1"></i>
-                    Reassigned: {{ $log->fromUser?->name ?? '—' }} → {{ $log->toUser?->name ?? '—' }}
+                    Reassigned: {{ $fromLabel }} → {{ $toLabel }}
+                    <small class="text-muted d-block ms-4">{{ $log->created_at?->format('M j, Y H:i') }}</small>
                 @endif
-                <small class="text-muted d-block ms-4">{{ $log->created_at?->format('M j, Y H:i') }}</small>
             </li>
         @endforeach
         @if (! $firstAssignee && $thread->logs->isEmpty())
