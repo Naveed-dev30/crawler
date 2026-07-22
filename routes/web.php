@@ -59,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
+        Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');
