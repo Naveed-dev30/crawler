@@ -15,7 +15,7 @@
                 <select class="form-select" name="status" style="width: 140px;" onchange="this.form.submit()">
                     <option value="">All</option>
                     <option value="fresh"@selected(request('status') === 'fresh')>Fresh</option>
-                    <option value="replied"@selected(request('status') === 'replied')>Replied</option>
+                    <option value="answered"@selected(request('status') === 'answered')>Answered</option>
                     <option value="blocked"@selected(request('status') === 'blocked')>Blocked</option>
                 </select>
             </form>
