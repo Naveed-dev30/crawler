@@ -77,6 +77,18 @@ test('insights: rating per skill captures the skill list (ratings are star icons
   ])
 })
 
+test('insights: rating per skill uses DOM star values when the worker supplies them', () => {
+  // The worker extracts each skill's data-star_rating attribute and passes it as
+  // dom.ratingPerSkill; the scraper must prefer that over the text-only name list.
+  const dom = { ratingPerSkill: [{ name: 'WooCommerce', value: '5.0' }, { name: 'Laravel', value: '4.8' }] }
+  const out = scrapeUserStats(read('insights-page.txt'), dom)
+
+  assert.deepEqual(out.ratingPerSkill, [
+    { name: 'WooCommerce', value: '5.0' },
+    { name: 'Laravel', value: '4.8' },
+  ])
+})
+
 test('insights: rating per skill is bounded — a missing end heading yields none', () => {
   // '51'/'BIDS REMAINING' keeps userStats non-empty; the rating section has no
   // 'Bid conversion' end heading, so it must not pull in the footer that follows.

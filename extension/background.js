@@ -153,11 +153,37 @@ async function runOne(capture) {
 async function readPage(tabId) {
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: (limit) => ({
-      url: location.href,
-      text: document.body ? document.body.innerText : '',
-      html: document.documentElement.outerHTML.slice(0, limit),
-    }),
+    func: (limit) => {
+      // Some values render only as DOM attributes, not as page text. The
+      // "Rating per skill" card stores each rating in `data-star_rating`, so
+      // pull those out here alongside the innerText. Guarded so a markup change
+      // degrades to an empty list rather than breaking the whole read.
+      let ratingPerSkill = []
+      try {
+        const card = Array.from(document.querySelectorAll('.StatCard')).find((c) => {
+          const t = c.querySelector('.StatCard-header-title')
+          return t && t.textContent.trim() === 'Rating per skill'
+        })
+        if (card) {
+          ratingPerSkill = Array.from(card.querySelectorAll('.StatTypeList-row'))
+            .map((row) => {
+              const nameEl = row.querySelector('.StatTypeList-row-name')
+              const ratingEl = row.querySelector('[data-star_rating]')
+              const name = nameEl ? nameEl.textContent.trim() : null
+              return name ? { name, value: ratingEl ? ratingEl.getAttribute('data-star_rating') : null } : null
+            })
+            .filter(Boolean)
+        }
+      } catch (e) {
+        ratingPerSkill = []
+      }
+      return {
+        url: location.href,
+        text: document.body ? document.body.innerText : '',
+        html: document.documentElement.outerHTML.slice(0, limit),
+        dom: { ratingPerSkill },
+      }
+    },
     args: [LOGIN_GUARD_HTML_LIMIT],
   })
   return result
@@ -181,7 +207,7 @@ async function runScrape(capture) {
         await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
         const page = await readPage(tab.id)
         assertLoggedIn({ url: page.url, status: 200 }, page.html)
-        collected[views[i].key] = views[i].scrape(page.text)
+        collected[views[i].key] = views[i].scrape(page.text, page.dom)
       }
       body = capture.combine(collected, scrapedAt)
     } else {
