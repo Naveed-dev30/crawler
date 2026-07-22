@@ -160,7 +160,9 @@ class BidInsightsController extends Controller
             return null;
         }
         if (is_array($value)) {
-            return json_encode($value);
+            // Key order varies between crawler payloads and DB round-trips;
+            // sort so identical content never registers as a change.
+            return json_encode($this->ksortRecursive($value));
         }
         if (is_bool($value)) {
             return $value ? '1' : '0';
@@ -170,6 +172,18 @@ class BidInsightsController extends Controller
         }
 
         return (string) $value;
+    }
+
+    private function ksortRecursive(array $value): array
+    {
+        foreach ($value as &$item) {
+            if (is_array($item)) {
+                $item = $this->ksortRecursive($item);
+            }
+        }
+        ksort($value);
+
+        return $value;
     }
 
     private function stringify(mixed $value): ?string
@@ -204,7 +218,7 @@ class BidInsightsController extends Controller
 
     public function page()
     {
-        $bids = BidInsight::orderByDesc('last_scraped_at')->paginate(50);
+        $bids = BidInsight::orderByDesc('last_scraped_at')->paginate(20);
 
         return view('content.pages.insights-bids', ['bids' => $bids]);
     }

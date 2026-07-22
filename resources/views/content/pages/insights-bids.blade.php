@@ -2,6 +2,13 @@
 
 @section('title', 'Bid Insights')
 
+@section('page-style')
+    <style>
+        /* Old/new values can be long JSON blobs — wrap, don't overflow. */
+        #changesModal td { word-break: break-word; white-space: normal; }
+    </style>
+@endsection
+
 @section('content')
     <h4 class="page-title">Bid Insights</h4>
 
@@ -91,7 +98,7 @@
 
         {{-- Audit log modal --}}
         <div class="modal fade" id="changesModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Change History — Project <span id="changesProjectId"></span></h5>
