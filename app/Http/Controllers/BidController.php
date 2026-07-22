@@ -67,31 +67,6 @@ class BidController extends Controller
       'failed' => (clone $base)->whereIn('bids.bid_status', $failed)->count(),
     ];
 
-    // Overview stats: never affected by the page filters. Daily = today in GMT+5.
-    $dayStart = Carbon::now('Asia/Karachi')->startOfDay()->setTimezone(config('app.timezone'));
-    $dayEnd = Carbon::now('Asia/Karachi')->endOfDay()->setTimezone(config('app.timezone'));
-
-    $overviewFor = function (?array $range) use ($placed, $failed) {
-      $bids = fn () => Bid::query()->when($range, fn ($q) => $q->whereBetween('created_at', $range));
-
-      return [
-        'placed' => $bids()->whereIn('bid_status', $placed)->count(),
-        'failed' => $bids()->whereIn('bid_status', $failed)
-          ->where(function ($s) {
-            $s->where('error_message', 'not like', '%skill%')->orWhereNull('error_message');
-          })->count(),
-        'skillNotMatched' => $bids()->whereIn('bid_status', $failed)
-          ->where('error_message', 'like', '%skill%')->count(),
-        'notQualified' => \App\Models\Proposal::notQualified()
-          ->when($range, fn ($q) => $q->whereBetween('created_at', $range))->count(),
-      ];
-    };
-
-    $overview = [
-      'lifetime' => $overviewFor(null),
-      'daily' => $overviewFor([$dayStart, $dayEnd]),
-    ];
-
     $statusCounts = (clone $base)
       ->whereNotIn('bids.bid_status', ['Project Missing', 'Skill Missing', 'Handle'])
       ->select('bids.bid_status as s')
@@ -129,7 +104,6 @@ class BidController extends Controller
         'rowsHtml' => $rowsHtml,
         'paginationHtml' => $proposals->links('vendor.pagination.bootstrap-5')->render(),
         'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
-        'overview' => $overview,
       ]);
     }
 
@@ -190,7 +164,6 @@ class BidController extends Controller
       'rowsHtml' => $rowsHtml,
       'paginationHtml' => $bids->links('vendor.pagination.bootstrap-5')->render(),
       'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
-      'overview' => $overview,
     ]);
   }
 

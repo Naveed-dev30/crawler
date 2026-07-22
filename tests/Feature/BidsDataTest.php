@@ -144,24 +144,22 @@ class BidsDataTest extends TestCase
             ->assertStatus(404);
     }
 
-    public function test_overview_stats_ignore_filters(): void
+    public function test_stats_overview_lifetime_and_daily(): void
     {
         $this->seedBids();
+        // One bid created "today" (test now frozen at 2026-07-15 12:00)
+        $p = Proposal::factory()->create(['project_id' => 999111]);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'created_at' => '2026-07-15 08:00:00']);
 
-        // Heavily filtered request — overview must still count everything
-        $res = $this->actingAs(User::factory()->create())
-            ->getJson('/bids/data?tab=completed&min=99999&q=nomatch')
-            ->assertOk();
+        $res = $this->actingAs(User::factory()->create())->getJson('/stats/overview')->assertOk();
 
-        $overview = $res->json('overview');
-        $this->assertSame(2, $overview['lifetime']['placed']);   // pending + completed
-        $this->assertSame(1, $overview['lifetime']['failed']);   // expired (non-skill)
-        $this->assertSame(1, $overview['lifetime']['skillNotMatched']);
-        $this->assertArrayHasKey('notQualified', $overview['lifetime']);
-        // seeded bids are from 2026-07-10..13; "today" is frozen at 2026-07-15 → daily all zero
-        $this->assertSame(0, $overview['daily']['placed']);
-        $this->assertSame(0, $overview['daily']['failed']);
-        $this->assertSame(0, $overview['daily']['skillNotMatched']);
+        $this->assertSame(3, $res->json('lifetime.placed'));          // pending + completed + today's
+        $this->assertSame(1, $res->json('lifetime.failed'));          // expired (non-skill)
+        $this->assertSame(1, $res->json('lifetime.skillNotMatched'));
+        $this->assertIsInt($res->json('lifetime.notQualified'));
+        $this->assertSame(1, $res->json('daily.placed'));             // only today's bid
+        $this->assertSame(0, $res->json('daily.failed'));
+        $this->assertSame(0, $res->json('daily.skillNotMatched'));
     }
 
     public function test_failed_tab_excludes_skill_errors(): void

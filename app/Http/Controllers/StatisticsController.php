@@ -14,6 +14,40 @@ class StatisticsController extends Controller
         return view('content.pages.stats');
     }
 
+    /**
+     * Lifetime + daily category counts. Never affected by the page's date
+     * range — daily means today in GMT+5 (00:00–23:59 Asia/Karachi).
+     */
+    public function overview()
+    {
+        $placed = ['pending', 'completed'];
+        $failed = ['failed', 'expired'];
+
+        $dayStart = Carbon::now('Asia/Karachi')->startOfDay()->setTimezone(config('app.timezone'));
+        $dayEnd = Carbon::now('Asia/Karachi')->endOfDay()->setTimezone(config('app.timezone'));
+
+        $countsFor = function (?array $range) use ($placed, $failed) {
+            $bids = fn () => Bid::query()->when($range, fn ($q) => $q->whereBetween('created_at', $range));
+
+            return [
+                'placed' => $bids()->whereIn('bid_status', $placed)->count(),
+                'failed' => $bids()->whereIn('bid_status', $failed)
+                    ->where(function ($s) {
+                        $s->where('error_message', 'not like', '%skill%')->orWhereNull('error_message');
+                    })->count(),
+                'skillNotMatched' => $bids()->whereIn('bid_status', $failed)
+                    ->where('error_message', 'like', '%skill%')->count(),
+                'notQualified' => Proposal::notQualified()
+                    ->when($range, fn ($q) => $q->whereBetween('created_at', $range))->count(),
+            ];
+        };
+
+        return response()->json([
+            'lifetime' => $countsFor(null),
+            'daily' => $countsFor([$dayStart, $dayEnd]),
+        ]);
+    }
+
     public function bids(Request $request)
     {
         $granularity = $this->resolveGranularity($request);
