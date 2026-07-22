@@ -17,6 +17,7 @@
                         <tr>
                             <th>Project</th>
                             <th>Time to Bid</th>
+                            <th>Submitted</th>
                             <th>Bid Amount</th>
                             <th>Client</th>
                             <th>Bid Rank</th>
@@ -45,6 +46,7 @@
                                         —
                                     @endif
                                 </td>
+                                <td>{{ $bid->time_submitted?->format('Y-m-d H:i') ?? '—' }}</td>
                                 <td>{{ $bid->bid_amount !== null ? number_format($bid->bid_amount, 2) . ' ' . ($bid->bid_currency ?? '') : '—' }}</td>
                                 <td>
                                     {{ $bid->client_country ?? '—' }}
@@ -80,7 +82,7 @@
                 </table>
             </div>
             <div class="card-body">
-                {{ $bids->links() }}
+                {{ $bids->links('vendor.pagination.bootstrap-5') }}
             </div>
         </div>
 
