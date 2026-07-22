@@ -59,6 +59,33 @@ class InsightsPageTest extends TestCase
         $res->assertSee('21.70');
     }
 
+    public function test_renders_live_crawler_shape(): void
+    {
+        InsightSnapshot::create([
+            'scraped_at' => '2026-07-21 06:42:51',
+            'earnings_total' => 363473.34,
+            'earnings_30d' => 0,
+            'bids_remaining' => 48,
+            'job_proficiency' => [
+                ['label' => 'Completed Jobs', 'value' => '99%'],
+                ['label' => 'Rehire Rate', 'value' => '24%'],
+            ],
+            'earnings_per_skill' => [
+                ['name' => 'PHP', 'value' => '$264,759.91'],
+                ['name' => 'Website Design', 'value' => '$231,679.90'],
+            ],
+            'raw' => '{}',
+        ]);
+
+        $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
+        $res->assertSee('Completed Jobs');
+        $res->assertSee('99%');
+        $res->assertSee('width: 99%', false);
+        $res->assertSee('Earnings per Skill');
+        $res->assertSee('PHP');
+        $res->assertSee('$264,759.91');
+    }
+
     public function test_partial_snapshot_does_not_error(): void
     {
         InsightSnapshot::create([

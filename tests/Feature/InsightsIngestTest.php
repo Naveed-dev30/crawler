@@ -66,6 +66,31 @@ class InsightsIngestTest extends TestCase
         $this->assertNull($snap->trending_skills);
     }
 
+    public function test_earnings_per_skill_from_live_payload_is_stored(): void
+    {
+        $p = [
+            'scraped_at' => '2026-07-21T06:42:51.400Z',
+            'userStats' => [
+                'totalEarnings' => [['value' => '$363,473.34'], ['value' => '$0.00']],
+                'bidSummary' => [['label' => 'Bids Remaining', 'value' => 48]],
+                'jobProficiency' => [['label' => 'Completed Jobs', 'value' => '99%']],
+                'earningsPerSkill' => [
+                    ['name' => 'PHP', 'value' => '$264,759.91'],
+                    ['name' => 'Website Design', 'value' => '$231,679.90'],
+                ],
+            ],
+            'marketplaceStats' => null,
+        ];
+
+        $this->postWithToken($p)->assertOk();
+
+        $snap = InsightSnapshot::firstOrFail();
+        $this->assertSame('363473.34', (string) $snap->earnings_total);
+        $this->assertSame(48, $snap->bids_remaining);
+        $this->assertCount(2, $snap->earnings_per_skill);
+        $this->assertSame('PHP', $snap->earnings_per_skill[0]['name']);
+    }
+
     public function test_missing_both_sections_is_422(): void
     {
         $this->postWithToken(['foo' => 'bar'])->assertStatus(422);
