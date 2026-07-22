@@ -114,6 +114,18 @@ test('marketplace: empty on unrecognizable text', () => {
   assert.equal(scrapeMarketplace('just navigation text'), null)
 })
 
+test('marketplace: trending skills does not swallow the footer if the end heading is missing', () => {
+  // No 'Overall ranking' heading, so trending cannot be bounded. It must come
+  // back empty rather than pulling nav/footer lines into trendingSkills.
+  const text = [
+    'Trending skills',
+    'Graphic Design', 'PHP',
+    'Network', 'Privacy Policy', 'Copyright © 2026 Freelancer',
+  ].join('\n')
+
+  assert.equal(scrapeMarketplace(text), null)
+})
+
 test('gamification: warns when no leaderboard row matches the profile', () => {
   const text = [
     'Someone Else',

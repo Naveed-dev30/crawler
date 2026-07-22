@@ -137,10 +137,13 @@ export function scrapeMarketplace(text) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length)
   const idx = (label, from = 0) => lines.indexOf(label, from)
 
-  const sliceBetween = (start, end) => {
+  const sliceBetween = (start, end, requireEnd = false) => {
     const i = idx(start)
     if (i < 0) return []
     const j = idx(end, i + 1)
+    // When requireEnd is set, a missing end heading means we cannot safely bound
+    // the section — return nothing rather than reading to end-of-page.
+    if (j < 0 && requireEnd) return []
     return lines.slice(i + 1, j < 0 ? lines.length : j)
   }
 
@@ -154,8 +157,10 @@ export function scrapeMarketplace(text) {
     }
   }
 
-  // Trending skills: names only.
-  const trendingSkills = sliceBetween('Trending skills', 'Overall ranking').map((name) => ({ name }))
+  // Trending skills: names only. These have no value pattern to anchor on and
+  // include all-caps names (PHP, HTML, SEO), so the only defense against pulling
+  // in the page footer is a hard boundary — require the end heading.
+  const trendingSkills = sliceBetween('Trending skills', 'Overall ranking', true).map((name) => ({ name }))
 
   // Overall ranking: first "\d+%" after the heading.
   let overall = null
@@ -181,7 +186,7 @@ export function scrapeMarketplace(text) {
     if (i >= 0) for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) { if (/^\d+(\.\d+)?$/.test(lines[j])) { bpm = lines[j]; break } }
   }
 
-  const empty = highDemandSkills.length === 0 && trendingSkills.length === 0 && !overall && rankingPerSkill.length === 0
+  const empty = highDemandSkills.length === 0 && trendingSkills.length === 0 && !overall && rankingPerSkill.length === 0 && !bpm
   if (empty) return null
 
   return {
