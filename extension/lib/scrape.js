@@ -120,13 +120,25 @@ export function scrapeUserStats(text) {
     }
   }
 
+  // Rating per skill: skill names only. The ratings themselves are star icons,
+  // which do not appear in the page text, so only the skill list is captured.
+  // Require the 'Bid conversion' end boundary so a missing heading doesn't pull
+  // the rest of the page in.
+  const rpStart = indexOf('Rating per skill')
+  const rpEnd = indexOf('Bid conversion')
+  const ratingPerSkill = (rpStart >= 0 && rpEnd > rpStart)
+    ? lines.slice(rpStart + 1, rpEnd).map((name) => ({ name }))
+    : []
+
   const userStats = {
     totalEarnings: [{ value: total }, { value: last30 }],
     bidSummary: [{ label: 'Bids Remaining', value: bidsRemaining ? toInt(bidsRemaining) : null }],
     jobProficiency,
     earningsPerSkill,
+    ratingPerSkill,
   }
-  const empty = !total && !bidsRemaining && earningsPerSkill.length === 0 && jobProficiency.length === 0
+  const empty = !total && !bidsRemaining && earningsPerSkill.length === 0 &&
+    jobProficiency.length === 0 && ratingPerSkill.length === 0
   return empty ? null : userStats
 }
 
