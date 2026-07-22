@@ -86,12 +86,12 @@ class ChatsPageTest extends TestCase
     public function test_status_filter(): void
     {
         Thread::factory()->create(['project_id' => 111001, 'status' => 'fresh']);
-        Thread::factory()->create(['project_id' => 222002, 'status' => 'replied']);
+        Thread::factory()->create(['project_id' => 222002, 'status' => 'answered']);
         Thread::factory()->create(['project_id' => 333003, 'blocked' => true]);
 
         $admin = $this->admin();
 
-        $this->actingAs($admin)->get('/chats?status=replied')
+        $this->actingAs($admin)->get('/chats?status=answered')
             ->assertOk()->assertSee('222002')->assertDontSee('111001');
 
         $this->actingAs($admin)->get('/chats?status=blocked')

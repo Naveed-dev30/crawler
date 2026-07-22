@@ -40,7 +40,7 @@ pattern). Columns:
 
 - **Project** — `project_id` plus proposal title (truncated)
 - **Assigned To** — user name, or muted "Unassigned"
-- **Status** — badge for `status` (fresh/replied); additional red
+- **Status** — badge for `status` (fresh/answered); additional red
   "Blocked" badge when `blocked`
 - **Messages** — message count
 - **Escalations** — count of `activity_logs` rows of type `escalation`
@@ -51,7 +51,7 @@ Filters above the table:
 
 - Search input (debounced): matches `project_id`, proposal title, or
   assignee name
-- Status dropdown: All / Fresh / Replied / Blocked
+- Status dropdown: All / Fresh / Answered / Blocked
 
 Query: `Thread::with(['assignedUser', 'proposal'])->withCount(['messages'])`
 plus an escalation-count aggregate; search joins stay in the controller.
