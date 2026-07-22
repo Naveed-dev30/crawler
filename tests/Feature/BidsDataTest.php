@@ -89,6 +89,61 @@ class BidsDataTest extends TestCase
         $this->assertStringNotContainsString('data-check="Incorrect"', $incorrect);
     }
 
+    public function test_interest_sub_tab_filters_skill_not_matched_rows(): void
+    {
+        $p = Proposal::factory()->create([
+            'type' => 'fixed', 'title' => 'Skill row', 'project_id' => 515151, 'country' => 'US',
+            'skills' => ['PHP', 'Laravel'],
+        ]);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 111, 'error_message' => 'skill mismatch', 'interest' => 'Interested']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 222, 'error_message' => 'skill mismatch', 'interest' => 'Not Interested']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 333, 'error_message' => 'skill mismatch', 'interest' => 'Unreviewed']);
+
+        $user = User::factory()->create();
+
+        // All: every row, both buttons, skills bubbles
+        $all = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $all);
+        $this->assertStringContainsString('222', $all);
+        $this->assertStringContainsString('333', $all);
+        $this->assertStringContainsString('data-interest="Interested"', $all);
+        $this->assertStringContainsString('data-interest="Not Interested"', $all);
+        $this->assertStringContainsString('Laravel</span>', $all);
+
+        // Interested: only that row; only the Not Interested (shift) button
+        $interested = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest=Interested')->assertOk()->json('rowsHtml');
+        $this->assertStringContainsString('111', $interested);
+        $this->assertStringNotContainsString('222', $interested);
+        $this->assertStringNotContainsString('data-interest="Interested"', $interested);
+        $this->assertStringContainsString('data-interest="Not Interested"', $interested);
+
+        // Not Interested: only that row; only the Interested (shift) button
+        $not = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest=' . urlencode('Not Interested'))->assertOk()->json('rowsHtml');
+        $this->assertStringNotContainsString('111', $not);
+        $this->assertStringContainsString('222', $not);
+        $this->assertStringContainsString('data-interest="Interested"', $not);
+        $this->assertStringNotContainsString('data-interest="Not Interested"', $not);
+    }
+
+    public function test_update_bid_interest_endpoint(): void
+    {
+        $p = Proposal::factory()->create(['project_id' => 616161]);
+        $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'error_message' => 'skill mismatch']);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => $bid->id, 'interest' => 'Interested'])
+            ->assertOk()->assertJson(['success' => true, 'interest' => 'Interested']);
+        $this->assertSame('Interested', $bid->fresh()->interest);
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => $bid->id, 'interest' => 'bogus'])
+            ->assertStatus(422);
+        $this->assertSame('Interested', $bid->fresh()->interest);
+
+        $this->actingAs($user)->postJson('/updateBidInterest', ['bid_id' => 999999, 'interest' => 'Interested'])
+            ->assertStatus(404);
+    }
+
     public function test_failed_tab_excludes_skill_errors(): void
     {
         $this->seedBids();
