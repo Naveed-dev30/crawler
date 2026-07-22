@@ -447,6 +447,15 @@
                     'Bid review saved.',
                     check === 'Correct' ? '#28c76f' : '#ff3e1d'
                 );
+                // If the slide-over is open on this bid, sync its badge too
+                const panelBtn = el('bidOffcanvasContent').querySelector('.bid-check-btn[data-bid-id="' + btn.dataset.bidId + '"]');
+                if (panelBtn) {
+                    const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
+                    if (badge) {
+                        badge.textContent = check;
+                        badge.className = 'badge ' + (check === 'Correct' ? 'bg-success' : 'bg-danger');
+                    }
+                }
                 loadData();
             });
 
@@ -517,15 +526,8 @@
                     badge.textContent = check;
                     badge.className = 'badge ' + (check === 'Correct' ? 'bg-success' : 'bg-danger');
                 }
-                const dot = document.querySelector('[data-check-dot="' + id + '"]');
-                if (dot) {
-                    dot.className = (check === 'Correct' ? 'fa fa-check text-success' : 'fa fa-close text-danger');
-                    dot.setAttribute('data-check-dot', id);
-                    const label = check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect';
-                    dot.setAttribute('title', label);
-                    const tip = bootstrap.Tooltip.getOrCreateInstance(dot);
-                    tip.setContent({ '.tooltip-inner': label });
-                }
+                // Keep the table's row buttons in sync with the panel
+                loadData();
             });
 
             // Auto-refresh: skip while typing search or past page 1
