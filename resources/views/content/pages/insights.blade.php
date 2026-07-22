@@ -251,21 +251,31 @@
 @section('page-script')
     <script>
         (function () {
-            function series(section) {
-                return (section && section.datasets ? section.datasets : []).map(function (d) {
-                    return { name: d.label || '', data: (d.data || []).map(Number) };
-                });
+            // Supports both chart shapes: {labels, datasets: [{label, data}]} (old
+            // fixture captures) and {labels, values} (live crawler payloads).
+            function series(section, fallbackName) {
+                if (section && Array.isArray(section.datasets)) {
+                    return section.datasets.map(function (d) {
+                        return { name: d.label || '', data: (d.data || []).map(Number) };
+                    });
+                }
+                if (section && Array.isArray(section.values)) {
+                    return [{ name: fallbackName || '', data: section.values.map(Number) }];
+                }
+                return [];
             }
 
-            function render(elId, type, section, colors) {
+            function render(elId, type, section, colors, fallbackName) {
                 const el = document.querySelector('#' + elId);
                 if (! el || ! section || ! section.labels) { return; }
+                const s = series(section, fallbackName);
+                if (! s.length) { return; }
                 new ApexCharts(el, {
-                    chart: { type: type, height: 300, toolbar: { show: false }, stacked: type === 'bar' && section.datasets.length > 1 },
+                    chart: { type: type, height: 300, toolbar: { show: false }, stacked: type === 'bar' && s.length > 1 },
                     stroke: { curve: 'smooth', width: type === 'line' ? 3 : 0 },
                     colors: colors,
                     dataLabels: { enabled: false },
-                    series: series(section),
+                    series: s,
                     xaxis: { categories: section.labels },
                 }).render();
             }
@@ -277,10 +287,10 @@
                 viewsYear: @json($latest?->profile_views_year),
             };
 
-            render('chart-earnings', 'line', latest.earnings, ['#28c76f']);
-            render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff']);
-            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff']);
-            render('chart-views-year', 'line', latest.viewsYear, ['#696cff']);
+            render('chart-earnings', 'line', latest.earnings, ['#28c76f'], 'Amount Earned');
+            render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff'], 'Bids');
+            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff'], 'Views');
+            render('chart-views-year', 'line', latest.viewsYear, ['#696cff'], 'Views');
 
             const history = @json($history);
             const el = document.querySelector('#chart-history');

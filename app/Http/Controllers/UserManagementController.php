@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserManagementController extends Controller
 {
@@ -70,5 +71,46 @@ class UserManagementController extends Controller
         ]);
 
         return redirect()->route('users')->with('status', 'User created.');
+    }
+
+    public function update(Request $request, User $user)
+    {
+        // Admin accounts: role and routing fields stay untouched — only identity/password.
+        if ($user->role === 'admin') {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'password' => ['nullable', 'string', 'min:8'],
+            ]);
+        } else {
+            $request->merge(['role' => $request->input('role', $user->role)]);
+
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'password' => ['nullable', 'string', 'min:8'],
+                'role' => ['required', 'in:mobile,team'],
+                'profile_prompt' => ['required_if:role,mobile', 'nullable', 'string'],
+                'escalation_ladder' => [
+                    'required_if:role,mobile', 'nullable', 'integer', 'between:1,10',
+                    Rule::unique('users', 'escalation_ladder')->ignore($user->id),
+                ],
+            ]);
+
+            $role = $validated['role'];
+            $user->role = $role;
+            // Team users take no part in chat routing/escalation.
+            $user->profile_prompt = $role === 'mobile' ? ($validated['profile_prompt'] ?? null) : null;
+            $user->escalation_ladder = $role === 'mobile' ? ($validated['escalation_ladder'] ?? null) : null;
+        }
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        $user->save();
+
+        return redirect()->route('users')->with('status', 'User updated.');
     }
 }

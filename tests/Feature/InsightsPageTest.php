@@ -84,6 +84,8 @@ class InsightsPageTest extends TestCase
                 ['name' => 'PHP'],
             ],
             'bids_per_milestone' => ['user' => null, 'marketplace' => '18.50'],
+            'profile_views_week' => ['labels' => ['16/7', '17/7'], 'values' => [39, 17]],
+            'profile_views_year' => ['labels' => ['Jun 26', 'Jul 26'], 'values' => [0, 221]],
             'raw' => '{}',
         ]);
 
@@ -103,6 +105,8 @@ class InsightsPageTest extends TestCase
         $res->assertSee('trend-up', false);
         $res->assertSee('trend-down', false);
         $res->assertSee('trend-even', false);
+        $res->assertSee('Profile Views (Past Week)');
+        $res->assertSee('"values":[39,17]', false);
     }
 
     public function test_partial_snapshot_does_not_error(): void
