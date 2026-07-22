@@ -447,13 +447,12 @@
                     'Bid review saved.',
                     check === 'Correct' ? '#28c76f' : '#ff3e1d'
                 );
-                // If the slide-over is open on this bid, sync its badge too
-                const panelBtn = el('bidOffcanvasContent').querySelector('.bid-check-btn[data-bid-id="' + btn.dataset.bidId + '"]');
-                if (panelBtn) {
-                    const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
-                    if (badge) {
-                        badge.textContent = check;
-                        badge.className = 'badge ' + (check === 'Correct' ? 'bg-success' : 'bg-danger');
+                // If the slide-over is open on this bid, re-fetch it so badge + buttons match
+                const panelBody = el('bidOffcanvasContent').querySelector('[data-bid-id="' + btn.dataset.bidId + '"]');
+                if (panelBody && el('bidOffcanvas').classList.contains('show')) {
+                    const detail = await fetch('/bids/' + btn.dataset.bidId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (detail.ok) {
+                        el('bidOffcanvasContent').innerHTML = await detail.text();
                     }
                 }
                 loadData();
