@@ -229,8 +229,8 @@
                         <th>Price</th>
                         <th>Status</th>
                         <th>Type</th>
-                        <th class="completed-col d-none">Awarded</th>
-                        <th class="completed-col d-none">Awarded Price</th>
+                        <th class="completed-col d-none text-nowrap">Awarded</th>
+                        <th class="completed-col d-none text-nowrap">Awarded Price</th>
                         <th>Time</th>
                         <th>Review</th>
                     </tr>
