@@ -17,7 +17,7 @@
         @elseif ($isFailure)
             <span class="badge bg-label-danger me-1">failed</span>
         @else
-            <span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status }}</span>
+            <span class="badge {{ $statusClass }} me-1">{{ $bid->bid_status === 'completed' ? 'Bid Placed' : $bid->bid_status }}</span>
         @endif
         @if (empty($completed) && $bid->bid_status === 'completed')
             <div class="mt-1 small">
@@ -37,9 +37,9 @@
     @if (!empty($completed))
         <td>
             @if ($bid->awarded)
-                <span class="badge" style="color:#399cff;background-color:rgba(57,156,255,.12)">True</span>
+                <span class="badge" style="color:#399cff;background-color:rgba(57,156,255,.12)">Yes</span>
             @else
-                <span class="badge bg-label-secondary">False</span>
+                <span class="badge bg-label-secondary">No</span>
             @endif
         </td>
         <td>{{ $bid->awarded_price !== null ? $bid->awarded_price . '$' : '—' }}</td>
