@@ -11,6 +11,66 @@
         </form>
     </div>
 
+    {{-- Overview stats: lifetime + today (GMT+5) — never affected by the filters below --}}
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted small text-uppercase fw-semibold">Lifetime</span>
+                        <span class="badge bg-label-primary rounded p-2 lh-1"><i class="bx bx-infinite"></i></span>
+                    </div>
+                    <div class="row text-center g-2">
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h4>
+                            <small class="text-muted">Bids Placed</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h4>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h4>
+                            <small class="text-muted">Skills Not Matched</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h4>
+                            <small class="text-muted">Not Qualified</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted small text-uppercase fw-semibold">Today <span class="fw-normal text-lowercase">(12:01 am – 11:59 pm)</span></span>
+                        <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
+                    </div>
+                    <div class="row text-center g-2">
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h4>
+                            <small class="text-muted">Bids Placed</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h4>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h4>
+                            <small class="text-muted">Skills Not Matched</small>
+                        </div>
+                        <div class="col-3">
+                            <h4 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h4>
+                            <small class="text-muted">Not Qualified</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Filter bar (sticky on scroll) --}}
     <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;">
         <div class="card-body">
@@ -333,6 +393,16 @@
                 el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
                 el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
                 el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
+                if (data.overview) {
+                    el('ov-life-placed').textContent = data.overview.lifetime.placed;
+                    el('ov-life-failed').textContent = data.overview.lifetime.failed;
+                    el('ov-life-skills').textContent = data.overview.lifetime.skillNotMatched;
+                    el('ov-life-nq').textContent = data.overview.lifetime.notQualified;
+                    el('ov-day-placed').textContent = data.overview.daily.placed;
+                    el('ov-day-failed').textContent = data.overview.daily.failed;
+                    el('ov-day-skills').textContent = data.overview.daily.skillNotMatched;
+                    el('ov-day-nq').textContent = data.overview.daily.notQualified;
+                }
                 const nq = currentTab === 'not-qualified';
                 el('thead-bids').classList.toggle('d-none', nq);
                 el('thead-nq').classList.toggle('d-none', !nq);

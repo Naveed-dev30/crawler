@@ -144,6 +144,26 @@ class BidsDataTest extends TestCase
             ->assertStatus(404);
     }
 
+    public function test_overview_stats_ignore_filters(): void
+    {
+        $this->seedBids();
+
+        // Heavily filtered request — overview must still count everything
+        $res = $this->actingAs(User::factory()->create())
+            ->getJson('/bids/data?tab=completed&min=99999&q=nomatch')
+            ->assertOk();
+
+        $overview = $res->json('overview');
+        $this->assertSame(2, $overview['lifetime']['placed']);   // pending + completed
+        $this->assertSame(1, $overview['lifetime']['failed']);   // expired (non-skill)
+        $this->assertSame(1, $overview['lifetime']['skillNotMatched']);
+        $this->assertArrayHasKey('notQualified', $overview['lifetime']);
+        // seeded bids are from 2026-07-10..13; "today" is frozen at 2026-07-15 → daily all zero
+        $this->assertSame(0, $overview['daily']['placed']);
+        $this->assertSame(0, $overview['daily']['failed']);
+        $this->assertSame(0, $overview['daily']['skillNotMatched']);
+    }
+
     public function test_failed_tab_excludes_skill_errors(): void
     {
         $this->seedBids();
