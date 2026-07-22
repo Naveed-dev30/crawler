@@ -96,11 +96,14 @@ class BidController extends Controller
         $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
       }
 
+      $lastUpdated = \App\Models\Proposal::max('updated_at');
+
       return response()->json([
         'cards' => $cards,
         'statusCounts' => $statusCounts,
         'rowsHtml' => $rowsHtml,
         'paginationHtml' => $proposals->links('vendor.pagination.bootstrap-5')->render(),
+        'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
       ]);
     }
 
@@ -153,11 +156,14 @@ class BidController extends Controller
       $rowsHtml = '<tr><td colspan="' . $colspan . '" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
     }
 
+    $lastUpdated = Bid::max('updated_at');
+
     return response()->json([
       'cards' => $cards,
       'statusCounts' => $statusCounts,
       'rowsHtml' => $rowsHtml,
       'paginationHtml' => $bids->links('vendor.pagination.bootstrap-5')->render(),
+      'lastUpdated' => $lastUpdated ? Carbon::parse($lastUpdated)->timezone('Asia/Karachi')->format('d M, Y h:i a') : null,
     ]);
   }
 
