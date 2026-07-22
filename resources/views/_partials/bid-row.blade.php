@@ -4,20 +4,28 @@
         : ($bid->bid_status === 'pending' ? 'bg-label-warning' : 'bg-label-danger');
 @endphp
 <tr>
+    @php $checkTab = $checkTab ?? 'all'; @endphp
     <td>
-        {{ $bid->proposal->project_id }}
+        <span class="fw-semibold {{ $checkTab === 'Correct' ? 'text-success' : ($checkTab === 'Incorrect' ? 'text-danger' : '') }}">
+            {{ $bid->proposal->project_id }}
+        </span>
         @if (!empty($completed))
-            @php $checkTab = $checkTab ?? 'all'; @endphp
-            <div class="d-flex gap-1 mt-1">
+            <div class="d-flex gap-1 mt-2">
                 @if ($checkTab !== 'Correct')
                     <button type="button"
-                            class="btn btn-sm py-0 px-2 bid-check-btn {{ $bid->check === 'Correct' ? 'btn-success' : 'btn-outline-success' }}"
-                            data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
+                            class="btn rounded-pill d-inline-flex align-items-center bid-check-btn {{ $bid->check === 'Correct' ? 'btn-success' : 'btn-outline-success' }}"
+                            style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                            data-bid-id="{{ $bid->id }}" data-check="Correct">
+                        <i class="bx bx-check me-1"></i>Correct
+                    </button>
                 @endif
                 @if ($checkTab !== 'Incorrect')
                     <button type="button"
-                            class="btn btn-sm py-0 px-2 bid-check-btn {{ $bid->check === 'Incorrect' ? 'btn-danger' : 'btn-outline-danger' }}"
-                            data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+                            class="btn rounded-pill d-inline-flex align-items-center bid-check-btn {{ $bid->check === 'Incorrect' ? 'btn-danger' : 'btn-outline-danger' }}"
+                            style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                            data-bid-id="{{ $bid->id }}" data-check="Incorrect">
+                        <i class="bx bx-x me-1"></i>Incorrect
+                    </button>
                 @endif
             </div>
         @endif
