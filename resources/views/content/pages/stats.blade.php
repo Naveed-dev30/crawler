@@ -20,7 +20,11 @@
                 <div class="row text-center g-2">
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h4>
-                        <small class="text-muted">Bids Placed</small>
+                        <small class="text-muted d-block">Bids Placed</small>
+                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
+                            <span class="badge bg-label-success">✓ <span id="ov-life-placed-correct">—</span></span>
+                            <span class="badge bg-label-danger">✕ <span id="ov-life-placed-incorrect">—</span></span>
+                        </div>
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h4>
@@ -28,7 +32,11 @@
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h4>
-                        <small class="text-muted">Skills Not Matched</small>
+                        <small class="text-muted d-block">Skills Not Matched</small>
+                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
+                            <span class="badge bg-label-success">✓ <span id="ov-life-skills-int">—</span></span>
+                            <span class="badge bg-label-danger">✕ <span id="ov-life-skills-notint">—</span></span>
+                        </div>
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h4>
@@ -40,13 +48,17 @@
         <div class="col-md-6">
             <div class="card h-100"><div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <span class="text-muted small text-uppercase fw-semibold">Today <span class="fw-normal text-lowercase">(12:01 am – 11:59 pm)</span></span>
+                    <span class="text-muted small text-uppercase fw-semibold">Today</span>
                     <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
                 </div>
                 <div class="row text-center g-2">
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h4>
-                        <small class="text-muted">Bids Placed</small>
+                        <small class="text-muted d-block">Bids Placed</small>
+                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
+                            <span class="badge bg-label-success">✓ <span id="ov-day-placed-correct">—</span></span>
+                            <span class="badge bg-label-danger">✕ <span id="ov-day-placed-incorrect">—</span></span>
+                        </div>
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h4>
@@ -54,7 +66,11 @@
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h4>
-                        <small class="text-muted">Skills Not Matched</small>
+                        <small class="text-muted d-block">Skills Not Matched</small>
+                        <div class="d-flex justify-content-center gap-1 mt-1 flex-wrap">
+                            <span class="badge bg-label-success">✓ <span id="ov-day-skills-int">—</span></span>
+                            <span class="badge bg-label-danger">✕ <span id="ov-day-skills-notint">—</span></span>
+                        </div>
                     </div>
                     <div class="col-3">
                         <h4 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h4>
@@ -211,6 +227,14 @@
                     if (!o) return;
                     const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
                     set('ov-life-placed', o.lifetime.placed);
+                    set('ov-life-placed-correct', o.lifetime.placedCorrect);
+                    set('ov-life-placed-incorrect', o.lifetime.placedIncorrect);
+                    set('ov-life-skills-int', o.lifetime.skillsInterested);
+                    set('ov-life-skills-notint', o.lifetime.skillsNotInterested);
+                    set('ov-day-placed-correct', o.daily.placedCorrect);
+                    set('ov-day-placed-incorrect', o.daily.placedIncorrect);
+                    set('ov-day-skills-int', o.daily.skillsInterested);
+                    set('ov-day-skills-notint', o.daily.skillsNotInterested);
                     set('ov-life-failed', o.lifetime.failed);
                     set('ov-life-skills', o.lifetime.skillNotMatched);
                     set('ov-life-nq', o.lifetime.notQualified);
