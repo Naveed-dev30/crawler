@@ -89,6 +89,7 @@ class InsightsController extends Controller
                 'overall_ranking' => $this->stringOrNull($marketStats['overallRanking'][0]['value'] ?? null),
                 'job_proficiency' => $this->arrayOrNull($userStats['jobProficiency'] ?? null),
                 'rating_per_skill' => $this->arrayOrNull($userStats['ratingPerSkill'] ?? null),
+                'earnings_per_skill' => $this->arrayOrNull($userStats['earningsPerSkill'] ?? null),
                 'ranking_per_skill' => $this->arrayOrNull($marketStats['rankingPerSkill'] ?? null),
                 'high_demand_skills' => $this->arrayOrNull($marketStats['highDemandSkills'] ?? null),
                 'trending_skills' => $this->arrayOrNull($marketStats['trendingSkills'] ?? null),

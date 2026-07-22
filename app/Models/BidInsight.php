@@ -8,10 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BidInsight extends Model
 {
     public const ONE_TIME_FIELDS = [
+        'bid_id',
         'project_url',
         'time_to_bid_seconds',
+        'time_submitted',
         'bid_amount',
         'bid_currency',
+        'description',
+        'upgrades',
         'client_country',
         'client_rating',
         'client_reviews',
@@ -28,10 +32,14 @@ class BidInsight extends Model
 
     protected $fillable = [
         'project_id',
+        'bid_id',
         'project_url',
         'time_to_bid_seconds',
+        'time_submitted',
         'bid_amount',
         'bid_currency',
+        'description',
+        'upgrades',
         'client_country',
         'client_rating',
         'client_reviews',
@@ -52,7 +60,9 @@ class BidInsight extends Model
         'winning_bid_sealed' => 'boolean',
         'actions_taken' => 'array',
         'client_engagement' => 'array',
+        'upgrades' => 'array',
         'raw' => 'array',
+        'time_submitted' => 'datetime',
         'last_scraped_at' => 'datetime',
     ];
 

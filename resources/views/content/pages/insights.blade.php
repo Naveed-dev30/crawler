@@ -54,14 +54,19 @@
                 <div class="card h-100"><div class="card-body">
                     <h5 class="mb-3">Job Proficiency</h5>
                     @forelse ($latest->job_proficiency ?? [] as $item)
-                        @php $bar = $item['bars'][0] ?? []; @endphp
+                        @php
+                            $bar = $item['bars'][0] ?? [];
+                            $rightLabel = $bar['rightLabel'] ?? $item['value'] ?? '';
+                            $fill = $bar['fillPercentage']
+                                ?? (float) preg_replace('/[^0-9.]/', '', (string) ($item['value'] ?? ''));
+                        @endphp
                         <div class="mb-3">
                             <div class="d-flex justify-content-between">
                                 <span>{{ $item['label'] ?? '' }}</span>
-                                <span class="fw-bold">{{ $bar['rightLabel'] ?? '' }}</span>
+                                <span class="fw-bold">{{ $rightLabel }}</span>
                             </div>
                             <div class="progress" style="height: 8px;">
-                                <div class="progress-bar" role="progressbar" style="width: {{ $bar['fillPercentage'] ?? 0 }}%"></div>
+                                <div class="progress-bar" role="progressbar" style="width: {{ $fill }}%"></div>
                             </div>
                         </div>
                     @empty
@@ -134,6 +139,7 @@
         <div class="row gy-4">
             @php
                 $skillTables = [
+                    ['title' => 'Earnings per Skill', 'rows' => $latest->earnings_per_skill ?? [], 'col' => 'Earnings', 'value' => fn ($r) => $r['value'] ?? '—'],
                     ['title' => 'Rating per Skill', 'rows' => $latest->rating_per_skill ?? [], 'col' => 'Rating', 'value' => fn ($r) => isset($r['value']) ? number_format((float) $r['value'], 1) : '—'],
                     ['title' => 'Ranking per Skill', 'rows' => $latest->ranking_per_skill ?? [], 'col' => 'Rank', 'value' => fn ($r) => $r['displayValue'] ?? '—'],
                     ['title' => 'High Demand Skills', 'rows' => $latest->high_demand_skills ?? [], 'col' => 'Change', 'value' => fn ($r) => $r['displayValue'] ?? '—'],
@@ -150,7 +156,7 @@
                                 <tbody>
                                     @foreach (array_slice($table['rows'], 0, 20) as $row)
                                         <tr>
-                                            <td>{{ $row['label'] ?? '' }}</td>
+                                            <td>{{ $row['label'] ?? $row['name'] ?? '' }}</td>
                                             <td class="text-end">{{ $table['value']($row) }}</td>
                                         </tr>
                                     @endforeach

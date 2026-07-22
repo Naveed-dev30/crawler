@@ -26,6 +26,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="FL_FAKE" value="false"/>
+        <env name="INGEST_TOKEN" value=""/>
+        <env name="GAMIFICATION_INGEST_TOKEN" value=""/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
