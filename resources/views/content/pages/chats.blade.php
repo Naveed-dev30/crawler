@@ -79,6 +79,16 @@
             {{ $threads->links('vendor.pagination.bootstrap-5') }}
         </div>
     @endif
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="chatOffcanvas" style="width: 480px;">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title">Thread Detail</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" id="chatOffcanvasContent">
+            <p class="text-muted">Loading…</p>
+        </div>
+    </div>
 @endsection
 
 @section('page-script')
@@ -90,6 +100,14 @@
                 clearTimeout(timer);
                 timer = setTimeout(() => document.getElementById('chats-filter-form').submit(), 400);
             });
+
+            document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
+                const body = document.getElementById('chatOffcanvasContent');
+                body.innerHTML = '<p class="text-muted">Loading…</p>';
+                bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
+                const res = await fetch('/chats/' + btn.dataset.threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                body.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+            }));
         });
     </script>
 @endsection

@@ -106,4 +106,58 @@ class ChatsPageTest extends TestCase
             ->assertOk()
             ->assertSee('page=2');
     }
+
+    public function test_detail_shows_messages_timeline_and_header(): void
+    {
+        $ali = User::factory()->create(['role' => 'mobile', 'name' => 'Ali Raza', 'escalation_ladder' => 1]);
+        $sara = User::factory()->create(['role' => 'mobile', 'name' => 'Sara Malik', 'escalation_ladder' => 2]);
+        $thread = Thread::factory()->create(['assigned_user_id' => $sara->id]);
+
+        ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'received',
+            'message' => 'Client asks about budget',
+            'message_time' => now()->subHour(),
+        ]);
+        ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'sent',
+            'sender_user_id' => $sara->id,
+            'message' => 'Our reply text',
+            'message_time' => now(),
+        ]);
+        ActivityLog::factory()->create([
+            'thread_id' => $thread->id,
+            'type' => 'escalation',
+            'from_user_id' => $ali->id,
+            'to_user_id' => $sara->id,
+        ]);
+
+        $res = $this->actingAs($this->admin())
+            ->get("/chats/{$thread->id}/detail", ['X-Requested-With' => 'XMLHttpRequest'])
+            ->assertOk();
+
+        $res->assertSee('Client asks about budget');
+        $res->assertSee('Our reply text');
+        $res->assertSee('Escalated');
+        $res->assertSeeInOrder(['Ali Raza', 'Sara Malik']);
+        $res->assertSee('AI matched to Ali Raza'); // synthetic first row: earliest log's from-user
+        $res->assertSee('ladder 2');
+    }
+
+    public function test_detail_without_logs_uses_current_assignee_for_ai_row(): void
+    {
+        $sara = User::factory()->create(['role' => 'mobile', 'name' => 'Sara Malik']);
+        $thread = Thread::factory()->create(['assigned_user_id' => $sara->id]);
+
+        $this->actingAs($this->admin())
+            ->get("/chats/{$thread->id}/detail")
+            ->assertOk()
+            ->assertSee('AI matched to Sara Malik');
+    }
+
+    public function test_detail_unknown_thread_is_404(): void
+    {
+        $this->actingAs($this->admin())->get('/chats/999999/detail')->assertNotFound();
+    }
 }
