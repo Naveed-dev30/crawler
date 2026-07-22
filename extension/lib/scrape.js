@@ -147,7 +147,7 @@ export function scrapeUserStats(text, dom) {
 const PCT = /^[+-]\d+%$/
 const RANK = /^Top \d+%$/
 
-export function scrapeMarketplace(text) {
+export function scrapeMarketplace(text, dom) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length)
   const idx = (label, from = 0) => lines.indexOf(label, from)
 
@@ -209,9 +209,10 @@ export function scrapeMarketplace(text) {
     highDemandSkills,
     trendingSkills,
     bidsPerMilestoneMarketplace: bpm,
-    // These render without a numeric value on the page; kept null so the shape
-    // matches what InsightsController expects (arrayOrNull → null).
-    profileViewCountPastWeek: null,
-    profileViewCountPastYear: null,
+    // Profile-view counts are Chart.js line charts drawn on a <canvas>; their
+    // numbers live in JS chart state, not the page text. The worker reads the
+    // chart data ({labels, values}) in the MAIN world and passes it via dom.
+    profileViewCountPastWeek: (dom && dom.profileViewCountPastWeek) || null,
+    profileViewCountPastYear: (dom && dom.profileViewCountPastYear) || null,
   }
 }
