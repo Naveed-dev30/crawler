@@ -91,6 +91,39 @@ class InsightsIngestTest extends TestCase
         $this->assertSame('PHP', $snap->earnings_per_skill[0]['name']);
     }
 
+    public function test_live_marketplace_stats_are_stored(): void
+    {
+        $p = [
+            'scraped_at' => '2026-07-22T05:33:02.228Z',
+            'userStats' => [
+                'totalEarnings' => [['value' => '$363,266.75'], ['value' => '$0.00']],
+                'bidSummary' => [['label' => 'Bids Remaining', 'value' => 1]],
+            ],
+            'marketplaceStats' => [
+                'overallRanking' => [['value' => '25%']],
+                'rankingPerSkill' => [
+                    ['name' => 'JSON', 'value' => 'Top 9%'],
+                    ['name' => 'Swift', 'value' => 'Top 14%'],
+                ],
+                'highDemandSkills' => [['name' => 'Data Entry', 'value' => '+27%']],
+                'trendingSkills' => [['name' => 'Graphic Design']],
+                'bidsPerMilestoneMarketplace' => '18.50',
+                'profileViewCountPastWeek' => null,
+                'profileViewCountPastYear' => null,
+            ],
+        ];
+
+        $this->postWithToken($p)->assertOk();
+
+        $snap = InsightSnapshot::firstOrFail();
+        $this->assertSame('25%', $snap->overall_ranking);
+        $this->assertSame('Top 9%', $snap->ranking_per_skill[0]['value']);
+        $this->assertSame('+27%', $snap->high_demand_skills[0]['value']);
+        $this->assertSame('Graphic Design', $snap->trending_skills[0]['name']);
+        $this->assertSame('18.50', $snap->bids_per_milestone['marketplace']);
+        $this->assertNull($snap->profile_views_week);
+    }
+
     public function test_missing_both_sections_is_422(): void
     {
         $this->postWithToken(['foo' => 'bar'])->assertStatus(422);

@@ -31,13 +31,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'slack' => [
-        'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_OAUTH_TOKEN'),
-            'channel' => '#stack',
-        ],
-    ],
-
     'firebase' => [
         // Path to the Firebase service-account JSON used for FCM pushes.
         'credentials' => env('FIREBASE_CREDENTIALS'),
