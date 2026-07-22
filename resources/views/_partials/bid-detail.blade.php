@@ -11,8 +11,12 @@
     <div class="d-flex justify-content-between align-items-center gap-2">
         <span class="badge {{ $checkBadge }}" data-check-badge>{{ $bid->check }}</span>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-success bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
-            <button type="button" class="btn btn-sm btn-outline-danger bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+            @if ($bid->check !== 'Correct')
+                <button type="button" class="btn btn-sm btn-outline-success bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
+            @endif
+            @if ($bid->check !== 'Incorrect')
+                <button type="button" class="btn btn-sm btn-outline-danger bid-check-btn" data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+            @endif
         </div>
     </div>
 
