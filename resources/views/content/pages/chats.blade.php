@@ -7,6 +7,18 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h5 class="mb-0">Chats</h5>
+            <form method="GET" action="{{ route('chats') }}" id="chats-filter-form"
+                  class="d-flex align-items-center gap-2">
+                <input type="search" class="form-control" name="search" id="chats-search"
+                       placeholder="Search project, title or user…" value="{{ request('search') }}"
+                       style="min-width: 240px;">
+                <select class="form-select" name="status" style="width: 140px;" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    <option value="fresh"@selected(request('status') === 'fresh')>Fresh</option>
+                    <option value="replied"@selected(request('status') === 'replied')>Replied</option>
+                    <option value="blocked"@selected(request('status') === 'blocked')>Blocked</option>
+                </select>
+            </form>
         </div>
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
@@ -67,4 +79,17 @@
             {{ $threads->links('vendor.pagination.bootstrap-5') }}
         </div>
     @endif
+@endsection
+
+@section('page-script')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('chats-search');
+            let timer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => document.getElementById('chats-filter-form').submit(), 400);
+            });
+        });
+    </script>
 @endsection
