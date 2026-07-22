@@ -204,13 +204,18 @@
         }
     </style>
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
                 <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Bids Placed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
+            <span class="badge bg-label-primary d-inline-flex align-items-center text-nowrap d-none"
+                  style="font-size: .8rem; padding: .45rem .75rem;" id="bids-last-updated-wrap">
+                <i class="bx bx-time-five me-1"></i>
+                <span id="bids-last-updated"></span>
+            </span>
         </div>
         {{-- Bids Placed only: review-state sub-tabs --}}
         <div class="px-3 py-2 border-bottom" id="bids-check-tabs">
@@ -326,6 +331,8 @@
                     th.classList.toggle('d-none', currentTab !== 'completed'));
                 el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
                 el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
+                el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
+                el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
                 const nq = currentTab === 'not-qualified';
                 el('thead-bids').classList.toggle('d-none', nq);
                 el('thead-nq').classList.toggle('d-none', !nq);
