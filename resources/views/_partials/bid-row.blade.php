@@ -4,7 +4,24 @@
         : ($bid->bid_status === 'pending' ? 'bg-label-warning' : 'bg-label-danger');
 @endphp
 <tr>
-    <td>{{ $bid->proposal->project_id }}</td>
+    <td>
+        {{ $bid->proposal->project_id }}
+        @if (!empty($completed))
+            @php $checkTab = $checkTab ?? 'all'; @endphp
+            <div class="d-flex gap-1 mt-1">
+                @if ($checkTab !== 'Correct')
+                    <button type="button"
+                            class="btn btn-sm py-0 px-2 bid-check-btn {{ $bid->check === 'Correct' ? 'btn-success' : 'btn-outline-success' }}"
+                            data-bid-id="{{ $bid->id }}" data-check="Correct">Correct</button>
+                @endif
+                @if ($checkTab !== 'Incorrect')
+                    <button type="button"
+                            class="btn btn-sm py-0 px-2 bid-check-btn {{ $bid->check === 'Incorrect' ? 'btn-danger' : 'btn-outline-danger' }}"
+                            data-bid-id="{{ $bid->id }}" data-check="Incorrect">Incorrect</button>
+                @endif
+            </div>
+        @endif
+    </td>
     <td>{{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}</td>
     <td>{{ $bid->price }}$ - {{ $bid->proposal->country }}</td>
     @php
