@@ -48,7 +48,8 @@ class ChatsPageTest extends TestCase
         $res->assertSee('Fresh');
         $res->assertSee('Blocked');
         // 3 messages, 2 escalations (manual_assign not counted)
-        $res->assertSeeInOrder(['3', '2']);
+        $res->assertSee('<td>3</td>', false);
+        $res->assertSee('<td>2</td>', false);
     }
 
     public function test_unassigned_thread_shows_unassigned(): void

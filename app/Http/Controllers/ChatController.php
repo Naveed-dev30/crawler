@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/ChatController.php
 
 namespace App\Http\Controllers;
 
