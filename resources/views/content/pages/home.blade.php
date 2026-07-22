@@ -309,7 +309,23 @@
                 el('thead-nq').classList.toggle('d-none', !nq);
                 document.querySelectorAll('.bid-only-filter').forEach(d => d.classList.toggle('d-none', nq));
                 el('bids-cards').classList.toggle('d-none', nq);
+                // Auto-refresh replaces the rows — remember which More/Less blocks
+                // the user expanded (keyed by proposal id + cell) and restore them.
+                const expandedKeys = [...el('bids-tbody').querySelectorAll('.nq-clamp.expanded')].map(span => {
+                    const tr = span.closest('tr');
+                    const id = tr?.querySelector('.js-nq-view')?.dataset.proposalId;
+                    return id ? id + ':' + [...tr.children].indexOf(span.closest('td')) : null;
+                }).filter(Boolean);
                 el('bids-tbody').innerHTML = data.rowsHtml;
+                expandedKeys.forEach(key => {
+                    const [id, tdIndex] = key.split(':');
+                    const tr = el('bids-tbody').querySelector('.js-nq-view[data-proposal-id="' + id + '"]')?.closest('tr');
+                    const td = tr?.children[tdIndex];
+                    const span = td?.querySelector('.nq-clamp');
+                    const link = td?.querySelector('.nq-more');
+                    if (span) { span.classList.add('expanded'); }
+                    if (link) { link.textContent = 'Less'; }
+                });
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
                 initTooltips();
