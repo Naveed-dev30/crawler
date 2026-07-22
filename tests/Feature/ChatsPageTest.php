@@ -160,4 +160,25 @@ class ChatsPageTest extends TestCase
     {
         $this->actingAs($this->admin())->get('/chats/999999/detail')->assertNotFound();
     }
+
+    public function test_attachment_with_unsafe_url_scheme_is_not_linked(): void
+    {
+        $thread = Thread::factory()->create();
+        $message = ThreadMessage::factory()->create(['thread_id' => $thread->id]);
+        \App\Models\ThreadAttachment::factory()->create([
+            'thread_message_id' => $message->id,
+            'filename' => 'evil.txt',
+            'url' => 'javascript:alert(1)',
+        ]);
+        \App\Models\ThreadAttachment::factory()->create([
+            'thread_message_id' => $message->id,
+            'filename' => 'safe.pdf',
+            'url' => 'https://example.com/safe.pdf',
+        ]);
+
+        $res = $this->actingAs($this->admin())->get("/chats/{$thread->id}/detail")->assertOk();
+        $res->assertSee('evil.txt');
+        $res->assertDontSee('javascript:alert(1)', false);
+        $res->assertSee('https://example.com/safe.pdf', false);
+    }
 }
