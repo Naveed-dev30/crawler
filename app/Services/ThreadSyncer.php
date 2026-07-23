@@ -88,7 +88,6 @@ class ThreadSyncer
         $messages = $this->messenger->fetchMessages((int) $thread->freelancer_thread_id, $fromTime);
 
         $lastClientMessageAt = $thread->last_client_message_at;
-        $latestOwnerReplyAt = null;
 
         foreach ($messages as $flMessage) {
             $fromUser = (int) ($flMessage['from_user'] ?? 0);
@@ -109,10 +108,6 @@ class ThreadSyncer
                     $existing->save();
                 }
                 continue;
-            }
-
-            if ($isOurs && $messageTime->gt($latestOwnerReplyAt ?? Carbon::createFromTimestamp(0))) {
-                $latestOwnerReplyAt = $messageTime;
             }
 
             $stored = ThreadMessage::create([
@@ -147,15 +142,6 @@ class ThreadSyncer
 
         if ($lastClientMessageAt && !$lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
             $thread->last_client_message_at = $lastClientMessageAt;
-            $thread->save();
-        }
-
-        // An owner reply from freelancer.com after the client's last message
-        // answers the thread, same as replying from the app.
-        if ($latestOwnerReplyAt
-            && $thread->status === 'fresh'
-            && (!$thread->last_client_message_at || $latestOwnerReplyAt->gte($thread->last_client_message_at))) {
-            $thread->status = 'answered';
             $thread->save();
         }
     }
