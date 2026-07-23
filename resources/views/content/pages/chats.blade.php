@@ -190,7 +190,7 @@
                     // Sync the server-rendered "Assigned To" cell without losing the open panel.
                     const rowBtn = document.querySelector('.js-chat-view[data-thread-id="' + select.dataset.threadId + '"]');
                     if (rowBtn) rowBtn.closest('tr').cells[1].textContent = name;
-                    showAppToast('Thread assigned', 'Now assigned to ' + name + ' — notification sent.', '#28c76f');
+                    showAppToast('Thread assigned', 'This thread is now assigned to ' + name + '.', '#28c76f');
                 } catch {
                     btn.disabled = false;
                     showAppToast('Assignment failed', 'Could not assign the thread. Try again.', '#ea5455');
