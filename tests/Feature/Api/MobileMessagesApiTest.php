@@ -49,6 +49,18 @@ class MobileMessagesApiTest extends TestCase
         $this->assertSame(['first', 'second'], collect($response->json('data'))->pluck('message')->all());
     }
 
+    public function test_opening_messages_queues_mark_thread_read(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
+
+        \Illuminate\Support\Facades\Queue::assertPushed(
+            \App\Jobs\MarkThreadReadJob::class,
+            fn ($job) => $job->threadId === $this->thread->id
+        );
+    }
+
     public function test_message_payload_carries_sender_and_state_tags(): void
     {
         $colleague = User::factory()->create(['role' => 'mobile', 'name' => 'Old Assignee']);

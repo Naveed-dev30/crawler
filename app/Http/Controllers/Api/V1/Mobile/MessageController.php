@@ -17,6 +17,9 @@ class MessageController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
+        // Opening the conversation counts as reading it on Freelancer.
+        \App\Jobs\MarkThreadReadJob::dispatch($thread->id);
+
         $messages = $thread->messages()
             ->with('attachments')
             ->orderBy('message_time')
