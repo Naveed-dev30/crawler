@@ -91,24 +91,36 @@ class ThreadSyncer
 
         foreach ($messages as $flMessage) {
             $fromUser = (int) ($flMessage['from_user'] ?? 0);
-            if ($fromUser === $ourFlUserId) {
-                continue; // our outbound messages are stored at send time
-            }
-
             $flMessageId = (int) ($flMessage['id'] ?? 0);
-            if (!$flMessageId || ThreadMessage::where('freelancer_message_id', $flMessageId)->exists()) {
+            if (!$flMessageId) {
                 continue;
             }
 
+            $isRead = array_key_exists('is_read', $flMessage) ? (bool) $flMessage['is_read'] : null;
+            $isOurs = $fromUser === $ourFlUserId;
             $messageTime = Carbon::createFromTimestamp((int) ($flMessage['time_created'] ?? now()->timestamp));
+
+            $existing = ThreadMessage::where('freelancer_message_id', $flMessageId)->first();
+            if ($existing) {
+                // App-sent messages come back around in the feed — only their read state can change.
+                if ($isRead !== null && $existing->is_read !== $isRead) {
+                    $existing->is_read = $isRead;
+                    $existing->save();
+                }
+                continue;
+            }
 
             $stored = ThreadMessage::create([
                 'thread_id' => $thread->id,
                 'freelancer_message_id' => $flMessageId,
-                'direction' => 'received',
+                // Outbound messages here were sent from the Freelancer profile
+                // itself (app sends are stored at send time): no app sender.
+                'direction' => $isOurs ? 'sent' : 'received',
                 'from_freelancer_user_id' => $fromUser,
+                'sender_user_id' => null,
                 'message' => $flMessage['message'] ?? null,
                 'message_time' => $messageTime,
+                'is_read' => $isRead,
             ]);
 
             foreach ($flMessage['attachments'] ?? [] as $flAttachment) {
@@ -123,7 +135,9 @@ class ThreadSyncer
                 ]);
             }
 
-            if (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt)) {
+            event(new \App\Events\ThreadMessageCreated($stored));
+
+            if (!$isOurs && (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
                 $lastClientMessageAt = $messageTime;
             }
         }
