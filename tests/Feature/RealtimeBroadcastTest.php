@@ -95,6 +95,18 @@ class RealtimeBroadcastTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_admin_web_session_can_auth_thread_channel(): void
+    {
+        $this->pusherTestConfig();
+        $admin = User::factory()->create(['role' => 'admin']);
+        $thread = Thread::factory()->create();
+
+        $this->actingAs($admin)->post('/broadcasting/auth', [
+            'channel_name' => "private-thread.{$thread->id}",
+            'socket_id' => '123.456',
+        ])->assertOk();
+    }
+
     // ---- event dispatch points ----
 
     public function test_syncer_import_fires_message_created(): void
