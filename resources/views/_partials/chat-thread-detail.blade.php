@@ -5,56 +5,70 @@
 
 <div class="p-1">
     {{-- Header --}}
-    <h5 class="mb-1">{{ $title }}</h5>
-    <p class="text-muted mb-2">Project {{ $thread->project_id }}</p>
-    <p class="mb-1">
-        <span class="badge {{ $thread->status === 'fresh' ? 'bg-label-warning' : 'bg-label-success' }}">{{ ucfirst($thread->status) }}</span>
-        @if ($thread->blocked)
-            <span class="badge bg-label-danger">Blocked</span>
-        @endif
-    </p>
-    <p class="mb-1">
-        <span class="text-muted">Assigned to:</span>
-        @if ($thread->assignedUser)
-            <span class="fw-semibold">{{ $thread->assignedUser->name }}</span>
-            @if ($thread->assignedUser->escalation_ladder !== null)
-                <small class="text-muted">— ladder {{ $thread->assignedUser->escalation_ladder }}</small>
-            @endif
-        @else
-            <span class="text-muted">Unassigned</span>
-        @endif
-    </p>
-    @if (($mobileUsers ?? collect())->isNotEmpty())
-        <div class="mt-2 mb-2 p-3 border rounded-3 bg-lighter" style="max-width: 26rem;">
-            <label class="form-label small text-muted fw-semibold mb-1" for="chat-assign-user">
-                <i class="bx bx-user-pin me-1"></i>Reassign thread
-            </label>
-            <div class="d-flex align-items-center gap-2">
-                <div class="flex-grow-1">
-                    <select id="chat-assign-user" class="selectpicker" data-style="btn-default bg-white border"
-                            data-width="100%" data-thread-id="{{ $thread->id }}">
-                        @foreach ($mobileUsers as $user)
-                            <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
-                                {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="button" id="chat-assign-btn" class="btn btn-primary text-nowrap">
-                    <i class="bx bx-user-plus me-1"></i>Assign
-                </button>
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
+        <div>
+            <h5 class="mb-1">{{ $title }}</h5>
+            <div class="text-muted small">
+                <i class="bx bx-briefcase-alt me-1"></i>Project {{ $thread->project_id }}
             </div>
         </div>
-    @endif
-    <p class="text-muted small mb-4">
-        Created {{ $thread->created_at?->format('M j, Y H:i') }}
+        <div class="text-nowrap">
+            <span class="badge {{ $thread->status === 'fresh' ? 'bg-label-warning' : 'bg-label-success' }}">{{ ucfirst($thread->status) }}</span>
+            @if ($thread->blocked)
+                <span class="badge bg-label-danger">Blocked</span>
+            @endif
+        </div>
+    </div>
+    <p class="text-muted small mb-3">
+        <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)
-            · Last client message {{ $thread->last_client_message_at->diffForHumans() }}
+            <span class="mx-1">·</span><i class="bx bx-message-dots me-1"></i>Last client message {{ $thread->last_client_message_at->diffForHumans() }}
         @endif
         @if ($thread->last_escalated_at)
-            · Last escalated {{ $thread->last_escalated_at->diffForHumans() }}
+            <span class="mx-1">·</span><i class="bx bx-up-arrow-alt me-1"></i>Last escalated {{ $thread->last_escalated_at->diffForHumans() }}
         @endif
     </p>
+
+    {{-- Assignee card --}}
+    @php
+        $assigneeName = $thread->assignedUser->name ?? null;
+        $assigneeInitials = $assigneeName
+            ? collect(explode(' ', $assigneeName))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('')
+            : '?';
+    @endphp
+    <div class="card shadow-none border mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="avatar avatar-sm flex-shrink-0">
+                    <span class="avatar-initial rounded-circle {{ $assigneeName ? 'bg-label-primary' : 'bg-label-secondary' }}">{{ $assigneeInitials }}</span>
+                </div>
+                <div>
+                    <div class="fw-semibold lh-sm">{{ $assigneeName ?? 'Unassigned' }}</div>
+                    <small class="text-muted">
+                        Assigned to{{ $thread->assignedUser?->escalation_ladder !== null && $assigneeName ? " · ladder {$thread->assignedUser->escalation_ladder}" : '' }}
+                    </small>
+                </div>
+            </div>
+            @if (($mobileUsers ?? collect())->isNotEmpty())
+                <label class="form-label small text-muted mb-1" for="chat-assign-user">Reassign to</label>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="flex-grow-1">
+                        <select id="chat-assign-user" class="selectpicker" data-style="btn-default bg-white border"
+                                data-width="100%" data-thread-id="{{ $thread->id }}">
+                            @foreach ($mobileUsers as $user)
+                                <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
+                                    {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="button" id="chat-assign-btn" class="btn btn-primary text-nowrap">
+                        <i class="bx bx-user-plus me-1"></i>Assign
+                    </button>
+                </div>
+            @endif
+        </div>
+    </div>
 
     {{-- Assignment timeline --}}
     <h6 class="mb-2">Assignment History</h6>
