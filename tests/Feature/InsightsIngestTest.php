@@ -139,6 +139,34 @@ class InsightsIngestTest extends TestCase
         $this->assertSame(1, InsightSnapshot::count());
     }
 
+    public function test_second_run_same_day_overrides_previous_snapshot(): void
+    {
+        $p = $this->payload();
+        $p['scraped_at'] = '2026-07-20T08:00:00Z';
+        $this->postWithToken($p)->assertOk();
+
+        $p['scraped_at'] = '2026-07-20T18:30:00Z';
+        $p['userStats']['bidSummary'] = [['label' => 'Bids Remaining', 'value' => '150']];
+        $this->postWithToken($p)->assertOk();
+
+        $this->assertSame(1, InsightSnapshot::count());
+        $snap = InsightSnapshot::firstOrFail();
+        $this->assertSame(150, $snap->bids_remaining);
+        $this->assertSame('2026-07-20 18:30:00', $snap->scraped_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_runs_on_different_days_create_separate_snapshots(): void
+    {
+        $p = $this->payload();
+        $p['scraped_at'] = '2026-07-20T08:00:00Z';
+        $this->postWithToken($p)->assertOk();
+
+        $p['scraped_at'] = '2026-07-21T08:00:00Z';
+        $this->postWithToken($p)->assertOk();
+
+        $this->assertSame(2, InsightSnapshot::count());
+    }
+
     public function test_invalid_scraped_at_does_not_500(): void
     {
         $p = $this->payload();
