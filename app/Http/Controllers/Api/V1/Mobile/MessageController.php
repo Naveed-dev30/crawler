@@ -68,6 +68,8 @@ class MessageController extends Controller
             ]);
         }
 
+        event(new \App\Events\ThreadMessageCreated($stored));
+
         if ($thread->status === 'fresh') {
             $thread->status = 'answered';
             $thread->save();

@@ -26,6 +26,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
   return $request->user();
 });
 
+// Socket private-channel auth for token clients (mobile). Web uses the
+// session-authenticated /broadcasting/auth registered by the provider.
+Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
+  return \Illuminate\Support\Facades\Broadcast::auth($request);
+});
+
 Route::get('getProposals', [ProposalController::class, 'getProposals']);
 
 Route::get('getBid', [BidController::class, 'getBid']);

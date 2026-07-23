@@ -34,6 +34,8 @@ class MarkThreadReadJob implements ShouldQueue
                 ->where('direction', 'received')
                 ->where(fn ($q) => $q->where('is_read', false)->orWhereNull('is_read'))
                 ->update(['is_read' => true]);
+
+            event(new \App\Events\ThreadReadStateChanged($thread->id));
         }
     }
 }

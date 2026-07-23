@@ -135,6 +135,8 @@ class ThreadSyncer
                 ]);
             }
 
+            event(new \App\Events\ThreadMessageCreated($stored));
+
             if (!$isOurs && (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
                 $lastClientMessageAt = $messageTime;
             }
