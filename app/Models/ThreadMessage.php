@@ -17,10 +17,12 @@ class ThreadMessage extends Model
         'sender_user_id',
         'message',
         'message_time',
+        'is_read',
     ];
 
     protected $casts = [
         'message_time' => 'datetime',
+        'is_read' => 'boolean',
     ];
 
     public function thread()
