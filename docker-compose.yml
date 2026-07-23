@@ -161,11 +161,11 @@ services:
     image: 'quay.io/soketi/soketi:latest-16-alpine'
     restart: unless-stopped
     ports:
-      - '${FORWARD_SOKETI_PORT:-6001}:6001'
+      - '6001:6001'
     environment:
-      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID:-crawler}'
-      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY:-crawler-key}'
-      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET:-crawler-secret}'
+      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
     networks:
       - crawler
 
