@@ -83,7 +83,6 @@ class ThreadSyncerTest extends TestCase
             [$this->flThread(9001, 777)],
             [
                 $this->flMessage(1, 9001, 111, 'Hello, saw your bid'),
-                $this->flMessage(2, 9001, self::OUR_FL_USER_ID, 'our own reply must be skipped'),
             ]
         );
 
@@ -102,6 +101,121 @@ class ThreadSyncerTest extends TestCase
         $this->assertSame(111, (int) $msg->from_freelancer_user_id);
 
         Queue::assertPushed(AssignThreadJob::class, 1);
+    }
+
+    public function test_owner_message_from_freelancer_web_is_imported_as_sent(): void
+    {
+        Queue::fake();
+        Proposal::factory()->create(['project_id' => 777]);
+
+        $this->fakeFreelancer(
+            [$this->flThread(9001, 777)],
+            [
+                $this->flMessage(1, 9001, 111, 'Hello, saw your bid', 1700000050),
+                $this->flMessage(2, 9001, self::OUR_FL_USER_ID, 'reply typed on freelancer.com', 1700000060),
+            ]
+        );
+
+        app(ThreadSyncer::class)->run();
+
+        $this->assertSame(2, ThreadMessage::count());
+        $owner = ThreadMessage::where('freelancer_message_id', 2)->first();
+        $this->assertSame('sent', $owner->direction);
+        $this->assertNull($owner->sender_user_id); // no app user — sent by the profile owner
+        $this->assertSame(self::OUR_FL_USER_ID, (int) $owner->from_freelancer_user_id);
+
+        // Owner reply is newer than the client message → thread counts as answered.
+        $thread = Thread::where('freelancer_thread_id', 9001)->first();
+        $this->assertSame('answered', $thread->status);
+        // Owner messages never move the client-message clock.
+        $this->assertSame(1700000050, $thread->last_client_message_at->timestamp);
+    }
+
+    public function test_owner_reply_older_than_client_message_keeps_thread_fresh(): void
+    {
+        Queue::fake();
+        Proposal::factory()->create(['project_id' => 777]);
+
+        $this->fakeFreelancer(
+            [$this->flThread(9001, 777)],
+            [
+                $this->flMessage(1, 9001, self::OUR_FL_USER_ID, 'we replied first', 1700000010),
+                $this->flMessage(2, 9001, 111, 'client came back after our reply', 1700000050),
+            ]
+        );
+
+        app(ThreadSyncer::class)->run();
+
+        $this->assertSame('fresh', Thread::where('freelancer_thread_id', 9001)->first()->status);
+    }
+
+    public function test_app_sent_message_is_not_duplicated_by_sync(): void
+    {
+        Queue::fake();
+        $proposal = Proposal::factory()->create(['project_id' => 777]);
+        $thread = Thread::factory()->create([
+            'freelancer_thread_id' => 9001,
+            'project_id' => 777,
+            'proposal_id' => $proposal->id,
+            'freelancer_time_updated' => 1700000100,
+        ]);
+        $appUser = \App\Models\User::factory()->create(['role' => 'mobile']);
+        ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'freelancer_message_id' => 88,
+            'direction' => 'sent',
+            'sender_user_id' => $appUser->id,
+        ]);
+
+        $this->fakeFreelancer(
+            [$this->flThread(9001, 777, 1700000200)],
+            [$this->flMessage(88, 9001, self::OUR_FL_USER_ID, 'sent from app earlier', 1700000150)]
+        );
+
+        app(ThreadSyncer::class)->run();
+
+        $this->assertSame(1, ThreadMessage::count());
+        // Attribution to the app user must survive the sync pass.
+        $this->assertSame($appUser->id, (int) ThreadMessage::first()->sender_user_id);
+    }
+
+    public function test_is_read_is_stored_on_import(): void
+    {
+        Queue::fake();
+        Proposal::factory()->create(['project_id' => 777]);
+
+        $unread = $this->flMessage(1, 9001, 111, 'client message');
+        $unread['is_read'] = false;
+        $this->fakeFreelancer([$this->flThread(9001, 777)], [$unread]);
+        app(ThreadSyncer::class)->run();
+
+        $this->assertFalse(ThreadMessage::where('freelancer_message_id', 1)->first()->is_read);
+    }
+
+    public function test_is_read_is_updated_for_already_imported_message(): void
+    {
+        Queue::fake();
+        $proposal = Proposal::factory()->create(['project_id' => 777]);
+        $thread = Thread::factory()->create([
+            'freelancer_thread_id' => 9001,
+            'project_id' => 777,
+            'proposal_id' => $proposal->id,
+            'freelancer_time_updated' => 1700000100,
+        ]);
+        ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'freelancer_message_id' => 1,
+            'direction' => 'received',
+            'is_read' => false,
+        ]);
+
+        $read = $this->flMessage(1, 9001, 111, 'client message');
+        $read['is_read'] = true;
+        $this->fakeFreelancer([$this->flThread(9001, 777, 1700000300)], [$read]);
+        app(ThreadSyncer::class)->run();
+
+        $this->assertSame(1, ThreadMessage::count());
+        $this->assertTrue(ThreadMessage::where('freelancer_message_id', 1)->first()->is_read);
     }
 
     public function test_ignores_threads_for_projects_we_did_not_bid_on(): void

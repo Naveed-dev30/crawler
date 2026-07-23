@@ -88,27 +88,44 @@ class ThreadSyncer
         $messages = $this->messenger->fetchMessages((int) $thread->freelancer_thread_id, $fromTime);
 
         $lastClientMessageAt = $thread->last_client_message_at;
+        $latestOwnerReplyAt = null;
 
         foreach ($messages as $flMessage) {
             $fromUser = (int) ($flMessage['from_user'] ?? 0);
-            if ($fromUser === $ourFlUserId) {
-                continue; // our outbound messages are stored at send time
-            }
-
             $flMessageId = (int) ($flMessage['id'] ?? 0);
-            if (!$flMessageId || ThreadMessage::where('freelancer_message_id', $flMessageId)->exists()) {
+            if (!$flMessageId) {
                 continue;
             }
 
+            $isRead = array_key_exists('is_read', $flMessage) ? (bool) $flMessage['is_read'] : null;
+            $isOurs = $fromUser === $ourFlUserId;
             $messageTime = Carbon::createFromTimestamp((int) ($flMessage['time_created'] ?? now()->timestamp));
+
+            $existing = ThreadMessage::where('freelancer_message_id', $flMessageId)->first();
+            if ($existing) {
+                // App-sent messages come back around in the feed — only their read state can change.
+                if ($isRead !== null && $existing->is_read !== $isRead) {
+                    $existing->is_read = $isRead;
+                    $existing->save();
+                }
+                continue;
+            }
+
+            if ($isOurs && $messageTime->gt($latestOwnerReplyAt ?? Carbon::createFromTimestamp(0))) {
+                $latestOwnerReplyAt = $messageTime;
+            }
 
             $stored = ThreadMessage::create([
                 'thread_id' => $thread->id,
                 'freelancer_message_id' => $flMessageId,
-                'direction' => 'received',
+                // Outbound messages here were sent from the Freelancer profile
+                // itself (app sends are stored at send time): no app sender.
+                'direction' => $isOurs ? 'sent' : 'received',
                 'from_freelancer_user_id' => $fromUser,
+                'sender_user_id' => null,
                 'message' => $flMessage['message'] ?? null,
                 'message_time' => $messageTime,
+                'is_read' => $isRead,
             ]);
 
             foreach ($flMessage['attachments'] ?? [] as $flAttachment) {
@@ -123,13 +140,22 @@ class ThreadSyncer
                 ]);
             }
 
-            if (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt)) {
+            if (!$isOurs && (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
                 $lastClientMessageAt = $messageTime;
             }
         }
 
         if ($lastClientMessageAt && !$lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
             $thread->last_client_message_at = $lastClientMessageAt;
+            $thread->save();
+        }
+
+        // An owner reply from freelancer.com after the client's last message
+        // answers the thread, same as replying from the app.
+        if ($latestOwnerReplyAt
+            && $thread->status === 'fresh'
+            && (!$thread->last_client_message_at || $latestOwnerReplyAt->gte($thread->last_client_message_at))) {
+            $thread->status = 'answered';
             $thread->save();
         }
     }
