@@ -140,14 +140,46 @@
             topBtn.addEventListener('click', () => ocBody.scrollTo({ top: 0, behavior: 'smooth' }));
             bottomBtn.addEventListener('click', () => ocBody.scrollTo({ top: ocBody.scrollHeight, behavior: 'smooth' }));
 
+            const loadDetail = async (threadId) => {
+                const res = await fetch('/chats/' + threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                updateScrollButtons();
+            };
+
             document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
                 ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
                 bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
-                const res = await fetch('/chats/' + btn.dataset.threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                await loadDetail(btn.dataset.threadId);
                 ocBody.scrollTop = 0;
-                updateScrollButtons();
             }));
+
+            // Manual assign: delegated — the control lives inside the fetched partial.
+            ocBody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('#chat-assign-btn');
+                if (!btn) return;
+                const select = document.getElementById('chat-assign-user');
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/chats/' + select.dataset.threadId + '/assign', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ user_id: select.value }),
+                    });
+                    if (!res.ok) throw new Error();
+                    const name = select.options[select.selectedIndex].text.split(' — ')[0].trim();
+                    await loadDetail(select.dataset.threadId);
+                    // Sync the server-rendered "Assigned To" cell without losing the open panel.
+                    const rowBtn = document.querySelector('.js-chat-view[data-thread-id="' + select.dataset.threadId + '"]');
+                    if (rowBtn) rowBtn.closest('tr').cells[1].textContent = name;
+                } catch {
+                    btn.disabled = false;
+                    alert('Failed to assign thread');
+                }
+            });
         });
     </script>
 @endsection

@@ -24,6 +24,20 @@
             <span class="text-muted">Unassigned</span>
         @endif
     </p>
+    @if (($mobileUsers ?? collect())->isNotEmpty())
+        <div class="d-flex align-items-center gap-2 mb-1" style="max-width: 24rem;">
+            <select id="chat-assign-user" class="form-select form-select-sm bg-white" data-thread-id="{{ $thread->id }}">
+                @foreach ($mobileUsers as $user)
+                    <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
+                        {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
+                    </option>
+                @endforeach
+            </select>
+            <button type="button" id="chat-assign-btn" class="btn btn-sm btn-primary text-nowrap">
+                <i class="bx bx-user-plus me-1"></i>Assign
+            </button>
+        </div>
+    @endif
     <p class="text-muted small mb-4">
         Created {{ $thread->created_at?->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)
