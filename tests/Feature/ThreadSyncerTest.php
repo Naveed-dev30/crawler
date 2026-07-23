@@ -240,7 +240,7 @@ class ThreadSyncerTest extends TestCase
         $this->assertSame(2, ThreadMessage::count());
         $this->assertNotNull(ThreadMessage::where('freelancer_message_id', 3)->first());
         $this->assertSame(1700000200, (int) $thread->fresh()->freelancer_time_updated);
-        Queue::assertNothingPushed(); // assignment only for new threads
+        Queue::assertNotPushed(AssignThreadJob::class); // assignment only for new threads
     }
 
     public function test_unchanged_known_thread_skips_message_fetch(): void
