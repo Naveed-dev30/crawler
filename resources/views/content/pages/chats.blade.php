@@ -145,8 +145,19 @@
                 ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
                 // The assign select arrives with the partial — init bootstrap-select for the white menu.
                 if (window.jQuery && jQuery.fn.selectpicker) jQuery('#chat-assign-user').selectpicker();
+                syncAssignButton();
                 updateScrollButtons();
             };
+
+            // Assign is a no-op while the selection matches the current assignee — keep it disabled.
+            const syncAssignButton = () => {
+                const select = document.getElementById('chat-assign-user');
+                const btn = document.getElementById('chat-assign-btn');
+                if (select && btn) btn.disabled = select.value === select.dataset.currentUserId;
+            };
+            ocBody.addEventListener('change', (e) => {
+                if (e.target.id === 'chat-assign-user') syncAssignButton();
+            });
 
             document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
                 ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
@@ -160,6 +171,7 @@
                 const btn = e.target.closest('#chat-assign-btn');
                 if (!btn) return;
                 const select = document.getElementById('chat-assign-user');
+                if (select.value === select.dataset.currentUserId) return; // already assigned — nothing to do
                 btn.disabled = true;
                 try {
                     const res = await fetch('/chats/' + select.dataset.threadId + '/assign', {

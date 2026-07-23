@@ -54,7 +54,8 @@
                 <div class="d-flex align-items-center gap-2">
                     <div class="flex-grow-1">
                         <select id="chat-assign-user" class="selectpicker" data-style="btn-default bg-white border"
-                                data-width="100%" data-thread-id="{{ $thread->id }}">
+                                data-width="100%" data-thread-id="{{ $thread->id }}"
+                                data-current-user-id="{{ $thread->assigned_user_id ?? '' }}">
                             @foreach ($mobileUsers as $user)
                                 <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
                                     {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
