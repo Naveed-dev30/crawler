@@ -115,6 +115,7 @@
 @endsection
 
 @section('page-script')
+    @include('_partials.toast-helper')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const searchInput = document.getElementById('chats-search');
@@ -189,9 +190,10 @@
                     // Sync the server-rendered "Assigned To" cell without losing the open panel.
                     const rowBtn = document.querySelector('.js-chat-view[data-thread-id="' + select.dataset.threadId + '"]');
                     if (rowBtn) rowBtn.closest('tr').cells[1].textContent = name;
+                    showAppToast('Thread assigned', 'Now assigned to ' + name + ' — notification sent.', '#28c76f');
                 } catch {
                     btn.disabled = false;
-                    alert('Failed to assign thread');
+                    showAppToast('Assignment failed', 'Could not assign the thread. Try again.', '#ea5455');
                 }
             });
         });
