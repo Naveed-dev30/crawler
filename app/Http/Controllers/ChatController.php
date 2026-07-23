@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Thread;
+use App\Models\User;
+use App\Services\ThreadAssigner;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ChatController extends Controller
 {
@@ -54,6 +57,22 @@ class ChatController extends Controller
         return view('_partials.chat-thread-detail', [
             'thread' => $thread,
             'firstAssignee' => $firstAssignee,
+            'mobileUsers' => User::mobile()->orderBy('name')->get(['id', 'name', 'escalation_ladder']),
         ]);
+    }
+
+    public function assign(Request $request, Thread $thread)
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', Rule::exists('users', 'id')->where('role', 'mobile')],
+        ]);
+
+        $to = User::findOrFail($validated['user_id']);
+
+        if ((int) $thread->assigned_user_id !== $to->id) {
+            app(ThreadAssigner::class)->assign($thread, $to, ThreadAssigner::TYPE_MANUAL, $thread->assignedUser);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

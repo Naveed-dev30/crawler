@@ -96,6 +96,11 @@ class FakeFreelancerMessenger extends FreelancerMessenger
         ));
     }
 
+    public function markThreadRead(int $flThreadId): bool
+    {
+        return true; // nothing to mark in the fake
+    }
+
     public function sendMessage(int $flThreadId, ?string $text, array $attachments = []): ?array
     {
         $state = $this->loadState();

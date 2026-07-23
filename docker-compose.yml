@@ -157,6 +157,18 @@ services:
       retries: 3
       timeout: 5s
 
+  soketi:
+    image: 'quay.io/soketi/soketi:latest-16-alpine'
+    restart: unless-stopped
+    ports:
+      - '6001:6001'
+    environment:
+      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
+    networks:
+      - crawler
+
   mailpit:
     image: 'axllent/mailpit:latest'
     restart: unless-stopped

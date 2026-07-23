@@ -49,6 +49,76 @@ class MobileMessagesApiTest extends TestCase
         $this->assertSame(['first', 'second'], collect($response->json('data'))->pluck('message')->all());
     }
 
+    public function test_opening_messages_queues_mark_thread_read(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
+
+        \Illuminate\Support\Facades\Queue::assertPushed(
+            \App\Jobs\MarkThreadReadJob::class,
+            fn ($job) => $job->threadId === $this->thread->id
+        );
+    }
+
+    public function test_message_payload_carries_sender_and_state_tags(): void
+    {
+        $colleague = User::factory()->create(['role' => 'mobile', 'name' => 'Old Assignee']);
+        ThreadMessage::factory()->create([
+            'thread_id' => $this->thread->id,
+            'direction' => 'sent',
+            'sender_user_id' => $colleague->id,
+            'freelancer_message_id' => 11,
+            'message' => 'sent by previous assignee',
+            'message_time' => now()->subMinutes(3),
+        ]);
+        ThreadMessage::factory()->create([
+            'thread_id' => $this->thread->id,
+            'direction' => 'sent',
+            'sender_user_id' => null,
+            'freelancer_message_id' => 12,
+            'message' => 'sent from freelancer.com',
+            'message_time' => now()->subMinutes(2),
+        ]);
+        ThreadMessage::factory()->create([
+            'thread_id' => $this->thread->id,
+            'direction' => 'received',
+            'freelancer_message_id' => 13,
+            'message' => 'client message',
+            'message_time' => now()->subMinute(),
+            'is_read' => false,
+        ]);
+        ThreadMessage::factory()->create([
+            'thread_id' => $this->thread->id,
+            'direction' => 'sent',
+            'sender_user_id' => $this->me->id,
+            'freelancer_message_id' => 14,
+            'message' => 'my own message',
+            'message_time' => now(),
+        ]);
+
+        $data = $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")
+            ->assertOk()
+            ->json('data');
+
+        [$colleagueMsg, $ownerMsg, $clientMsg, $mineMsg] = $data;
+
+        $this->assertTrue($mineMsg['is_mine']);
+        $this->assertSame($this->me->name, $mineMsg['sender_name']);
+
+        $this->assertSame('Old Assignee', $colleagueMsg['sender_name']);
+        $this->assertFalse($colleagueMsg['is_mine']);
+        $this->assertTrue($colleagueMsg['is_sent']);
+
+        $this->assertSame('Owner', $ownerMsg['sender_name']);
+        $this->assertFalse($ownerMsg['is_mine']);
+        $this->assertTrue($ownerMsg['is_sent']);
+
+        $this->assertNull($clientMsg['sender_name']);
+        $this->assertFalse($clientMsg['is_mine']);
+        $this->assertFalse($clientMsg['is_read']);
+    }
+
     public function test_send_message_relays_to_freelancer_and_marks_answered(): void
     {
         Http::fake([

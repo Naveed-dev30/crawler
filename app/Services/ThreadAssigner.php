@@ -45,6 +45,8 @@ class ThreadAssigner
             ]);
         }
 
+        event(new \App\Events\ThreadAssigned($thread, $to, $type, $from));
+
         $this->notify($to, $thread, $title, $body);
 
         if ($from && $from->id !== $to->id && $type !== self::TYPE_AI) {

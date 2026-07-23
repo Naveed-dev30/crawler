@@ -116,6 +116,28 @@ class FreelancerMessenger
     }
 
     /**
+     * Mark every message in a thread as read for our account.
+     */
+    public function markThreadRead(int $flThreadId): bool
+    {
+        try {
+            $response = $this->client()->asForm()->put($this->base() . "/threads/{$flThreadId}/", [
+                'action' => 'read',
+            ]);
+
+            if (!$response->successful()) {
+                Log::warning('FreelancerMessenger markThreadRead: HTTP ' . $response->status());
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('FreelancerMessenger markThreadRead exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * URL a received attachment can be fetched from.
      */
     public function attachmentUrl(int $flMessageId, string $filename): string

@@ -9,6 +9,7 @@
 
 @section('vendor-script')
     <script src="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js') }}"></script>
+    <script src="{{ asset('assets/vendor/libs/pusher/pusher.min.js') }}"></script>
 @endsection
 
 @section('content')
@@ -115,6 +116,7 @@
 @endsection
 
 @section('page-script')
+    @include('_partials.toast-helper')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const searchInput = document.getElementById('chats-search');
@@ -140,14 +142,91 @@
             topBtn.addEventListener('click', () => ocBody.scrollTo({ top: 0, behavior: 'smooth' }));
             bottomBtn.addEventListener('click', () => ocBody.scrollTo({ top: ocBody.scrollHeight, behavior: 'smooth' }));
 
+            const loadDetail = async (threadId) => {
+                const res = await fetch('/chats/' + threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                // The assign select arrives with the partial — init bootstrap-select for the white menu.
+                if (window.jQuery && jQuery.fn.selectpicker) jQuery('#chat-assign-user').selectpicker();
+                syncAssignButton();
+                updateScrollButtons();
+            };
+
+            // Assign is a no-op while the selection matches the current assignee — keep it disabled.
+            const syncAssignButton = () => {
+                const select = document.getElementById('chat-assign-user');
+                const btn = document.getElementById('chat-assign-btn');
+                if (select && btn) btn.disabled = select.value === select.dataset.currentUserId;
+            };
+            ocBody.addEventListener('change', (e) => {
+                if (e.target.id === 'chat-assign-user') syncAssignButton();
+            });
+
+            // Realtime: while a thread panel is open, listen for its events and refresh in place.
+            const pusher = new Pusher(@json(config('broadcasting.connections.pusher.key')), {
+                wsHost: window.location.hostname,
+                wsPort: {{ (int) (config('broadcasting.connections.pusher.options.port') ?: 6001) }},
+                forceTLS: false,
+                enabledTransports: ['ws', 'wss'],
+                cluster: 'mt1',
+                channelAuthorization: {
+                    endpoint: '/broadcasting/auth',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                },
+            });
+            let liveChannelName = null;
+            const watchThread = (threadId) => {
+                if (liveChannelName) pusher.unsubscribe(liveChannelName);
+                liveChannelName = 'private-thread.' + threadId;
+                const channel = pusher.subscribe(liveChannelName);
+                const refresh = async () => {
+                    const nearBottom = ocBody.scrollHeight - ocBody.clientHeight - ocBody.scrollTop < 80;
+                    await loadDetail(threadId);
+                    if (nearBottom) ocBody.scrollTop = ocBody.scrollHeight;
+                };
+                channel.bind('message.created', refresh);
+                channel.bind('thread.read', refresh);
+            };
+            document.getElementById('chatOffcanvas').addEventListener('hidden.bs.offcanvas', () => {
+                if (liveChannelName) { pusher.unsubscribe(liveChannelName); liveChannelName = null; }
+            });
+
             document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
                 ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
                 bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
-                const res = await fetch('/chats/' + btn.dataset.threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                await loadDetail(btn.dataset.threadId);
                 ocBody.scrollTop = 0;
-                updateScrollButtons();
+                watchThread(btn.dataset.threadId);
             }));
+
+            // Manual assign: delegated — the control lives inside the fetched partial.
+            ocBody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('#chat-assign-btn');
+                if (!btn) return;
+                const select = document.getElementById('chat-assign-user');
+                if (select.value === select.dataset.currentUserId) return; // already assigned — nothing to do
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/chats/' + select.dataset.threadId + '/assign', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ user_id: select.value }),
+                    });
+                    if (!res.ok) throw new Error();
+                    const name = select.options[select.selectedIndex].text.split(' — ')[0].trim();
+                    await loadDetail(select.dataset.threadId);
+                    // Sync the server-rendered "Assigned To" cell without losing the open panel.
+                    const rowBtn = document.querySelector('.js-chat-view[data-thread-id="' + select.dataset.threadId + '"]');
+                    if (rowBtn) rowBtn.closest('tr').cells[1].textContent = name;
+                    showAppToast('Thread assigned', 'This thread is now assigned to ' + name + '.', '#28c76f');
+                } catch {
+                    btn.disabled = false;
+                    showAppToast('Assignment failed', 'Could not assign the thread. Try again.', '#ea5455');
+                }
+            });
         });
     </script>
 @endsection
