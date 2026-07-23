@@ -143,6 +143,8 @@
             const loadDetail = async (threadId) => {
                 const res = await fetch('/chats/' + threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                // The assign select arrives with the partial — init bootstrap-select for the white menu.
+                if (window.jQuery && jQuery.fn.selectpicker) jQuery('#chat-assign-user').selectpicker();
                 updateScrollButtons();
             };
 
