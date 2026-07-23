@@ -18,14 +18,15 @@ services:
       LARAVEL_SAIL: 1
     volumes:
       - '.:/var/www/html'
-    # First boot: install PHP deps if vendor/ is missing, then serve on :80.
-    # (vendor/ is git-ignored, so it won't exist on a fresh clone.)
+    # Every boot: sync PHP deps with composer.lock (no-op in seconds when current),
+    # then stamp vendor/.installed.lock so the worker services know deps are fresh.
     # Scheduling lives in the dedicated 'scheduler' service below.
     command:
       - bash
       - -c
       - |
-        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist --optimize-autoloader; fi
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+        cp composer.lock vendor/.installed.lock
         # Normalize ownership so the sail (uid 1000) process can always write logs/cache.
         # Self-heals root-owned files that would otherwise crash logging (see logging.php).
         chown -R sail:sail storage bootstrap/cache || true
@@ -53,7 +54,7 @@ services:
       - bash
       - -c
       - |
-        until [ -d vendor ]; do sleep 5; done
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
         php artisan schedule:work
     networks:
       - crawler
@@ -79,7 +80,7 @@ services:
       - bash
       - -c
       - |
-        until [ -d vendor ]; do sleep 5; done
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
         php artisan queue:work --tries=3 --backoff=10 --sleep=3 --max-time=3600
     networks:
       - crawler
@@ -104,7 +105,7 @@ services:
       - bash
       - -c
       - |
-        until [ -d vendor ]; do sleep 5; done
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
         php artisan threads:sync
     networks:
       - crawler
