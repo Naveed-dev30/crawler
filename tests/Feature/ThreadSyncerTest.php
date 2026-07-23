@@ -124,29 +124,11 @@ class ThreadSyncerTest extends TestCase
         $this->assertNull($owner->sender_user_id); // no app user — sent by the profile owner
         $this->assertSame(self::OUR_FL_USER_ID, (int) $owner->from_freelancer_user_id);
 
-        // Owner reply is newer than the client message → thread counts as answered.
+        // Status stays fresh: only app replies by mobile users answer a thread.
         $thread = Thread::where('freelancer_thread_id', 9001)->first();
-        $this->assertSame('answered', $thread->status);
+        $this->assertSame('fresh', $thread->status);
         // Owner messages never move the client-message clock.
         $this->assertSame(1700000050, $thread->last_client_message_at->timestamp);
-    }
-
-    public function test_owner_reply_older_than_client_message_keeps_thread_fresh(): void
-    {
-        Queue::fake();
-        Proposal::factory()->create(['project_id' => 777]);
-
-        $this->fakeFreelancer(
-            [$this->flThread(9001, 777)],
-            [
-                $this->flMessage(1, 9001, self::OUR_FL_USER_ID, 'we replied first', 1700000010),
-                $this->flMessage(2, 9001, 111, 'client came back after our reply', 1700000050),
-            ]
-        );
-
-        app(ThreadSyncer::class)->run();
-
-        $this->assertSame('fresh', Thread::where('freelancer_thread_id', 9001)->first()->status);
     }
 
     public function test_app_sent_message_is_not_duplicated_by_sync(): void
