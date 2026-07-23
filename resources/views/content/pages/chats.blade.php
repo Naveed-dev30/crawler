@@ -9,6 +9,7 @@
 
 @section('vendor-script')
     <script src="{{ asset('assets/vendor/libs/bootstrap-select/bootstrap-select.js') }}"></script>
+    <script src="{{ asset('assets/vendor/libs/pusher/pusher.min.js') }}"></script>
 @endsection
 
 @section('content')
@@ -160,11 +161,41 @@
                 if (e.target.id === 'chat-assign-user') syncAssignButton();
             });
 
+            // Realtime: while a thread panel is open, listen for its events and refresh in place.
+            const pusher = new Pusher(@json(config('broadcasting.connections.pusher.key')), {
+                wsHost: window.location.hostname,
+                wsPort: {{ (int) (config('broadcasting.connections.pusher.options.port') ?: 6001) }},
+                forceTLS: false,
+                enabledTransports: ['ws', 'wss'],
+                cluster: 'mt1',
+                channelAuthorization: {
+                    endpoint: '/broadcasting/auth',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                },
+            });
+            let liveChannelName = null;
+            const watchThread = (threadId) => {
+                if (liveChannelName) pusher.unsubscribe(liveChannelName);
+                liveChannelName = 'private-thread.' + threadId;
+                const channel = pusher.subscribe(liveChannelName);
+                const refresh = async () => {
+                    const nearBottom = ocBody.scrollHeight - ocBody.clientHeight - ocBody.scrollTop < 80;
+                    await loadDetail(threadId);
+                    if (nearBottom) ocBody.scrollTop = ocBody.scrollHeight;
+                };
+                channel.bind('message.created', refresh);
+                channel.bind('thread.read', refresh);
+            };
+            document.getElementById('chatOffcanvas').addEventListener('hidden.bs.offcanvas', () => {
+                if (liveChannelName) { pusher.unsubscribe(liveChannelName); liveChannelName = null; }
+            });
+
             document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
                 ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
                 bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
                 await loadDetail(btn.dataset.threadId);
                 ocBody.scrollTop = 0;
+                watchThread(btn.dataset.threadId);
             }));
 
             // Manual assign: delegated — the control lives inside the fetched partial.
