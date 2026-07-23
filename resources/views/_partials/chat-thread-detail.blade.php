@@ -25,17 +25,25 @@
         @endif
     </p>
     @if (($mobileUsers ?? collect())->isNotEmpty())
-        <div class="d-flex align-items-center gap-2 mb-1" style="max-width: 24rem;">
-            <select id="chat-assign-user" class="form-select form-select-sm bg-white" data-thread-id="{{ $thread->id }}">
-                @foreach ($mobileUsers as $user)
-                    <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
-                        {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
-                    </option>
-                @endforeach
-            </select>
-            <button type="button" id="chat-assign-btn" class="btn btn-sm btn-primary text-nowrap">
-                <i class="bx bx-user-plus me-1"></i>Assign
-            </button>
+        <div class="mt-2 mb-2 p-3 border rounded-3 bg-lighter" style="max-width: 26rem;">
+            <label class="form-label small text-muted fw-semibold mb-1" for="chat-assign-user">
+                <i class="bx bx-user-pin me-1"></i>Reassign thread
+            </label>
+            <div class="d-flex align-items-center gap-2">
+                <div class="flex-grow-1">
+                    <select id="chat-assign-user" class="selectpicker" data-style="btn-default bg-white border"
+                            data-width="100%" data-thread-id="{{ $thread->id }}">
+                        @foreach ($mobileUsers as $user)
+                            <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
+                                {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="button" id="chat-assign-btn" class="btn btn-primary text-nowrap">
+                    <i class="bx bx-user-plus me-1"></i>Assign
+                </button>
+            </div>
         </div>
     @endif
     <p class="text-muted small mb-4">
