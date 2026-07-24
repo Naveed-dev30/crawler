@@ -28,3 +28,5 @@ db.sql
 /docs/
 
 .DS_Store
+
+/storage/app/firebase
