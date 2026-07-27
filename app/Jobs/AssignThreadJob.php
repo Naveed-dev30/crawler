@@ -57,5 +57,18 @@ class AssignThreadJob implements ShouldQueue
         }
 
         $assigner->assign($thread, $user, ThreadAssigner::TYPE_AI);
+
+        // The sync-time trigger skipped this thread's opening message because
+        // it arrived before an owner existed. Now that one does, answer the
+        // latest client message. GenerateAiReplyJob re-checks aiActiveNow,
+        // blocked, and already-answered, so this no-ops when inappropriate.
+        $lastClient = $thread->messages()
+            ->where('direction', 'received')
+            ->latest('message_time')
+            ->first();
+
+        if ($lastClient) {
+            GenerateAiReplyJob::dispatch($thread->id, $lastClient->id);
+        }
     }
 }
