@@ -1,5 +1,7 @@
 <?php
+
 // tests/Feature/Api/MobileAiAssistantApiTest.php
+
 namespace Tests\Feature\Api;
 
 use App\Models\User;
@@ -38,9 +40,9 @@ class MobileAiAssistantApiTest extends TestCase
         $this->putJson('/api/v1/mobile/ai-assistant/schedule', [
             'enabled' => true, 'start' => '09:00', 'end' => '17:00', 'timezone' => 'UTC',
         ])->assertOk()
-          ->assertJsonPath('data.schedule_enabled', true)
-          ->assertJsonPath('data.window.start', '09:00')
-          ->assertJsonPath('data.active_now', true);
+            ->assertJsonPath('data.schedule_enabled', true)
+            ->assertJsonPath('data.window.start', '09:00')
+            ->assertJsonPath('data.active_now', true);
 
         Carbon::setTestNow();
     }

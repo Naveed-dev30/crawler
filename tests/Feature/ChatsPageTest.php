@@ -1,10 +1,12 @@
 <?php
+
 // tests/Feature/ChatsPageTest.php
 
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\Thread;
+use App\Models\ThreadAttachment;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -165,12 +167,12 @@ class ChatsPageTest extends TestCase
     {
         $thread = Thread::factory()->create();
         $message = ThreadMessage::factory()->create(['thread_id' => $thread->id]);
-        \App\Models\ThreadAttachment::factory()->create([
+        ThreadAttachment::factory()->create([
             'thread_message_id' => $message->id,
             'filename' => 'evil.txt',
             'url' => 'javascript:alert(1)',
         ]);
-        \App\Models\ThreadAttachment::factory()->create([
+        ThreadAttachment::factory()->create([
             'thread_message_id' => $message->id,
             'filename' => 'safe.pdf',
             'url' => 'https://example.com/safe.pdf',

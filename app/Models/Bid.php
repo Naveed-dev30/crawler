@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Models\Proposal;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Notifications\Notifiable;
 
 class Bid extends Model
@@ -19,7 +19,7 @@ class Bid extends Model
     /**
      * Get the proposal that owns the Bid
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function proposal()
     {
@@ -36,7 +36,6 @@ class Bid extends Model
         return $query->where('created_at', '>=', now()->subYear());
     }
 
-
     public function scopeWhereSeen($query)
     {
         return $query->where('is_seen', '=', 1);
@@ -47,5 +46,4 @@ class Bid extends Model
         return $query->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date');
     }
-
 }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\ThreadReadStateChanged;
 use App\Models\Thread;
 use App\Services\FreelancerMessenger;
 use Illuminate\Bus\Queueable;
@@ -18,14 +19,12 @@ class MarkThreadReadJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public int $threadId)
-    {
-    }
+    public function __construct(public int $threadId) {}
 
     public function handle(FreelancerMessenger $messenger): void
     {
         $thread = Thread::find($this->threadId);
-        if (!$thread || !$thread->freelancer_thread_id) {
+        if (! $thread || ! $thread->freelancer_thread_id) {
             return;
         }
 
@@ -35,7 +34,7 @@ class MarkThreadReadJob implements ShouldQueue
                 ->where(fn ($q) => $q->where('is_read', false)->orWhereNull('is_read'))
                 ->update(['is_read' => true]);
 
-            event(new \App\Events\ThreadReadStateChanged($thread->id));
+            event(new ThreadReadStateChanged($thread->id));
         }
     }
 }

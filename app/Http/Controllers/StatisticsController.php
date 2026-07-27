@@ -76,7 +76,7 @@ class StatisticsController extends Controller
 
         foreach ($query->get() as $row) {
             $key = $this->bucketKey(Carbon::parse($row->created_at), $granularity);
-            if (!isset($data[$key])) {
+            if (! isset($data[$key])) {
                 continue;
             }
             $status = strtolower($row->bid_status);
@@ -95,6 +95,7 @@ class StatisticsController extends Controller
     private function resolveGranularity(Request $request): string
     {
         $g = $request->query('granularity', 'daily');
+
         return in_array($g, ['hourly', 'daily', 'weekly', 'monthly'], true) ? $g : 'daily';
     }
 
@@ -176,7 +177,7 @@ class StatisticsController extends Controller
 
         foreach ($rows as $row) {
             $key = $this->bucketKey(Carbon::parse($row->created_at), $granularity);
-            if (!isset($data[$key])) {
+            if (! isset($data[$key])) {
                 continue;
             }
             $usd = ($row->min_budget ?? 0) * ($row->exchange_rate ?? 1);
@@ -289,9 +290,9 @@ class StatisticsController extends Controller
 
         return response()->json([
             'summary' => [
-                'completed'    => $totalCompleted,
-                'awarded'      => $totalAwarded,
-                'win_rate'     => $totalCompleted > 0 ? round(($totalAwarded / $totalCompleted) * 100, 1) : 0,
+                'completed' => $totalCompleted,
+                'awarded' => $totalAwarded,
+                'win_rate' => $totalCompleted > 0 ? round(($totalAwarded / $totalCompleted) * 100, 1) : 0,
                 'earnings_usd' => round($earningsUsd, 2),
             ],
             'series' => array_values($buckets),

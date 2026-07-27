@@ -1,4 +1,5 @@
 <?php
+
 // tests/Feature/RealtimeBroadcastTest.php
 
 namespace Tests\Feature;
@@ -11,6 +12,7 @@ use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
+use App\Services\FreelancerMessenger;
 use App\Services\ThreadAssigner;
 use App\Services\ThreadSyncer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -173,6 +175,7 @@ class RealtimeBroadcastTest extends TestCase
 
         Event::assertDispatched(ThreadAssigned::class, function ($e) use ($to, $from) {
             $channels = collect($e->broadcastOn())->map(fn ($c) => (string) $c);
+
             return $e->to->id === $to->id
                 && $channels->contains("private-user.{$to->id}")
                 && $channels->contains("private-user.{$from->id}");
@@ -189,7 +192,7 @@ class RealtimeBroadcastTest extends TestCase
         $thread = Thread::factory()->create(['freelancer_thread_id' => 9001]);
         ThreadMessage::factory()->create(['thread_id' => $thread->id, 'direction' => 'received', 'is_read' => false]);
 
-        (new MarkThreadReadJob($thread->id))->handle(app(\App\Services\FreelancerMessenger::class));
+        (new MarkThreadReadJob($thread->id))->handle(app(FreelancerMessenger::class));
 
         Event::assertDispatched(ThreadReadStateChanged::class, fn ($e) => $e->threadId === $thread->id);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadResource;
+use App\Models\BidInsight;
 use App\Models\Thread;
 use App\Models\User;
 use App\Services\ThreadAssigner;
@@ -36,7 +37,7 @@ class ThreadController extends Controller
         $thread->load(['proposal.bid']);
         $thread->setAttribute(
             'client_insight',
-            \App\Models\BidInsight::where('project_id', $thread->project_id)->first()
+            BidInsight::where('project_id', $thread->project_id)->first()
         );
 
         return $this->ok(new ThreadResource($thread), 'Thread fetched successfully.');

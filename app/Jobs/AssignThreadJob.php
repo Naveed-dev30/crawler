@@ -17,9 +17,7 @@ class AssignThreadJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public int $threadId)
-    {
-    }
+    public function __construct(public int $threadId) {}
 
     public function handle(ThreadMatcher $matcher, ThreadAssigner $assigner): void
     {
@@ -35,6 +33,7 @@ class AssignThreadJob implements ShouldQueue
 
         if ($profiles === []) {
             Log::warning("AssignThreadJob: no mobile users to assign thread {$thread->id}");
+
             return;
         }
 
@@ -53,6 +52,7 @@ class AssignThreadJob implements ShouldQueue
 
         if (! $user) {
             Log::warning("AssignThreadJob: no assignable user for thread {$thread->id}");
+
             return;
         }
 

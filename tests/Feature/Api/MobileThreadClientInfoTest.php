@@ -1,5 +1,7 @@
 <?php
+
 // tests/Feature/Api/MobileThreadClientInfoTest.php
+
 namespace Tests\Feature\Api;
 
 use App\Models\BidInsight;

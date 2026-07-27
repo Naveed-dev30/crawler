@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Exception\Messaging\NotFound;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -15,7 +16,7 @@ use Kreait\Firebase\Messaging\Notification;
  */
 class FcmPusher
 {
-    private ?\Kreait\Firebase\Contract\Messaging $messaging = null;
+    private ?Messaging $messaging = null;
 
     public function sendToUser(User $user, string $title, string $body, array $data = []): bool
     {
@@ -39,16 +40,16 @@ class FcmPusher
 
             return false;
         } catch (\Throwable $e) {
-            Log::warning('FcmPusher: ' . $e->getMessage());
+            Log::warning('FcmPusher: '.$e->getMessage());
 
             return false;
         }
     }
 
-    private function messaging(): \Kreait\Firebase\Contract\Messaging
+    private function messaging(): Messaging
     {
         if ($this->messaging === null) {
-            $this->messaging = (new Factory())
+            $this->messaging = (new Factory)
                 ->withServiceAccount(config('services.firebase.credentials'))
                 ->createMessaging();
         }

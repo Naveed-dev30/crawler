@@ -6,6 +6,7 @@ use App\Jobs\AssignThreadJob;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
+use App\Models\User;
 use App\Services\ThreadSyncer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -141,7 +142,7 @@ class ThreadSyncerTest extends TestCase
             'proposal_id' => $proposal->id,
             'freelancer_time_updated' => 1700000100,
         ]);
-        $appUser = \App\Models\User::factory()->create(['role' => 'mobile']);
+        $appUser = User::factory()->create(['role' => 'mobile']);
         ThreadMessage::factory()->create([
             'thread_id' => $thread->id,
             'freelancer_message_id' => 88,

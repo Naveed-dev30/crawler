@@ -20,7 +20,7 @@ class ProposalQualifierTest extends TestCase
 
     private function qualifier(): ProposalQualifier
     {
-        return new ProposalQualifier();
+        return new ProposalQualifier;
     }
 
     public function test_true_reply_returns_qualified_true_with_reason(): void
@@ -86,6 +86,7 @@ class ProposalQualifierTest extends TestCase
 
         Http::assertSent(function ($request) {
             $system = strtolower($request->data()['messages'][0]['content'] ?? '');
+
             return str_contains($system, 'no gambling sites')
                 && str_contains($system, 'json')
                 && str_contains($system, 'qualified')

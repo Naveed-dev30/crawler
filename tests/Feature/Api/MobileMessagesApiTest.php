@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -16,6 +18,7 @@ class MobileMessagesApiTest extends TestCase
     use RefreshDatabase;
 
     private User $me;
+
     private Thread $thread;
 
     protected function setUp(): void
@@ -51,12 +54,12 @@ class MobileMessagesApiTest extends TestCase
 
     public function test_opening_messages_queues_mark_thread_read(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
 
         $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
 
-        \Illuminate\Support\Facades\Queue::assertPushed(
-            \App\Jobs\MarkThreadReadJob::class,
+        Queue::assertPushed(
+            MarkThreadReadJob::class,
             fn ($job) => $job->threadId === $this->thread->id
         );
     }

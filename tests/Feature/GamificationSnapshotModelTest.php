@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\GamificationSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class GamificationSnapshotModelTest extends TestCase
@@ -28,6 +29,6 @@ class GamificationSnapshotModelTest extends TestCase
         $this->assertSame(309961, $fresh->self_score);
         $this->assertIsArray($fresh->top5);
         $this->assertSame('Chandrasekhar G.', $fresh->top5[0]['public_name']);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $fresh->scraped_at);
+        $this->assertInstanceOf(Carbon::class, $fresh->scraped_at);
     }
 }

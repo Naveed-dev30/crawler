@@ -1,11 +1,14 @@
 <?php
+
 // tests/Feature/Api/AiAssistantSchemaTest.php
+
 namespace Tests\Feature\Api;
 
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AiAssistantSchemaTest extends TestCase
@@ -26,7 +29,7 @@ class AiAssistantSchemaTest extends TestCase
 
         $this->assertTrue($user->ai_schedule_enabled);
         $this->assertFalse($user->ai_manual_state);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $user->ai_manual_until);
+        $this->assertInstanceOf(Carbon::class, $user->ai_manual_until);
         $this->assertSame('Asia/Karachi', $user->ai_timezone);
     }
 

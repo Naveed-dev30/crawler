@@ -1,5 +1,7 @@
 <?php
+
 // app/Jobs/GenerateAiReplyJob.php
+
 namespace App\Jobs;
 
 use App\Models\Thread;
