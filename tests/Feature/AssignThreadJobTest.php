@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\AssignThreadJob;
+use App\Jobs\GenerateAiReplyJob;
 use App\Jobs\SendFcmPushJob;
 use App\Models\MobileNotification;
 use App\Models\Thread;
@@ -62,6 +63,41 @@ class AssignThreadJobTest extends TestCase
         $this->assertSame($thread->id, (int) $notification->thread_id);
 
         Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $flutterDev->id);
+    }
+
+    public function test_assignment_queues_ai_reply_for_latest_client_message(): void
+    {
+        Queue::fake();
+        $first = $this->mobileUser(1);
+        Http::fake(['https://api.openai.com/*' => Http::response('boom', 500)]);
+
+        $thread = $this->threadWithMessage();
+        $latest = ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'received',
+            'message' => 'Any update?',
+            'message_time' => now(),
+        ]);
+
+        app()->call([new AssignThreadJob($thread->id), 'handle']);
+
+        $this->assertSame($first->id, (int) $thread->fresh()->assigned_user_id);
+        Queue::assertPushed(
+            GenerateAiReplyJob::class,
+            fn ($job) => $job->threadId === $thread->id && $job->clientMessageId === $latest->id
+        );
+    }
+
+    public function test_unassigned_thread_does_not_queue_ai_reply(): void
+    {
+        Queue::fake();
+        Http::fake();
+
+        $thread = $this->threadWithMessage();
+
+        app()->call([new AssignThreadJob($thread->id), 'handle']);
+
+        Queue::assertNotPushed(GenerateAiReplyJob::class);
     }
 
     public function test_matcher_failure_falls_back_to_ladder_one_user(): void
