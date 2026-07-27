@@ -6,7 +6,6 @@ use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
 use App\Jobs\OpenAIJob;
 use App\Models\Bid;
-use App\Models\BidInsight;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Filter;
@@ -271,63 +270,11 @@ class ProposalController extends Controller
 
     /**
      * Upsert the client ("About the client") info for a project into
-     * bid_insights, keyed by project_id. Sourced from the projects/active
-     * user_details + employer-reputation projection. Only non-null fields are
-     * written so a later extension ingest (or an earlier one) is never
-     * clobbered with blanks. Creates the row when absent — otherwise the
-     * mobile thread's client block stays null for crawler-only projects.
+     * bid_insights via the shared writer (also used by client:backfill).
      */
     private function storeClientInsight(array $project, array $users): void
     {
-        // Prefer the owner object attached directly by owner_info=true; fall
-        // back to the users map (owner_id) when only that projection is present.
-        $owner = $project['owner_info'] ?? null;
-        if (! is_array($owner)) {
-            $ownerId = $project['owner_id'] ?? null;
-            $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
-        }
-
-        if (! is_array($owner)) {
-            return;
-        }
-
-        // Real owner_info shape (verified against a live projects/active call):
-        // reputation.entire_history holds rating/reviews/complete; country is a
-        // top-level object; status carries the verification badges. Name/avatar
-        // are PII and only appear on token-authenticated requests.
-        $history = $owner['reputation']['entire_history'] ?? [];
-        $country = $owner['country'] ?? [];
-
-        // Prefer the project's own client_engagement object; fall back to what
-        // the reputation / invited list gives us.
-        $engagement = is_array($project['client_engagement'] ?? null)
-            ? $project['client_engagement']
-            : array_filter([
-                'completed' => $history['complete'] ?? null,
-                'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
-            ], fn ($v) => $v !== null);
-
-        $registered = $owner['registration_date'] ?? null;
-
-        $attributes = array_filter([
-            'client_name' => $owner['display_name'] ?? $owner['public_name'] ?? $owner['username'] ?? null,
-            'client_avatar' => $owner['avatar_large_cdn'] ?? $owner['avatar_cdn'] ?? $owner['avatar'] ?? null,
-            'client_country' => $country['name'] ?? null,
-            'client_country_flag' => $country['flag_url_cdn'] ?? $country['flag_url'] ?? null,
-            'client_rating' => $history['overall'] ?? null,
-            'client_reviews' => $history['reviews'] ?? null,
-            'client_member_since' => $registered ? Carbon::createFromTimestamp((int) $registered) : null,
-            'client_verification' => is_array($owner['status'] ?? null) ? $owner['status'] : null,
-            'client_engagement' => $engagement !== [] ? $engagement : null,
-        ], fn ($v) => $v !== null);
-
-        if ($attributes === []) {
-            return;
-        }
-
-        $attributes['last_scraped_at'] = now();
-
-        BidInsight::updateOrCreate(['project_id' => $project['id']], $attributes);
+        app(\App\Services\ClientInsightWriter::class)->store($project, $users);
     }
 
     /**
