@@ -75,4 +75,13 @@ class ChatController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    public function unblock(Thread $thread)
+    {
+        $thread->blocked = false;
+        $thread->block_reason = null;
+        $thread->save();
+
+        return response()->json(['success' => true]);
+    }
 }

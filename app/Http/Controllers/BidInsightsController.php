@@ -18,7 +18,7 @@ class BidInsightsController extends Controller
         Log::info('========================= bid insights ingest: payload', ['payload' => $payload]);
 
         $bids = $payload['bids'] ?? null;
-        if (!is_array($bids)) {
+        if (! is_array($bids)) {
             return response()->json(['message' => 'Invalid payload'], 422);
         }
 
@@ -36,13 +36,15 @@ class BidInsightsController extends Controller
 
         DB::transaction(function () use ($bids, $scrapedAt, &$created, &$updated, &$changes, &$skipped) {
             foreach ($bids as $item) {
-                if (!is_array($item)) {
+                if (! is_array($item)) {
                     $skipped++;
+
                     continue;
                 }
                 $pid = $item['project_id'] ?? null;
-                if (!(is_int($pid) || (is_string($pid) && ctype_digit($pid)))) {
+                if (! (is_int($pid) || (is_string($pid) && ctype_digit($pid)))) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -61,6 +63,7 @@ class BidInsightsController extends Controller
                     $attributes['raw'] = $item;
                     BidInsight::create($attributes);
                     $created++;
+
                     continue;
                 }
 
@@ -110,7 +113,7 @@ class BidInsightsController extends Controller
         }
 
         foreach (array_merge(BidInsight::ONE_TIME_FIELDS, BidInsight::RECURRING_FIELDS) as $field) {
-            if (!array_key_exists($field, $mapped) && array_key_exists($field, $item)) {
+            if (! array_key_exists($field, $mapped) && array_key_exists($field, $item)) {
                 $mapped[$field] = $item[$field];
             }
         }
@@ -129,7 +132,7 @@ class BidInsightsController extends Controller
         }
 
         foreach (BidInsight::RECURRING_FIELDS as $field) {
-            if (!array_key_exists($field, $mapped)) {
+            if (! array_key_exists($field, $mapped)) {
                 continue;
             }
             $old = $existing->{$field};

@@ -118,7 +118,7 @@ class BidsDataTest extends TestCase
         $this->assertStringContainsString('data-interest="Not Interested"', $interested);
 
         // Not Interested: only that row; only the Interested (shift) button
-        $not = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest=' . urlencode('Not Interested'))->assertOk()->json('rowsHtml');
+        $not = $this->actingAs($user)->getJson('/bids/data?tab=skill-not-matched&interest='.urlencode('Not Interested'))->assertOk()->json('rowsHtml');
         $this->assertStringNotContainsString('111', $not);
         $this->assertStringContainsString('222', $not);
         $this->assertStringContainsString('data-interest="Interested"', $not);

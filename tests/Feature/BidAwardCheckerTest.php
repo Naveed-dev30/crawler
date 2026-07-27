@@ -34,7 +34,7 @@ class BidAwardCheckerTest extends TestCase
         $p = Proposal::factory()->create(['project_id' => 555]);
         $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'awarded' => false, 'price' => 100]);
 
-        (new BidAwardChecker())->run();
+        (new BidAwardChecker)->run();
 
         $bid->refresh();
         $this->assertTrue($bid->awarded);
@@ -49,7 +49,7 @@ class BidAwardCheckerTest extends TestCase
         $p = Proposal::factory()->create(['project_id' => 555]);
         $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'awarded' => false, 'price' => 100]);
 
-        (new BidAwardChecker())->run();
+        (new BidAwardChecker)->run();
 
         $bid->refresh();
         $this->assertTrue($bid->awarded);
@@ -64,7 +64,7 @@ class BidAwardCheckerTest extends TestCase
         $p = Proposal::factory()->create(['project_id' => 555]);
         $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'awarded' => false]);
 
-        (new BidAwardChecker())->run();
+        (new BidAwardChecker)->run();
 
         $bid->refresh();
         $this->assertFalse($bid->awarded);
@@ -80,7 +80,7 @@ class BidAwardCheckerTest extends TestCase
         $p = Proposal::factory()->create(['project_id' => 777]);
         $bid = Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'awarded' => false]);
 
-        (new BidAwardChecker())->run();
+        (new BidAwardChecker)->run();
 
         $bid->refresh();
         $this->assertFalse($bid->awarded);

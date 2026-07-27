@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\ThreadMessageCreated;
 use App\Jobs\AssignThreadJob;
+use App\Jobs\GenerateAiReplyJob;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
@@ -17,16 +19,14 @@ use Illuminate\Support\Facades\Log;
  */
 class ThreadSyncer
 {
-    public function __construct(private FreelancerMessenger $messenger)
-    {
-    }
+    public function __construct(private FreelancerMessenger $messenger) {}
 
     public function run(): void
     {
         try {
             $this->sync();
         } catch (\Throwable $e) {
-            Log::warning('ThreadSyncer: ' . $e->getMessage());
+            Log::warning('ThreadSyncer: '.$e->getMessage());
         }
     }
 
@@ -49,18 +49,18 @@ class ThreadSyncer
             $flThreadId = (int) ($flThread['id'] ?? 0);
             $timeUpdated = (int) ($flThread['time_updated'] ?? 0);
 
-            if (!$projectId || !$flThreadId) {
+            if (! $projectId || ! $flThreadId) {
                 continue;
             }
 
             $proposalId = Proposal::where('project_id', $projectId)->value('id');
-            if (!$proposalId) {
+            if (! $proposalId) {
                 continue; // not a project we bid on
             }
 
             $thread = Thread::where('freelancer_thread_id', $flThreadId)->first();
 
-            if (!$thread) {
+            if (! $thread) {
                 $thread = Thread::create([
                     'freelancer_thread_id' => $flThreadId,
                     'project_id' => $projectId,
@@ -72,6 +72,7 @@ class ThreadSyncer
                 $this->importMessages($thread, $ourFlUserId);
 
                 AssignThreadJob::dispatch($thread->id);
+
                 continue;
             }
 
@@ -80,6 +81,17 @@ class ThreadSyncer
                 $thread->freelancer_time_updated = $timeUpdated;
                 $thread->save();
             }
+        }
+    }
+
+    public function maybeQueueAiReply(Thread $thread, ThreadMessage $message): void
+    {
+        if ($message->direction !== 'received' || $thread->blocked || $thread->assigned_user_id === null) {
+            return;
+        }
+        $thread->loadMissing('assignedUser');
+        if ($thread->assignedUser && $thread->assignedUser->aiActiveNow(\Illuminate\Support\Carbon::now('UTC'))) {
+            GenerateAiReplyJob::dispatch($thread->id, $message->id);
         }
     }
 
@@ -92,7 +104,7 @@ class ThreadSyncer
         foreach ($messages as $flMessage) {
             $fromUser = (int) ($flMessage['from_user'] ?? 0);
             $flMessageId = (int) ($flMessage['id'] ?? 0);
-            if (!$flMessageId) {
+            if (! $flMessageId) {
                 continue;
             }
 
@@ -107,6 +119,7 @@ class ThreadSyncer
                     $existing->is_read = $isRead;
                     $existing->save();
                 }
+
                 continue;
             }
 
@@ -135,14 +148,16 @@ class ThreadSyncer
                 ]);
             }
 
-            event(new \App\Events\ThreadMessageCreated($stored));
+            event(new ThreadMessageCreated($stored));
 
-            if (!$isOurs && (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
+            $this->maybeQueueAiReply($thread, $stored);
+
+            if (! $isOurs && (! $lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
                 $lastClientMessageAt = $messageTime;
             }
         }
 
-        if ($lastClientMessageAt && !$lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
+        if ($lastClientMessageAt && ! $lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
             $thread->last_client_message_at = $lastClientMessageAt;
             $thread->save();
         }

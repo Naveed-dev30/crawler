@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadResource;
+use App\Models\BidInsight;
 use App\Models\Thread;
 use App\Models\User;
 use App\Services\ThreadAssigner;
@@ -34,6 +35,10 @@ class ThreadController extends Controller
         $this->authorizeThread($request, $thread);
 
         $thread->load(['proposal.bid']);
+        $thread->setAttribute(
+            'client_insight',
+            BidInsight::where('project_id', $thread->project_id)->first()
+        );
 
         return $this->ok(new ThreadResource($thread), 'Thread fetched successfully.');
     }
@@ -42,10 +47,15 @@ class ThreadController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
         $thread->blocked = true;
+        $thread->block_reason = $validated['reason'];
         $thread->save();
 
-        return $this->ok(['blocked' => true], 'Thread blocked.');
+        return $this->ok(['blocked' => true, 'reason' => $thread->block_reason], 'Thread blocked.');
     }
 
     public function unblock(Request $request, Thread $thread)
@@ -53,6 +63,7 @@ class ThreadController extends Controller
         $this->authorizeThread($request, $thread);
 
         $thread->blocked = false;
+        $thread->block_reason = null;
         $thread->save();
 
         return $this->ok(['blocked' => false], 'Thread unblocked.');

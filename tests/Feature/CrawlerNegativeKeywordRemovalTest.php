@@ -22,7 +22,7 @@ class CrawlerNegativeKeywordRemovalTest extends TestCase
             'id' => $id,
             'title' => $title,
             'description' => $description,
-            'seo_url' => 'project-' . $id,
+            'seo_url' => 'project-'.$id,
             'type' => 'fixed',
             'language' => 'en',
             'owner_id' => 1,
@@ -46,14 +46,14 @@ class CrawlerNegativeKeywordRemovalTest extends TestCase
             'usekeywords' => 0,
             'usecountries' => 1,
         ]);
-        $country = new Country();
+        $country = new Country;
         $country->country = 'US';
         $country->language = 'US';
         $country->save();
         $filter->countries()->attach($country->id);
 
         // Table still exists; entries must be inert now.
-        $nk = new NegativeKeyword();
+        $nk = new NegativeKeyword;
         $nk->name = 'gambling';
         $nk->save();
 
@@ -67,7 +67,7 @@ class CrawlerNegativeKeywordRemovalTest extends TestCase
             ], 200),
         ]);
 
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
 
         $this->assertDatabaseHas('proposals', ['project_id' => 901]);
     }

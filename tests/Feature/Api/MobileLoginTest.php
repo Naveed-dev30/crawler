@@ -126,7 +126,7 @@ class MobileLoginTest extends TestCase
 
     public function test_user_endpoint_rejects_non_mobile_role(): void
     {
-        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $token = $admin->createToken('x')->plainTextToken;
 
         $this->getJson('/api/v1/mobile/user', [

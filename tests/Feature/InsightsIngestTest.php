@@ -25,7 +25,7 @@ class InsightsIngestTest extends TestCase
 
     private function postWithToken(array $payload)
     {
-        return $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+        return $this->withHeader('Authorization', 'Bearer '.self::TOKEN)
             ->postJson('/api/insights/ingest', $payload);
     }
 

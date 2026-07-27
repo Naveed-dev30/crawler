@@ -14,6 +14,7 @@ class ThreadResource extends JsonResource
             'project_id' => $this->project_id,
             'status' => $this->status,
             'blocked' => (bool) $this->blocked,
+            'block_reason' => $this->block_reason,
             'assigned_user_id' => $this->assigned_user_id,
             'last_client_message_at' => $this->last_client_message_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
@@ -37,6 +38,12 @@ class ThreadResource extends JsonResource
                     ] : null,
                 ];
             }),
+            'client' => $this->resource->client_insight ? [
+                'country' => $this->resource->client_insight->client_country,
+                'rating' => $this->resource->client_insight->client_rating,
+                'reviews' => $this->resource->client_insight->client_reviews,
+                'engagement' => $this->resource->client_insight->client_engagement,
+            ] : null,
         ];
     }
 }

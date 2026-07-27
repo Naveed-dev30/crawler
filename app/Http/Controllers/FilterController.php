@@ -33,14 +33,11 @@ class FilterController extends Controller
      *
      * @return Response
      */
-    public function create()
-    {
-    }
+    public function create() {}
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param StoreFilterRequest $request
      * @return Response
      */
     public function store(StoreFilterRequest $request)
@@ -51,7 +48,6 @@ class FilterController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param Filter $filter
      * @return Response
      */
     public function show(Filter $filter)
@@ -62,7 +58,6 @@ class FilterController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param Filter $filter
      * @return Response
      */
     public function edit(Filter $filter)
@@ -73,8 +68,8 @@ class FilterController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param UpdateFilterRequest $request
-     * @param Filter $filter
+     * @param  UpdateFilterRequest  $request
+     * @param  Filter  $filter
      * @return Response
      */
     public function update(Request $request)
@@ -87,7 +82,6 @@ class FilterController extends Controller
             $crawlerOn = $request->formValidationCrawler;
             $minHourly = $request->formValidationMinHourlyRate;
             $minFixed = $request->formValidationMinFixedRate;
-
 
             $filter = Filter::find(1);
 
@@ -134,9 +128,9 @@ class FilterController extends Controller
                 $filter->min_hourly_amount = $minHourly;
             }
 
-            $filter->usecountries = $request->useCountries == "on" ? 1 : 0;
-            $filter->useminfix = $request->useminfix == "on" ? 1 : 0;
-            $filter->useminhour = $request->useminhour == "on" ? 1 : 0;
+            $filter->usecountries = $request->useCountries == 'on' ? 1 : 0;
+            $filter->useminfix = $request->useminfix == 'on' ? 1 : 0;
+            $filter->useminhour = $request->useminhour == 'on' ? 1 : 0;
 
             $filter->save();
 
@@ -149,7 +143,6 @@ class FilterController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param Filter $filter
      * @return Response
      */
     public function destroy(Filter $filter)

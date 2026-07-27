@@ -83,6 +83,7 @@ class ThreadMatcherTest extends TestCase
 
         Http::assertSent(function ($request) {
             $system = $request->data()['messages'][0]['content'] ?? '';
+
             return str_contains($system, 'CUSTOM MATCH RULES');
         });
     }

@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Jobs\BidNowJob;
+use App\Services\AiReplyGenerator;
+use App\Services\Fake\FakeAiReplyGenerator;
+use App\Services\Fake\FakeFreelancerMessenger;
+use App\Services\FreelancerMessenger;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -18,8 +22,15 @@ class AppServiceProvider extends ServiceProvider
         // swallow outbound messages — no network traffic either way.
         if (config('variables.flFake')) {
             $this->app->bind(
-                \App\Services\FreelancerMessenger::class,
-                \App\Services\Fake\FakeFreelancerMessenger::class
+                FreelancerMessenger::class,
+                FakeFreelancerMessenger::class
+            );
+
+            // Same offline switch: fabricate AI replies without an OpenAI key
+            // so the auto-reply pipeline runs end-to-end locally.
+            $this->app->bind(
+                AiReplyGenerator::class,
+                FakeAiReplyGenerator::class
             );
         }
     }

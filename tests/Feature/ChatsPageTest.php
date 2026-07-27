@@ -1,10 +1,12 @@
 <?php
+
 // tests/Feature/ChatsPageTest.php
 
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\Thread;
+use App\Models\ThreadAttachment;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,6 +52,18 @@ class ChatsPageTest extends TestCase
         // 3 messages, 2 escalations (manual_assign not counted)
         $res->assertSee('<td>3</td>', false);
         $res->assertSee('<td>2</td>', false);
+    }
+
+    public function test_thread_detail_shows_block_status_and_reason(): void
+    {
+        $thread = Thread::factory()->create([
+            'blocked' => true,
+            'block_reason' => 'Abusive client language',
+        ]);
+
+        $res = $this->actingAs($this->admin())->get("/chats/{$thread->id}/detail")->assertOk();
+        $res->assertSee('Blocked');
+        $res->assertSee('Abusive client language');
     }
 
     public function test_unassigned_thread_shows_unassigned(): void
@@ -165,12 +179,12 @@ class ChatsPageTest extends TestCase
     {
         $thread = Thread::factory()->create();
         $message = ThreadMessage::factory()->create(['thread_id' => $thread->id]);
-        \App\Models\ThreadAttachment::factory()->create([
+        ThreadAttachment::factory()->create([
             'thread_message_id' => $message->id,
             'filename' => 'evil.txt',
             'url' => 'javascript:alert(1)',
         ]);
-        \App\Models\ThreadAttachment::factory()->create([
+        ThreadAttachment::factory()->create([
             'thread_message_id' => $message->id,
             'filename' => 'safe.pdf',
             'url' => 'https://example.com/safe.pdf',
