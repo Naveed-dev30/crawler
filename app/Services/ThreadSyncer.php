@@ -83,6 +83,17 @@ class ThreadSyncer
         }
     }
 
+    public function maybeQueueAiReply(\App\Models\Thread $thread, \App\Models\ThreadMessage $message): void
+    {
+        if ($message->direction !== 'received' || $thread->blocked || $thread->assigned_user_id === null) {
+            return;
+        }
+        $thread->loadMissing('assignedUser');
+        if ($thread->assignedUser && $thread->assignedUser->aiActiveNow(\Illuminate\Support\Carbon::now('UTC'))) {
+            \App\Jobs\GenerateAiReplyJob::dispatch($thread->id, $message->id);
+        }
+    }
+
     private function importMessages(Thread $thread, int $ourFlUserId, int $fromTime = 0): void
     {
         $messages = $this->messenger->fetchMessages((int) $thread->freelancer_thread_id, $fromTime);
@@ -136,6 +147,8 @@ class ThreadSyncer
             }
 
             event(new \App\Events\ThreadMessageCreated($stored));
+
+            $this->maybeQueueAiReply($thread, $stored);
 
             if (!$isOurs && (!$lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
                 $lastClientMessageAt = $messageTime;
