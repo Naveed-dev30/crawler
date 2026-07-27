@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Models\Bid;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Proposal extends Model
 {
@@ -18,7 +18,7 @@ class Proposal extends Model
     /**
      * Get the Bid associated with the Proposal
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
     public function bid()
     {

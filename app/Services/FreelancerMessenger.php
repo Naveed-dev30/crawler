@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,7 +16,7 @@ class FreelancerMessenger
 {
     private function base(): string
     {
-        return rtrim(config('variables.flBase'), '/') . '/api/messages/0.1';
+        return rtrim(config('variables.flBase'), '/').'/api/messages/0.1';
     }
 
     private function client(): PendingRequest
@@ -31,16 +32,18 @@ class FreelancerMessenger
     public function fetchThreads(): array
     {
         try {
-            $response = $this->client()->get($this->base() . '/threads/');
+            $response = $this->client()->get($this->base().'/threads/');
 
-            if (!$response->successful()) {
-                Log::warning('FreelancerMessenger threads: HTTP ' . $response->status());
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger threads: HTTP '.$response->status());
+
                 return [];
             }
 
             return $response->json('result.threads') ?? [];
         } catch (\Throwable $e) {
-            Log::warning('FreelancerMessenger threads exception: ' . $e->getMessage());
+            Log::warning('FreelancerMessenger threads exception: '.$e->getMessage());
+
             return [];
         }
     }
@@ -56,16 +59,18 @@ class FreelancerMessenger
                 $params['from_time'] = $fromTime;
             }
 
-            $response = $this->client()->get($this->base() . '/messages/', $params);
+            $response = $this->client()->get($this->base().'/messages/', $params);
 
-            if (!$response->successful()) {
-                Log::warning('FreelancerMessenger messages: HTTP ' . $response->status());
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger messages: HTTP '.$response->status());
+
                 return [];
             }
 
             return $response->json('result.messages') ?? [];
         } catch (\Throwable $e) {
-            Log::warning('FreelancerMessenger messages exception: ' . $e->getMessage());
+            Log::warning('FreelancerMessenger messages exception: '.$e->getMessage());
+
             return [];
         }
     }
@@ -73,14 +78,14 @@ class FreelancerMessenger
     /**
      * Send a message (and/or attachments) to a thread.
      *
-     * @param array<int, \Illuminate\Http\UploadedFile> $attachments
+     * @param  array<int, UploadedFile>  $attachments
      * @return array|null decoded result message on success, null on failure
      */
     public function sendMessage(int $flThreadId, ?string $text, array $attachments = []): ?array
     {
         try {
             $request = $this->client();
-            $url = $this->base() . "/threads/{$flThreadId}/messages/";
+            $url = $this->base()."/threads/{$flThreadId}/messages/";
 
             if ($attachments !== []) {
                 // Multipart: file parts plus one attachments[] name field per
@@ -103,14 +108,16 @@ class FreelancerMessenger
                 $response = $request->asForm()->post($url, ['message' => (string) $text]);
             }
 
-            if (!$response->successful()) {
-                Log::warning('FreelancerMessenger send: HTTP ' . $response->status() . ' ' . $response->body());
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger send: HTTP '.$response->status().' '.$response->body());
+
                 return null;
             }
 
             return $response->json('result');
         } catch (\Throwable $e) {
-            Log::warning('FreelancerMessenger send exception: ' . $e->getMessage());
+            Log::warning('FreelancerMessenger send exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -121,18 +128,20 @@ class FreelancerMessenger
     public function markThreadRead(int $flThreadId): bool
     {
         try {
-            $response = $this->client()->asForm()->put($this->base() . "/threads/{$flThreadId}/", [
+            $response = $this->client()->asForm()->put($this->base()."/threads/{$flThreadId}/", [
                 'action' => 'read',
             ]);
 
-            if (!$response->successful()) {
-                Log::warning('FreelancerMessenger markThreadRead: HTTP ' . $response->status());
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger markThreadRead: HTTP '.$response->status());
+
                 return false;
             }
 
             return true;
         } catch (\Throwable $e) {
-            Log::warning('FreelancerMessenger markThreadRead exception: ' . $e->getMessage());
+            Log::warning('FreelancerMessenger markThreadRead exception: '.$e->getMessage());
+
             return false;
         }
     }
@@ -142,6 +151,6 @@ class FreelancerMessenger
      */
     public function attachmentUrl(int $flMessageId, string $filename): string
     {
-        return $this->base() . "/messages/{$flMessageId}/attachments/" . rawurlencode($filename);
+        return $this->base()."/messages/{$flMessageId}/attachments/".rawurlencode($filename);
     }
 }

@@ -29,9 +29,8 @@ class FineTuneBidJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
-
 
         $prompt = $this->bid->cover_letter;
 

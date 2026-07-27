@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Models\Filter;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Keyword extends Model
 {
@@ -13,7 +13,7 @@ class Keyword extends Model
     /**
      * The filters that belong to the Keyword
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function filters()
     {

@@ -32,13 +32,13 @@ class SummarizeReasonJob implements ShouldQueue
         }
 
         $project = trim(
-            trim((string) $this->proposal->title) . "\n\n" . trim((string) $this->proposal->description)
+            trim((string) $this->proposal->title)."\n\n".trim((string) $this->proposal->description)
         );
         if ($project === '') {
             return; // nothing to summarize
         }
 
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
         $data = [
@@ -62,10 +62,10 @@ class SummarizeReasonJob implements ShouldQueue
                     $this->proposal->save();
                 }
             } else {
-                Log::warning('SummarizeReasonJob: HTTP ' . $response->status());
+                Log::warning('SummarizeReasonJob: HTTP '.$response->status());
             }
         } catch (\Throwable $e) {
-            Log::warning('SummarizeReasonJob: ' . $e->getMessage());
+            Log::warning('SummarizeReasonJob: '.$e->getMessage());
         }
     }
 }

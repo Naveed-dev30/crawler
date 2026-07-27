@@ -57,6 +57,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['auth:sanctum', 'mobile'])->group(function () {
             Route::get('user', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'me']);
             Route::post('logout', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'logout']);
+            Route::post('fcm-token', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'updateFcmToken']);
             Route::get('threads', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'index']);
             Route::get('threads/{thread}', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'show']);
             Route::post('threads/{thread}/block', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'block']);
@@ -68,6 +69,9 @@ Route::prefix('v1')->group(function () {
             Route::get('notifications', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'index']);
             Route::post('notifications/{notification}/read', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'markRead']);
             Route::get('users', [\App\Http\Controllers\Api\V1\Mobile\UserController::class, 'index']);
+            Route::get('ai-assistant', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'show']);
+            Route::put('ai-assistant', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'toggle']);
+            Route::put('ai-assistant/schedule', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'schedule']);
         });
     });
 });

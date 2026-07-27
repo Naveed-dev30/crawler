@@ -2,38 +2,37 @@
 
 namespace App\Models;
 
-use App\Models\Country;
-use App\Models\Currency;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Filter extends Model
 {
-  use HasFactory;
+    use HasFactory;
 
-  protected $hidden = [
-    'created_at',
-    'updated_at',
-    'id'
-  ];
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+        'id',
+    ];
 
-  /**
-   * The countries that belong to the Filter
-   *
-   * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-   */
-  public function countries()
-  {
-    return $this->belongsToMany(Country::class);
-  }
+    /**
+     * The countries that belong to the Filter
+     *
+     * @return BelongsToMany
+     */
+    public function countries()
+    {
+        return $this->belongsToMany(Country::class);
+    }
 
-  /**
-   * The currencies that belong to the Filter
-   *
-   * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-   */
-  public function currencies()
-  {
-    return $this->belongsToMany(Currency::class);
-  }
+    /**
+     * The currencies that belong to the Filter
+     *
+     * @return BelongsToMany
+     */
+    public function currencies()
+    {
+        return $this->belongsToMany(Currency::class);
+    }
 }

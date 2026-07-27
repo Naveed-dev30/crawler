@@ -1,4 +1,5 @@
 <?php
+
 // tests/Feature/ChatAssignTest.php
 
 namespace Tests\Feature;
@@ -66,6 +67,48 @@ class ChatAssignTest extends TestCase
             'thread_id' => $thread->id,
         ]);
         Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $to->id);
+    }
+
+    public function test_reassign_pushes_to_both_users_independently_even_if_one_has_no_token(): void
+    {
+        // A missing token on one user must not prevent the other's push:
+        // each user gets its own SendFcmPushJob; the token is only checked
+        // inside the job, per user.
+        Queue::fake();
+        $from = $this->mobile(['name' => 'Has Token', 'fcm_token' => 'tok-abc']);
+        $to = $this->mobile(['name' => 'No Token', 'fcm_token' => null]);
+        $thread = Thread::factory()->create(['assigned_user_id' => $from->id]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/chats/{$thread->id}/assign", ['user_id' => $to->id])
+            ->assertOk();
+
+        Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $to->id);
+        Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $from->id);
+        Queue::assertPushed(SendFcmPushJob::class, 2);
+    }
+
+    public function test_admin_can_unblock_thread(): void
+    {
+        $thread = Thread::factory()->create(['blocked' => true, 'block_reason' => 'Spam']);
+
+        $this->actingAs($this->admin())
+            ->postJson("/chats/{$thread->id}/unblock")
+            ->assertOk()->assertJson(['success' => true]);
+
+        $fresh = $thread->fresh();
+        $this->assertFalse($fresh->blocked);
+        $this->assertNull($fresh->block_reason);
+    }
+
+    public function test_unblock_forbidden_for_non_admin(): void
+    {
+        $team = User::factory()->create(['role' => 'team']);
+        $thread = Thread::factory()->create(['blocked' => true]);
+
+        $this->actingAs($team)
+            ->postJson("/chats/{$thread->id}/unblock")
+            ->assertForbidden();
     }
 
     public function test_assigning_unassigned_thread_works(): void

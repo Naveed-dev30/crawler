@@ -12,13 +12,11 @@ class ThreadReadStateChanged implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public int $threadId)
-    {
-    }
+    public function __construct(public int $threadId) {}
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('thread.' . $this->threadId)];
+        return [new PrivateChannel('thread.'.$this->threadId)];
     }
 
     public function broadcastAs(): string

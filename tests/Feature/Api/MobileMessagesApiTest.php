@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -16,6 +18,7 @@ class MobileMessagesApiTest extends TestCase
     use RefreshDatabase;
 
     private User $me;
+
     private Thread $thread;
 
     protected function setUp(): void
@@ -51,12 +54,12 @@ class MobileMessagesApiTest extends TestCase
 
     public function test_opening_messages_queues_mark_thread_read(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
 
         $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
 
-        \Illuminate\Support\Facades\Queue::assertPushed(
-            \App\Jobs\MarkThreadReadJob::class,
+        Queue::assertPushed(
+            MarkThreadReadJob::class,
             fn ($job) => $job->threadId === $this->thread->id
         );
     }
@@ -138,6 +141,19 @@ class MobileMessagesApiTest extends TestCase
         $this->assertSame($this->me->id, (int) $stored->sender_user_id);
         $this->assertSame(777, (int) $stored->freelancer_message_id);
         $this->assertSame('answered', $this->thread->fresh()->status);
+    }
+
+    public function test_cannot_send_on_a_blocked_thread(): void
+    {
+        Http::fake(); // fail loudly if any outbound send is attempted
+        $this->thread->update(['blocked' => true, 'block_reason' => 'Spam']);
+
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/messages", [
+            'message' => 'should not go out',
+        ])->assertStatus(409)->assertJsonPath('success', false);
+
+        $this->assertSame(0, ThreadMessage::where('direction', 'sent')->count());
+        Http::assertNothingSent();
     }
 
     public function test_freelancer_failure_returns_502_and_stores_nothing(): void

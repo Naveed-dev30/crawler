@@ -13,7 +13,7 @@ class ReviewFeedbackTest extends TestCase
 
     private function makeProposal(): Proposal
     {
-        $proposal = new Proposal();
+        $proposal = new Proposal;
         $proposal->project_id = 555;
         $proposal->title = 'Labelling target';
         $proposal->description = 'desc';

@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadMessageResource;
+use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
-use App\Services\FreelancerMessenger;
+use App\Services\SendThreadMessage;
 use Illuminate\Http\Request;
 
 class MessageController extends Controller
@@ -18,7 +19,7 @@ class MessageController extends Controller
         $this->authorizeThread($request, $thread);
 
         // Opening the conversation counts as reading it on Freelancer.
-        \App\Jobs\MarkThreadReadJob::dispatch($thread->id);
+        MarkThreadReadJob::dispatch($thread->id);
 
         $messages = $thread->messages()
             ->with('attachments')
@@ -32,9 +33,13 @@ class MessageController extends Controller
         );
     }
 
-    public function store(Request $request, Thread $thread, FreelancerMessenger $messenger)
+    public function store(Request $request, Thread $thread, SendThreadMessage $sender)
     {
         $this->authorizeThread($request, $thread);
+
+        if ($thread->blocked) {
+            return $this->fail('Thread is blocked; unblock before sending.', 409);
+        }
 
         $validated = $request->validate([
             'message' => 'nullable|string|required_without:attachments',
@@ -42,37 +47,16 @@ class MessageController extends Controller
             'attachments.*' => 'file|max:20480', // 20 MB each
         ]);
 
-        $text = $validated['message'] ?? null;
-        $files = $request->file('attachments', []);
+        $stored = $sender->send(
+            $thread,
+            $validated['message'] ?? null,
+            $request->file('attachments', []),
+            $request->user()->id,
+            false
+        );
 
-        $result = $messenger->sendMessage((int) $thread->freelancer_thread_id, $text, $files);
-
-        if ($result === null) {
+        if ($stored === null) {
             return $this->fail('Freelancer rejected the message.', 502);
-        }
-
-        $stored = $thread->messages()->create([
-            'freelancer_message_id' => $result['id'] ?? null,
-            'direction' => 'sent',
-            'sender_user_id' => $request->user()->id,
-            'message' => $text,
-            'message_time' => now(),
-        ]);
-
-        foreach ($files as $file) {
-            $stored->attachments()->create([
-                'filename' => $file->getClientOriginalName(),
-                'url' => '', // outbound attachment; content lives on Freelancer
-                'mime_type' => $file->getClientMimeType(),
-                'size' => $file->getSize(),
-            ]);
-        }
-
-        event(new \App\Events\ThreadMessageCreated($stored));
-
-        if ($thread->status === 'fresh') {
-            $thread->status = 'answered';
-            $thread->save();
         }
 
         return $this->ok(

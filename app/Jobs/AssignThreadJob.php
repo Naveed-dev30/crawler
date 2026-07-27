@@ -17,9 +17,7 @@ class AssignThreadJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public int $threadId)
-    {
-    }
+    public function __construct(public int $threadId) {}
 
     public function handle(ThreadMatcher $matcher, ThreadAssigner $assigner): void
     {
@@ -35,6 +33,7 @@ class AssignThreadJob implements ShouldQueue
 
         if ($profiles === []) {
             Log::warning("AssignThreadJob: no mobile users to assign thread {$thread->id}");
+
             return;
         }
 
@@ -53,9 +52,23 @@ class AssignThreadJob implements ShouldQueue
 
         if (! $user) {
             Log::warning("AssignThreadJob: no assignable user for thread {$thread->id}");
+
             return;
         }
 
         $assigner->assign($thread, $user, ThreadAssigner::TYPE_AI);
+
+        // The sync-time trigger skipped this thread's opening message because
+        // it arrived before an owner existed. Now that one does, answer the
+        // latest client message. GenerateAiReplyJob re-checks aiActiveNow,
+        // blocked, and already-answered, so this no-ops when inappropriate.
+        $lastClient = $thread->messages()
+            ->where('direction', 'received')
+            ->latest('message_time')
+            ->first();
+
+        if ($lastClient) {
+            GenerateAiReplyJob::dispatch($thread->id, $lastClient->id);
+        }
     }
 }

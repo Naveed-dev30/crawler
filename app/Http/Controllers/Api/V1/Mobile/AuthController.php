@@ -62,4 +62,17 @@ class AuthController extends Controller
 
         return $this->ok(null, 'Logged out successfully.');
     }
+
+    public function updateFcmToken(Request $request)
+    {
+        $validated = $request->validate([
+            'fcm_token' => 'required|string|max:512',
+        ]);
+
+        $user = $request->user();
+        $user->fcm_token = $validated['fcm_token'];
+        $user->save();
+
+        return $this->ok(null, 'FCM token updated.');
+    }
 }

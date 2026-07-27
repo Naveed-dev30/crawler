@@ -24,7 +24,7 @@ class ThreadEscalationTest extends TestCase
         parent::tearDown();
     }
 
-    private function ladderUser(int $ladder, string $name = null): User
+    private function ladderUser(int $ladder, ?string $name = null): User
     {
         return User::factory()->create([
             'role' => 'mobile',

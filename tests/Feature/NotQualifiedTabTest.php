@@ -139,7 +139,7 @@ class NotQualifiedTabTest extends TestCase
         ]);
 
         $res = $this->actingAs($this->user())
-            ->get('/proposals/' . $p->id . '/nq-detail')
+            ->get('/proposals/'.$p->id.'/nq-detail')
             ->assertOk();
 
         $res->assertSee('Detail project');

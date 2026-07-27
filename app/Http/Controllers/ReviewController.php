@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 class ReviewController extends Controller
 {
     private const NEW_WINDOW_DAYS = 7;
+
     private const PER_PAGE = 20;
 
     private function tabQuery(string $tab)

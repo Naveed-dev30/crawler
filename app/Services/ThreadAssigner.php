@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Events\ThreadAssigned;
 use App\Jobs\SendFcmPushJob;
 use App\Models\ActivityLog;
 use App\Models\MobileNotification;
 use App\Models\Thread;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /**
  * Single write-path for every thread assignment (AI match, escalation,
@@ -16,7 +18,9 @@ use App\Models\User;
 class ThreadAssigner
 {
     public const TYPE_AI = 'ai_match';
+
     public const TYPE_ESCALATION = 'escalation';
+
     public const TYPE_MANUAL = 'manual_assign';
 
     public function assign(Thread $thread, User $to, string $type, ?User $from = null): void
@@ -32,7 +36,7 @@ class ThreadAssigner
             ->where('direction', 'received')
             ->orderByDesc('message_time')
             ->value('message');
-        $body = \Illuminate\Support\Str::limit((string) ($lastMessage ?: 'New thread assigned to you'), 180);
+        $body = Str::limit((string) ($lastMessage ?: 'New thread assigned to you'), 180);
 
         if ($type !== self::TYPE_AI) {
             $verb = $type === self::TYPE_ESCALATION ? 'escalated' : 'assigned';
@@ -45,7 +49,7 @@ class ThreadAssigner
             ]);
         }
 
-        event(new \App\Events\ThreadAssigned($thread, $to, $type, $from));
+        event(new ThreadAssigned($thread, $to, $type, $from));
 
         $this->notify($to, $thread, $title, $body);
 
