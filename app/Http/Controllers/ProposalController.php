@@ -109,14 +109,21 @@ class ProposalController extends Controller
             // Without job_details the projects/active payload returns job IDs
             // only (no names), so proposal skills come back empty.
             'job_details' => true,
-            // Client ("About the client") info: adds a result.users map with the
-            // owner's employer reputation (rating/reviews/completed) and country,
-            // plus this project's invited-freelancer count.
+            // Client ("About the client") info: adds a result.users map (and
+            // owner_id on each project) with the owner's profile, employer
+            // reputation (rating/reviews/completed), country and status. Note:
+            // no `compact` — it strips owner_id, which we need to index users.
+            // owner_info=true attaches the client (project owner) user object
+            // directly on each project as `owner_info` — the reliable source,
+            // since projects/active hides owner_id + the users map.
+            'owner_info' => true,
             'user_details' => true,
+            'user_avatar' => true,
+            'user_display_info' => true,
             'user_employer_reputation' => true,
+            'user_reputation' => true,
             'user_country_details' => true,
-            'invited_freelancer_details' => true,
-            'compact' => true,
+            'user_status' => true,
         ];
 
         if ($filter->useminfix) {
@@ -272,24 +279,45 @@ class ProposalController extends Controller
      */
     private function storeClientInsight(array $project, array $users): void
     {
-        $ownerId = $project['owner_id'] ?? null;
-        $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
+        // Prefer the owner object attached directly by owner_info=true; fall
+        // back to the users map (owner_id) when only that projection is present.
+        $owner = $project['owner_info'] ?? null;
+        if (! is_array($owner)) {
+            $ownerId = $project['owner_id'] ?? null;
+            $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
+        }
 
         if (! is_array($owner)) {
             return;
         }
 
-        $history = $owner['employer_reputation']['entire_history'] ?? [];
+        // Real owner_info shape (verified against a live projects/active call):
+        // reputation.entire_history holds rating/reviews/complete; country is a
+        // top-level object; status carries the verification badges. Name/avatar
+        // are PII and only appear on token-authenticated requests.
+        $history = $owner['reputation']['entire_history'] ?? [];
+        $country = $owner['country'] ?? [];
 
-        $engagement = array_filter([
-            'completed' => $history['complete'] ?? null,
-            'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
-        ], fn ($v) => $v !== null);
+        // Prefer the project's own client_engagement object; fall back to what
+        // the reputation / invited list gives us.
+        $engagement = is_array($project['client_engagement'] ?? null)
+            ? $project['client_engagement']
+            : array_filter([
+                'completed' => $history['complete'] ?? null,
+                'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
+            ], fn ($v) => $v !== null);
+
+        $registered = $owner['registration_date'] ?? null;
 
         $attributes = array_filter([
-            'client_country' => $owner['location']['country']['name'] ?? null,
+            'client_name' => $owner['display_name'] ?? $owner['public_name'] ?? $owner['username'] ?? null,
+            'client_avatar' => $owner['avatar_large_cdn'] ?? $owner['avatar_cdn'] ?? $owner['avatar'] ?? null,
+            'client_country' => $country['name'] ?? null,
+            'client_country_flag' => $country['flag_url_cdn'] ?? $country['flag_url'] ?? null,
             'client_rating' => $history['overall'] ?? null,
             'client_reviews' => $history['reviews'] ?? null,
+            'client_member_since' => $registered ? Carbon::createFromTimestamp((int) $registered) : null,
+            'client_verification' => is_array($owner['status'] ?? null) ? $owner['status'] : null,
             'client_engagement' => $engagement !== [] ? $engagement : null,
         ], fn ($v) => $v !== null);
 
