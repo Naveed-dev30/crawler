@@ -67,6 +67,8 @@ class CrawlerCapturesClientInfoTest extends TestCase
 
             return str_contains($url, 'projects/active')
                 && str_contains($url, 'user_details=1')
+                && str_contains($url, 'user_avatar=1')
+                && str_contains($url, 'user_display_info=1')
                 && str_contains($url, 'user_employer_reputation=1')
                 && str_contains($url, 'user_country_details=1');
         });
@@ -82,6 +84,8 @@ class CrawlerCapturesClientInfoTest extends TestCase
 
         $this->fakeProjects($project, [
             '42' => [
+                'display_name' => 'Acme Corp',
+                'avatar_cdn' => 'https://cdn.freelancer.com/avatar/42.jpg',
                 'location' => ['country' => ['name' => 'Nigeria']],
                 'employer_reputation' => ['entire_history' => [
                     'overall' => 5, 'reviews' => 1, 'complete' => 3,
@@ -93,6 +97,8 @@ class CrawlerCapturesClientInfoTest extends TestCase
 
         $insight = BidInsight::where('project_id', 555)->first();
         $this->assertNotNull($insight, 'crawler should create a bid_insights row when none exists');
+        $this->assertSame('Acme Corp', $insight->client_name);
+        $this->assertSame('https://cdn.freelancer.com/avatar/42.jpg', $insight->client_avatar);
         $this->assertSame('Nigeria', $insight->client_country);
         $this->assertSame('5.00', (string) $insight->client_rating);
         $this->assertSame(1, $insight->client_reviews);

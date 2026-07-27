@@ -39,6 +39,8 @@ class ThreadResource extends JsonResource
                 ];
             }),
             'client' => $this->resource->client_insight ? [
+                'name' => $this->resource->client_insight->client_name,
+                'avatar' => $this->resource->client_insight->client_avatar,
                 'country' => $this->resource->client_insight->client_country,
                 'rating' => $this->resource->client_insight->client_rating,
                 'reviews' => $this->resource->client_insight->client_reviews,

@@ -109,14 +109,18 @@ class ProposalController extends Controller
             // Without job_details the projects/active payload returns job IDs
             // only (no names), so proposal skills come back empty.
             'job_details' => true,
-            // Client ("About the client") info: adds a result.users map with the
-            // owner's employer reputation (rating/reviews/completed) and country,
-            // plus this project's invited-freelancer count.
+            // Client ("About the client") info: adds a result.users map (and
+            // owner_id on each project) with the owner's profile, employer
+            // reputation (rating/reviews/completed), country and status. Note:
+            // no `compact` — it strips owner_id, which we need to index users.
             'user_details' => true,
+            'user_avatar' => true,
+            'user_display_info' => true,
             'user_employer_reputation' => true,
+            'user_reputation' => true,
             'user_country_details' => true,
+            'user_status' => true,
             'invited_freelancer_details' => true,
-            'compact' => true,
         ];
 
         if ($filter->useminfix) {
@@ -281,12 +285,18 @@ class ProposalController extends Controller
 
         $history = $owner['employer_reputation']['entire_history'] ?? [];
 
-        $engagement = array_filter([
-            'completed' => $history['complete'] ?? null,
-            'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
-        ], fn ($v) => $v !== null);
+        // Prefer the project's own client_engagement object; fall back to what
+        // the employer reputation / invited list gives us.
+        $engagement = is_array($project['client_engagement'] ?? null)
+            ? $project['client_engagement']
+            : array_filter([
+                'completed' => $history['complete'] ?? null,
+                'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
+            ], fn ($v) => $v !== null);
 
         $attributes = array_filter([
+            'client_name' => $owner['display_name'] ?? $owner['public_name'] ?? $owner['username'] ?? null,
+            'client_avatar' => $owner['avatar_large_cdn'] ?? $owner['avatar_cdn'] ?? $owner['avatar'] ?? null,
             'client_country' => $owner['location']['country']['name'] ?? null,
             'client_rating' => $history['overall'] ?? null,
             'client_reviews' => $history['reviews'] ?? null,
