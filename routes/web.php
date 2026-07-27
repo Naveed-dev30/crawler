@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
         Route::get('/chats/{thread}/detail', [\App\Http\Controllers\ChatController::class, 'detail'])->name('chats.detail');
         Route::post('/chats/{thread}/assign', [\App\Http\Controllers\ChatController::class, 'assign'])->name('chats.assign');
+        Route::post('/chats/{thread}/unblock', [\App\Http\Controllers\ChatController::class, 'unblock'])->name('chats.unblock');
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');

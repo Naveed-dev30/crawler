@@ -19,9 +19,14 @@
             @endif
         </div>
     </div>
-    @if ($thread->blocked && $thread->block_reason)
-        <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
-            <i class="bx bx-block me-1"></i><strong>Blocked reason:</strong> {{ $thread->block_reason }}
+    @if ($thread->blocked)
+        <div class="alert alert-danger d-flex justify-content-between align-items-center py-2 px-3 mb-3" role="alert">
+            <span>
+                <i class="bx bx-block me-1"></i><strong>Blocked</strong>@if ($thread->block_reason) — {{ $thread->block_reason }}@endif
+            </span>
+            <button type="button" id="chat-unblock-btn" data-thread-id="{{ $thread->id }}" class="btn btn-sm btn-danger text-nowrap ms-3">
+                <i class="bx bx-lock-open-alt me-1"></i>Unblock
+            </button>
         </div>
     @endif
     <p class="text-muted small mb-3">

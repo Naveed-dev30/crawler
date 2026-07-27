@@ -88,6 +88,29 @@ class ChatAssignTest extends TestCase
         Queue::assertPushed(SendFcmPushJob::class, 2);
     }
 
+    public function test_admin_can_unblock_thread(): void
+    {
+        $thread = Thread::factory()->create(['blocked' => true, 'block_reason' => 'Spam']);
+
+        $this->actingAs($this->admin())
+            ->postJson("/chats/{$thread->id}/unblock")
+            ->assertOk()->assertJson(['success' => true]);
+
+        $fresh = $thread->fresh();
+        $this->assertFalse($fresh->blocked);
+        $this->assertNull($fresh->block_reason);
+    }
+
+    public function test_unblock_forbidden_for_non_admin(): void
+    {
+        $team = User::factory()->create(['role' => 'team']);
+        $thread = Thread::factory()->create(['blocked' => true]);
+
+        $this->actingAs($team)
+            ->postJson("/chats/{$thread->id}/unblock")
+            ->assertForbidden();
+    }
+
     public function test_assigning_unassigned_thread_works(): void
     {
         Queue::fake();

@@ -227,6 +227,28 @@
                     showAppToast('Assignment failed', 'Could not assign the thread. Try again.', '#ea5455');
                 }
             });
+
+            // Unblock: delegated — the button lives inside the fetched partial.
+            ocBody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('#chat-unblock-btn');
+                if (!btn) return;
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/chats/' + btn.dataset.threadId + '/unblock', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    if (!res.ok) throw new Error();
+                    await loadDetail(btn.dataset.threadId);
+                    showAppToast('Thread unblocked', 'Sending is enabled again for this thread.', '#28c76f');
+                } catch {
+                    btn.disabled = false;
+                    showAppToast('Unblock failed', 'Could not unblock the thread. Try again.', '#ea5455');
+                }
+            });
         });
     </script>
 @endsection
