@@ -34,6 +34,10 @@ class ThreadController extends Controller
         $this->authorizeThread($request, $thread);
 
         $thread->load(['proposal.bid']);
+        $thread->setAttribute(
+            'client_insight',
+            \App\Models\BidInsight::where('project_id', $thread->project_id)->first()
+        );
 
         return $this->ok(new ThreadResource($thread), 'Thread fetched successfully.');
     }
