@@ -47,10 +47,15 @@ class ThreadController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
         $thread->blocked = true;
+        $thread->block_reason = $validated['reason'];
         $thread->save();
 
-        return $this->ok(['blocked' => true], 'Thread blocked.');
+        return $this->ok(['blocked' => true, 'reason' => $thread->block_reason], 'Thread blocked.');
     }
 
     public function unblock(Request $request, Thread $thread)
@@ -58,6 +63,7 @@ class ThreadController extends Controller
         $this->authorizeThread($request, $thread);
 
         $thread->blocked = false;
+        $thread->block_reason = null;
         $thread->save();
 
         return $this->ok(['blocked' => false], 'Thread unblocked.');

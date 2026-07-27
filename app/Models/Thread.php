@@ -16,6 +16,7 @@ class Thread extends Model
         'assigned_user_id',
         'status',
         'blocked',
+        'block_reason',
         'last_client_message_at',
         'last_escalated_at',
         'freelancer_time_updated',
