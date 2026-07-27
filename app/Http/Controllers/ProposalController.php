@@ -105,6 +105,9 @@ class ProposalController extends Controller
             'limit' => 200,
             'sort_field' => 'time_updated',
             'full_description' => true,
+            // Without job_details the projects/active payload returns job IDs
+            // only (no names), so proposal skills come back empty.
+            'job_details' => true,
             'compact' => true,
         ];
 
