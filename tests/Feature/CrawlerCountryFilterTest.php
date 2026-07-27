@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Http\Controllers\ProposalController;
 use App\Models\Country;
 use App\Models\Filter;
-use App\Models\Proposal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -20,9 +19,9 @@ class CrawlerCountryFilterTest extends TestCase
     {
         return [
             'id' => $id,
-            'title' => 'Some clean project ' . $id,
+            'title' => 'Some clean project '.$id,
             'description' => 'A clean project description.',
-            'seo_url' => 'project-' . $id,
+            'seo_url' => 'project-'.$id,
             'type' => 'fixed',
             'language' => 'en',
             'owner_id' => 1,
@@ -46,7 +45,7 @@ class CrawlerCountryFilterTest extends TestCase
         ]);
 
         foreach ($allowedIsoCodes as $code) {
-            $country = new Country();
+            $country = new Country;
             $country->country = $code;
             $country->language = $code;
             $country->save();
@@ -70,7 +69,7 @@ class CrawlerCountryFilterTest extends TestCase
             ], 200),
         ]);
 
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
 
         $this->assertDatabaseHas('proposals', ['project_id' => 111]);
         $this->assertDatabaseMissing('proposals', ['project_id' => 222]);
@@ -91,7 +90,7 @@ class CrawlerCountryFilterTest extends TestCase
             ], 200),
         ]);
 
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
 
         $this->assertDatabaseHas('proposals', ['project_id' => 333]);
     }
@@ -111,7 +110,7 @@ class CrawlerCountryFilterTest extends TestCase
             ], 200),
         ]);
 
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
 
         $this->assertDatabaseHas('proposals', ['project_id' => 444]);
     }

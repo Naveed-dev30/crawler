@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\InsightSnapshot;
+use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,13 +31,13 @@ class InsightSnapshotModelTest extends TestCase
         $this->assertSame('25%', $snap->overall_ranking);
         $this->assertIsArray($snap->job_proficiency);
         $this->assertSame('PHP', $snap->trending_skills[0]['label']);
-        $this->assertInstanceOf(\Carbon\Carbon::class, $snap->scraped_at);
+        $this->assertInstanceOf(Carbon::class, $snap->scraped_at);
     }
 
     public function test_scraped_at_is_unique(): void
     {
         InsightSnapshot::create(['scraped_at' => '2026-07-20 10:00:00', 'raw' => '{}']);
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         InsightSnapshot::create(['scraped_at' => '2026-07-20 10:00:00', 'raw' => '{}']);
     }
 }

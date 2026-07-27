@@ -1,5 +1,7 @@
 <?php
+
 // tests/Feature/SendThreadMessageTest.php
+
 namespace Tests\Feature;
 
 use App\Events\ThreadMessageCreated;

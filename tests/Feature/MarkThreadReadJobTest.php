@@ -1,4 +1,5 @@
 <?php
+
 // tests/Feature/MarkThreadReadJobTest.php
 
 namespace Tests\Feature;
@@ -6,6 +7,7 @@ namespace Tests\Feature;
 use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
+use App\Services\FreelancerMessenger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -38,7 +40,7 @@ class MarkThreadReadJobTest extends TestCase
             'is_read' => null,
         ]);
 
-        (new MarkThreadReadJob($thread->id))->handle(app(\App\Services\FreelancerMessenger::class));
+        (new MarkThreadReadJob($thread->id))->handle(app(FreelancerMessenger::class));
 
         Http::assertSent(fn ($request) => $request->method() === 'PUT'
             && str_contains($request->url(), '/messages/0.1/threads/9001/'));
@@ -60,7 +62,7 @@ class MarkThreadReadJobTest extends TestCase
             'is_read' => false,
         ]);
 
-        (new MarkThreadReadJob($thread->id))->handle(app(\App\Services\FreelancerMessenger::class));
+        (new MarkThreadReadJob($thread->id))->handle(app(FreelancerMessenger::class));
 
         $this->assertFalse($unread->fresh()->is_read);
     }
@@ -68,7 +70,7 @@ class MarkThreadReadJobTest extends TestCase
     public function test_missing_thread_is_a_noop(): void
     {
         Http::fake();
-        (new MarkThreadReadJob(999999))->handle(app(\App\Services\FreelancerMessenger::class));
+        (new MarkThreadReadJob(999999))->handle(app(FreelancerMessenger::class));
         Http::assertNothingSent();
     }
 }

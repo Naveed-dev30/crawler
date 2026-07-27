@@ -2,29 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\BidNowJob;
+use App\Http\Requests\StoreProposalRequest;
+use App\Http\Requests\UpdateProposalRequest;
 use App\Jobs\OpenAIJob;
 use App\Models\Bid;
 use App\Models\Country;
-use Carbon\Carbon;
-use App\Models\Filter;
 use App\Models\Currency;
+use App\Models\Filter;
 use App\Models\Proposal;
+use Carbon\Carbon;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
-use App\Http\Requests\StoreProposalRequest;
-use App\Http\Requests\UpdateProposalRequest;
-
 
 class ProposalController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function index()
-    {
-    }
+    public function index() {}
 
     /** Slide-over detail for a not-qualified proposal (AJAX HTML fragment). */
     public function nqDetail(Proposal $proposal)
@@ -35,7 +32,7 @@ class ProposalController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -45,8 +42,7 @@ class ProposalController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \App\Http\Requests\StoreProposalRequest $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(StoreProposalRequest $request)
     {
@@ -56,8 +52,7 @@ class ProposalController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param \App\Models\Proposal $proposal
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Proposal $proposal)
     {
@@ -67,8 +62,7 @@ class ProposalController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param \App\Models\Proposal $proposal
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Proposal $proposal)
     {
@@ -78,9 +72,7 @@ class ProposalController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param \App\Http\Requests\UpdateProposalRequest $request
-     * @param \App\Models\Proposal $proposal
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(UpdateProposalRequest $request, Proposal $proposal)
     {
@@ -90,8 +82,7 @@ class ProposalController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param \App\Models\Proposal $proposal
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Proposal $proposal)
     {
@@ -102,7 +93,7 @@ class ProposalController extends Controller
     {
         $filter = Filter::find(1);
 
-        if (!$filter->crawler_on) {
+        if (! $filter->crawler_on) {
             return;
         }
 
@@ -140,7 +131,7 @@ class ProposalController extends Controller
 
         $query = rtrim($query, '&');
 
-        $url = rtrim(config('variables.flBase'), '/') . '/api/projects/0.1/projects/active?' . $query;
+        $url = rtrim(config('variables.flBase'), '/').'/api/projects/0.1/projects/active?'.$query;
 
         $response = Http::timeout(30)->withHeaders([
             'Freelancer-OAuth-V1' => $accessAuthToken,
@@ -153,99 +144,97 @@ class ProposalController extends Controller
             if ($jsonResponse['status'] === 'success') {
                 $result = $jsonResponse['result'];
 
-
                 $projects = $result['projects'];
 
                 foreach ($projects as $project) {
                     try {
-                    if ($this->shouldNotProceed($project)) {
-                        continue;
-                    }
+                        if ($this->shouldNotProceed($project)) {
+                            continue;
+                        }
 
-                    $currency = new Currency();
-                    $currency->currency_name = $project['currency']['code'];
-                    $currency->curreny_symbol = $project['currency']['sign'];
+                        $currency = new Currency;
+                        $currency->currency_name = $project['currency']['code'];
+                        $currency->curreny_symbol = $project['currency']['sign'];
 
-                    $country = new Country();
-                    $country->country = $project['currency']['country'];
-                    $country->language = $project['language'];
+                        $country = new Country;
+                        $country->country = $project['currency']['country'];
+                        $country->language = $project['language'];
 
+                        $isNDA = $project['upgrades']['NDA'];
+                        $isSealed = $project['upgrades']['sealed'];
 
-                    $isNDA = $project['upgrades']['NDA'];
-                    $isSealed = $project['upgrades']['sealed'];
+                        if ($isNDA or $isSealed) {
+                            continue;
+                        }
 
+                        // Defense-in-depth: even if the API returns it, never bid on a
+                        // project whose country is not in the selected whitelist.
+                        if (! $this->countryAllowed($filter, $project['currency']['country'] ?? null)) {
+                            continue;
+                        }
 
-                    if ($isNDA or $isSealed) {
-                        continue;
-                    }
+                        $proposalExists = Proposal::where('project_id', $project['id'])->exists();
 
-                    // Defense-in-depth: even if the API returns it, never bid on a
-                    // project whose country is not in the selected whitelist.
-                    if (!$this->countryAllowed($filter, $project['currency']['country'] ?? null)) {
-                        continue;
-                    }
+                        if ($proposalExists) {
+                            continue;
+                        }
 
-                    $proposalExists = Proposal::where('project_id', $project['id'])->exists();
+                        $proposal = new Proposal;
+                        // / [id]
+                        $proposal->project_id = $project['id'];
+                        // / [title]
+                        $proposal->title = $project['title'];
 
-                    if ($proposalExists) {
-                        continue;
-                    }
+                        // / [description]
+                        $proposal->description = $project['description'];
 
-                    $proposal = new Proposal();
-                    /// [id]
-                    $proposal->project_id = $project['id'];
-                    /// [title]
-                    $proposal->title = $project['title'];
+                        // / [seo url]
+                        $proposal->seo_url = $project['seo_url'];
+                        // / [type]
+                        $proposal->type = $project['type'];
+                        // / [Min Cost]
+                        $proposal->min_budget = $project['budget']['minimum'];
 
-                    /// [description]
-                    $proposal->description = $project['description'];
-
-                    /// [seo url]
-                    $proposal->seo_url = $project['seo_url'];
-                    /// [type]
-                    $proposal->type = $project['type'];
-                    /// [Min Cost]
-                    $proposal->min_budget = $project['budget']['minimum'];
-
-                    if ($proposal->type == 'fixed') {
-                        if ($filter->useminfix) {
-                            if ($proposal->min_budget < $filter->min_fixed_amount) {
-                                continue;
+                        if ($proposal->type == 'fixed') {
+                            if ($filter->useminfix) {
+                                if ($proposal->min_budget < $filter->min_fixed_amount) {
+                                    continue;
+                                }
+                            }
+                        } else {
+                            if ($filter->useminhour) {
+                                if ($proposal->min_budget < $filter->min_hourly_amount) {
+                                    continue;
+                                }
                             }
                         }
-                    } else {
-                        if ($filter->useminhour) {
-                            if ($proposal->min_budget < $filter->min_hourly_amount) {
-                                continue;
-                            }
-                        }
-                    }
 
-                    /// [Max Cost]
-                    $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
-                    /// [Project Owner] (absent from compact API responses; column is nullable and unused downstream)
-                    $proposal->project_owner = $project['owner_id'] ?? null;
-                    /// [Language]
-                    $proposal->language = $project['language'];
-                    ///[Currency Symbol]
-                    $proposal->currency_symbol = $currency->curreny_symbol;
-                    /// [currency_name]
-                    $proposal->currency_name = $currency->currency_name;
-                    /// [Added Time]
-                    $proposal->project_added_time = $project['time_submitted'];
-                    /// [Country]
-                    $proposal->country = $country->country;
-                    /// [Exchange rate → USD]
-                    $proposal->exchange_rate = $project['currency']['exchange_rate'] ?? 1;
-                    /// [Skills]
-                    $proposal->skills = collect($project['jobs'] ?? [])->pluck('name')->values()->all();
+                        // / [Max Cost]
+                        $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
+                        // / [Project Owner] (absent from compact API responses; column is nullable and unused downstream)
+                        $proposal->project_owner = $project['owner_id'] ?? null;
+                        // / [Language]
+                        $proposal->language = $project['language'];
+                        // /[Currency Symbol]
+                        $proposal->currency_symbol = $currency->curreny_symbol;
+                        // / [currency_name]
+                        $proposal->currency_name = $currency->currency_name;
+                        // / [Added Time]
+                        $proposal->project_added_time = $project['time_submitted'];
+                        // / [Country]
+                        $proposal->country = $country->country;
+                        // / [Exchange rate → USD]
+                        $proposal->exchange_rate = $project['currency']['exchange_rate'] ?? 1;
+                        // / [Skills]
+                        $proposal->skills = collect($project['jobs'] ?? [])->pluck('name')->values()->all();
 
-                    $proposal->save();
-                    $proposal->get();
+                        $proposal->save();
+                        $proposal->get();
 
-                    OpenAIJob::dispatch($proposal);
+                        OpenAIJob::dispatch($proposal);
                     } catch (\Throwable $e) {
-                        \Log::warning("Skipping project " . ($project['id'] ?? '?') . ": " . $e->getMessage());
+                        \Log::warning('Skipping project '.($project['id'] ?? '?').': '.$e->getMessage());
+
                         continue;
                     }
                 }
@@ -265,7 +254,7 @@ class ProposalController extends Controller
      */
     public function countryAllowed(Filter $filter, ?string $currencyCountry): bool
     {
-        if (!$filter->usecountries) {
+        if (! $filter->usecountries) {
             return true;
         }
 
@@ -286,7 +275,8 @@ class ProposalController extends Controller
         // whitelisted any eurozone country.
         if ($normalized === 'EU') {
             $eurozone = ['DE', 'FR', 'IT', 'ES', 'NL', 'IE', 'AT', 'BE', 'PT', 'FI',
-                         'GR', 'LU', 'SK', 'SI', 'EE', 'LV', 'LT', 'CY', 'MT'];
+                'GR', 'LU', 'SK', 'SI', 'EE', 'LV', 'LT', 'CY', 'MT'];
+
             return count(array_intersect($allowed, $eurozone)) > 0;
         }
 
@@ -296,21 +286,22 @@ class ProposalController extends Controller
     public function shouldNotProceed($project): bool
     {
         $response = Http::timeout(30)->withHeaders([
-            "freelancer-auth-v2" => "7032685;b3mJw8I8w8zk3scCNDcWNZP8Qa//CCbr00HBRcQRTEE=",
-        ])->get(rtrim(config('variables.flBase'), '/') . "/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
+            'freelancer-auth-v2' => '7032685;b3mJw8I8w8zk3scCNDcWNZP8Qa//CCbr00HBRcQRTEE=',
+        ])->get(rtrim(config('variables.flBase'), '/')."/api/support/0.1/agent_sessions/?agent_session_states%5B%5D=assigned&latest=true&source_type=project&sources%5B%5D={$project['id']}&support_types%5B%5D=recruiter&order_by=agent_session_create_time_dsc&webapp=1&compact=true&new_errors=true&new_pools=true");
 
         if ($response->ok()) {
             $jsonResponse = $response->json();
-            if ($jsonResponse["result"] == null or $jsonResponse["result"]["agent_sessions"] == null) {
+            if ($jsonResponse['result'] == null or $jsonResponse['result']['agent_sessions'] == null) {
                 return false;
             }
 
-            foreach ($jsonResponse["result"]["agent_sessions"] as $sessionResult) {
-                if ($sessionResult["agent_id"] === 954) {
+            foreach ($jsonResponse['result']['agent_sessions'] as $sessionResult) {
+                if ($sessionResult['agent_id'] === 954) {
                     return true;
                 }
             }
         }
+
         return false;
     }
 }

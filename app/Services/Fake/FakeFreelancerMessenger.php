@@ -20,8 +20,11 @@ use Illuminate\Support\Facades\Storage;
 class FakeFreelancerMessenger extends FreelancerMessenger
 {
     private const STATE_FILE = 'fake-freelancer.json';
+
     private const MAX_THREADS = 5;
+
     private const NEW_MESSAGE_EVERY_SECONDS = 60;
+
     private const CLIENT_FL_USER_BASE = 111000;
 
     private const SAMPLE_MESSAGES = [

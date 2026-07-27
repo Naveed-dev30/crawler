@@ -13,7 +13,7 @@ class FetchProposals extends Command
 
     public function handle(): int
     {
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
         $this->info('Proposal fetch complete.');
 
         return self::SUCCESS;

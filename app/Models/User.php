@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -94,7 +95,7 @@ class User extends Authenticatable
         return $this->ai_timezone ?: config('app.timezone', 'UTC');
     }
 
-    public function withinWindow(\Illuminate\Support\Carbon $now): bool
+    public function withinWindow(Carbon $now): bool
     {
         if (! $this->ai_window_start || ! $this->ai_window_end) {
             return false;
@@ -108,7 +109,7 @@ class User extends Authenticatable
             : ($t >= $start || $t < $end);  // overnight wrap
     }
 
-    public function nextBoundaryAfter(\Illuminate\Support\Carbon $now): ?\Illuminate\Support\Carbon
+    public function nextBoundaryAfter(Carbon $now): ?Carbon
     {
         if (! $this->ai_schedule_enabled || ! $this->ai_window_start || ! $this->ai_window_end) {
             return null;
@@ -128,7 +129,7 @@ class User extends Authenticatable
         return $future === [] ? null : $future[0]->copy()->setTimezone('UTC');
     }
 
-    public function aiActiveNow(\Illuminate\Support\Carbon $now): bool
+    public function aiActiveNow(Carbon $now): bool
     {
         if ($this->ai_manual_state !== null
             && ($this->ai_manual_until === null || $now->lt($this->ai_manual_until))) {

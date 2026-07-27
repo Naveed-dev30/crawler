@@ -16,6 +16,7 @@ class MobileThreadActionsApiTest extends TestCase
     use RefreshDatabase;
 
     private User $me;
+
     private Thread $thread;
 
     protected function setUp(): void

@@ -13,17 +13,15 @@ class ThreadMessageCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public ThreadMessage $message)
-    {
-    }
+    public function __construct(public ThreadMessage $message) {}
 
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('thread.' . $this->message->thread_id)];
+        $channels = [new PrivateChannel('thread.'.$this->message->thread_id)];
 
         $assignedUserId = $this->message->thread?->assigned_user_id;
         if ($assignedUserId) {
-            $channels[] = new PrivateChannel('user.' . $assignedUserId);
+            $channels[] = new PrivateChannel('user.'.$assignedUserId);
         }
 
         return $channels;

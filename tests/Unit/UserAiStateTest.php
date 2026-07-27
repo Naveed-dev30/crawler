@@ -1,5 +1,7 @@
 <?php
+
 // tests/Unit/UserAiStateTest.php
+
 namespace Tests\Unit;
 
 use App\Models\User;
@@ -10,7 +12,7 @@ class UserAiStateTest extends TestCase
 {
     private function user(array $attrs): User
     {
-        $u = new User();
+        $u = new User;
         $u->forceFill(array_merge([
             'ai_schedule_enabled' => false,
             'ai_window_start' => null,
@@ -19,6 +21,7 @@ class UserAiStateTest extends TestCase
             'ai_manual_state' => null,
             'ai_manual_until' => null,
         ], $attrs));
+
         return $u;
     }
 

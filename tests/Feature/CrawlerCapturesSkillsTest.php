@@ -53,7 +53,7 @@ class CrawlerCapturesSkillsTest extends TestCase
             ], 200),
         ]);
 
-        (new ProposalController())->getProposals();
+        (new ProposalController)->getProposals();
 
         $proposal = Proposal::where('project_id', 555)->first();
         $this->assertNotNull($proposal);

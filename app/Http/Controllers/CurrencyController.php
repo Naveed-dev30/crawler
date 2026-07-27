@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCurrencyRequest;
 use App\Http\Requests\UpdateCurrencyRequest;
 use App\Models\Currency;
+use Illuminate\Http\Response;
 
 class CurrencyController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -21,7 +22,7 @@ class CurrencyController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -31,8 +32,7 @@ class CurrencyController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StoreCurrencyRequest  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(StoreCurrencyRequest $request)
     {
@@ -42,8 +42,7 @@ class CurrencyController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Currency  $currency
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Currency $currency)
     {
@@ -53,8 +52,7 @@ class CurrencyController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Currency  $currency
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(Currency $currency)
     {
@@ -64,9 +62,7 @@ class CurrencyController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\UpdateCurrencyRequest  $request
-     * @param  \App\Models\Currency  $currency
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(UpdateCurrencyRequest $request, Currency $currency)
     {
@@ -76,8 +72,7 @@ class CurrencyController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Currency  $currency
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Currency $currency)
     {

@@ -20,7 +20,7 @@ class ThreadEscalator
         try {
             $this->escalate();
         } catch (\Throwable $e) {
-            Log::warning('ThreadEscalator: ' . $e->getMessage());
+            Log::warning('ThreadEscalator: '.$e->getMessage());
         }
     }
 

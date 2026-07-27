@@ -19,15 +19,14 @@ class ThreadAssigned implements ShouldBroadcast
         public User $to,
         public string $type,
         public ?User $from = null,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('user.' . $this->to->id)];
+        $channels = [new PrivateChannel('user.'.$this->to->id)];
 
         if ($this->from && $this->from->id !== $this->to->id) {
-            $channels[] = new PrivateChannel('user.' . $this->from->id);
+            $channels[] = new PrivateChannel('user.'.$this->from->id);
         }
 
         return $channels;

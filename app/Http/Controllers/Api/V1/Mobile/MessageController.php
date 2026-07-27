@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadMessageResource;
+use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
 use App\Services\SendThreadMessage;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class MessageController extends Controller
         $this->authorizeThread($request, $thread);
 
         // Opening the conversation counts as reading it on Freelancer.
-        \App\Jobs\MarkThreadReadJob::dispatch($thread->id);
+        MarkThreadReadJob::dispatch($thread->id);
 
         $messages = $thread->messages()
             ->with('attachments')

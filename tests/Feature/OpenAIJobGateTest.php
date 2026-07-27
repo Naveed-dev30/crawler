@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\FineTuneBidJob;
 use App\Jobs\OpenAIJob;
 use App\Jobs\SummarizeReasonJob;
 use App\Models\Bid;
@@ -40,7 +41,7 @@ class OpenAIJobGateTest extends TestCase
 
     public function test_gate_pass_flags_qualified_and_creates_bid(): void
     {
-        Bus::fake([SummarizeReasonJob::class, \App\Jobs\FineTuneBidJob::class]);
+        Bus::fake([SummarizeReasonJob::class, FineTuneBidJob::class]);
         Filter::factory()->create(['id' => 1, 'crawler_on' => true, 'negative_prompt' => 'no crypto', 'summary_prompt' => '', 'prompt' => 'Write a cover letter.']);
         $proposal = Proposal::factory()->create(['description' => 'A Laravel API', 'max_budget' => 500, 'qualified' => null]);
 

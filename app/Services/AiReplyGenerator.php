@@ -1,5 +1,7 @@
 <?php
+
 // app/Services/AiReplyGenerator.php
+
 namespace App\Services;
 
 use App\Models\Thread;
@@ -15,22 +17,24 @@ use Illuminate\Support\Facades\Log;
 class AiReplyGenerator
 {
     private const MODEL = 'gpt-3.5-turbo';
+
     private const MAX_ATTEMPTS = 2;
+
     private const HISTORY = 10;
 
     public function generate(Thread $thread, ThreadMessage $clientMessage): ?string
     {
         $profile = trim((string) ($thread->assignedUser?->profile_prompt ?? ''));
-        $system = "You are replying to a client on a freelancing marketplace on behalf of a freelancer. "
-            . "Write a concise, professional reply as the freelancer. Do not include a signature.\n\n"
-            . "Freelancer profile:\n" . ($profile !== '' ? $profile : 'Experienced freelancer.');
+        $system = 'You are replying to a client on a freelancing marketplace on behalf of a freelancer. '
+            ."Write a concise, professional reply as the freelancer. Do not include a signature.\n\n"
+            ."Freelancer profile:\n".($profile !== '' ? $profile : 'Experienced freelancer.');
 
         $history = $thread->messages()
             ->orderByDesc('message_time')
             ->limit(self::HISTORY)
             ->get()
             ->reverse()
-            ->map(fn ($m) => ($m->direction === 'received' ? 'Client' : 'Freelancer') . ': ' . (string) $m->message)
+            ->map(fn ($m) => ($m->direction === 'received' ? 'Client' : 'Freelancer').': '.(string) $m->message)
             ->implode("\n");
 
         $payload = [
@@ -42,7 +46,7 @@ class AiReplyGenerator
             ],
         ];
 
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
         for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {
@@ -55,10 +59,10 @@ class AiReplyGenerator
                     }
                     Log::warning("AiReplyGenerator: empty reply (attempt {$attempt})");
                 } else {
-                    Log::warning('AiReplyGenerator: HTTP ' . $response->status() . " (attempt {$attempt})");
+                    Log::warning('AiReplyGenerator: HTTP '.$response->status()." (attempt {$attempt})");
                 }
             } catch (\Throwable $e) {
-                Log::warning('AiReplyGenerator: exception ' . $e->getMessage() . " (attempt {$attempt})");
+                Log::warning('AiReplyGenerator: exception '.$e->getMessage()." (attempt {$attempt})");
             }
         }
 

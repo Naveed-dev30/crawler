@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\Log;
 class ThreadMatcher
 {
     private const MODEL = 'gpt-3.5-turbo';
+
     private const MAX_ATTEMPTS = 2; // initial try + 1 retry
 
     /**
-     * @param array<int, string> $profiles user_id => profile_prompt
+     * @param  array<int, string>  $profiles  user_id => profile_prompt
      * @return int|null matched user id, or null on failure
      */
     public function match(string $title, string $description, array $profiles): ?int
@@ -26,7 +27,7 @@ class ThreadMatcher
             return null;
         }
 
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
         $payload = [
@@ -49,12 +50,12 @@ class ThreadMatcher
                     if ($userId !== null && array_key_exists($userId, $profiles)) {
                         return $userId;
                     }
-                    Log::warning('ThreadMatcher: unusable reply (attempt ' . $attempt . ')');
+                    Log::warning('ThreadMatcher: unusable reply (attempt '.$attempt.')');
                 } else {
-                    Log::warning('ThreadMatcher: HTTP ' . $response->status() . " (attempt {$attempt})");
+                    Log::warning('ThreadMatcher: HTTP '.$response->status()." (attempt {$attempt})");
                 }
             } catch (\Throwable $e) {
-                Log::warning('ThreadMatcher: exception ' . $e->getMessage() . " (attempt {$attempt})");
+                Log::warning('ThreadMatcher: exception '.$e->getMessage()." (attempt {$attempt})");
             }
         }
 
@@ -62,7 +63,7 @@ class ThreadMatcher
     }
 
     /**
-     * @param array<int, string> $profiles
+     * @param  array<int, string>  $profiles
      */
     private function systemPrompt(array $profiles): string
     {
@@ -71,16 +72,16 @@ class ThreadMatcher
         $intro = $custom !== ''
             ? $custom
             : 'You are a work router. Pick the single team member whose profile best '
-                . 'matches the project. If none fits well, pick the closest anyway.';
+                .'matches the project. If none fits well, pick the closest anyway.';
 
         $rendered = '';
         foreach ($profiles as $id => $profile) {
             $rendered .= "ID {$id}:\n{$profile}\n---\n";
         }
 
-        return $intro . "\n\nTeam member profiles:\n" . $rendered
-            . "\nReply with ONLY a JSON object of the form {\"user_id\": <numeric id>}. "
-            . 'Output nothing but the JSON.';
+        return $intro."\n\nTeam member profiles:\n".$rendered
+            ."\nReply with ONLY a JSON object of the form {\"user_id\": <numeric id>}. "
+            .'Output nothing but the JSON.';
     }
 
     private function parse(?string $raw): ?int

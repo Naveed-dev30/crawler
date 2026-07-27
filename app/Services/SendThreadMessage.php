@@ -5,13 +5,14 @@ namespace App\Services;
 use App\Events\ThreadMessageCreated;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
+use Illuminate\Http\UploadedFile;
 
 class SendThreadMessage
 {
     public function __construct(private FreelancerMessenger $messenger) {}
 
     /**
-     * @param  array<int, \Illuminate\Http\UploadedFile>  $files
+     * @param  array<int, UploadedFile>  $files
      */
     public function send(
         Thread $thread,

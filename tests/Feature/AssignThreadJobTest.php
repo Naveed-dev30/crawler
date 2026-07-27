@@ -47,7 +47,7 @@ class AssignThreadJobTest extends TestCase
 
         Http::fake([
             'https://api.openai.com/*' => Http::response([
-                'choices' => [['message' => ['content' => '{"user_id": ' . $flutterDev->id . '}']]],
+                'choices' => [['message' => ['content' => '{"user_id": '.$flutterDev->id.'}']]],
             ]),
         ]);
 

@@ -1,11 +1,15 @@
 <?php
+
 // tests/Feature/GenerateAiReplyJobTest.php
+
 namespace Tests\Feature;
 
 use App\Jobs\GenerateAiReplyJob;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
+use App\Services\AiReplyGenerator;
+use App\Services\SendThreadMessage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -16,7 +20,9 @@ class GenerateAiReplyJobTest extends TestCase
     use RefreshDatabase;
 
     private User $me;
+
     private Thread $thread;
+
     private ThreadMessage $client;
 
     protected function setUp(): void
@@ -64,7 +70,7 @@ class GenerateAiReplyJobTest extends TestCase
     {
         $this->fakeOpenAi('Yes, I can start today.');
 
-        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(\App\Services\SendThreadMessage::class), app(\App\Services\AiReplyGenerator::class));
+        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(SendThreadMessage::class), app(AiReplyGenerator::class));
 
         $sent = ThreadMessage::where('thread_id', $this->thread->id)->where('direction', 'sent')->first();
         $this->assertNotNull($sent);
@@ -77,7 +83,7 @@ class GenerateAiReplyJobTest extends TestCase
         $this->fakeOpenAi('should not send');
         $this->me->forceFill(['ai_schedule_enabled' => false])->save();
 
-        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(\App\Services\SendThreadMessage::class), app(\App\Services\AiReplyGenerator::class));
+        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(SendThreadMessage::class), app(AiReplyGenerator::class));
 
         $this->assertSame(0, ThreadMessage::where('direction', 'sent')->count());
     }
@@ -90,7 +96,7 @@ class GenerateAiReplyJobTest extends TestCase
             'sender_user_id' => $this->me->id, 'message_time' => now(), // after client message
         ]);
 
-        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(\App\Services\SendThreadMessage::class), app(\App\Services\AiReplyGenerator::class));
+        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(SendThreadMessage::class), app(AiReplyGenerator::class));
 
         $this->assertSame(0, ThreadMessage::where('direction', 'sent')->where('sent_by_ai', true)->count());
     }
@@ -100,7 +106,7 @@ class GenerateAiReplyJobTest extends TestCase
         $this->fakeOpenAi('blocked reply');
         $this->thread->forceFill(['blocked' => true])->save();
 
-        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(\App\Services\SendThreadMessage::class), app(\App\Services\AiReplyGenerator::class));
+        (new GenerateAiReplyJob($this->thread->id, $this->client->id))->handle(app(SendThreadMessage::class), app(AiReplyGenerator::class));
 
         $this->assertSame(0, ThreadMessage::where('sent_by_ai', true)->count());
     }

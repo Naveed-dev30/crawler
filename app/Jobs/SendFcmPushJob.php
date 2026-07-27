@@ -15,6 +15,7 @@ class SendFcmPushJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 10;
 
     public function __construct(
@@ -22,8 +23,7 @@ class SendFcmPushJob implements ShouldQueue
         public string $title,
         public string $body,
         public array $data = []
-    ) {
-    }
+    ) {}
 
     public function handle(FcmPusher $pusher): void
     {
