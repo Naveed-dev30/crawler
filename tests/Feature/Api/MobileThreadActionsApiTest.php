@@ -29,11 +29,24 @@ class MobileThreadActionsApiTest extends TestCase
 
     public function test_block_and_unblock(): void
     {
-        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/block")->assertOk()->assertJsonPath('success', true)->assertJsonPath('data.blocked', true);
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/block", ['reason' => 'Spam client'])
+            ->assertOk()->assertJsonPath('success', true)
+            ->assertJsonPath('data.blocked', true)
+            ->assertJsonPath('data.reason', 'Spam client');
         $this->assertTrue($this->thread->fresh()->blocked);
+        $this->assertSame('Spam client', $this->thread->fresh()->block_reason);
 
         $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/unblock")->assertOk()->assertJsonPath('data.blocked', false);
         $this->assertFalse($this->thread->fresh()->blocked);
+        $this->assertNull($this->thread->fresh()->block_reason, 'unblock clears the reason');
+    }
+
+    public function test_block_requires_a_reason(): void
+    {
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/block")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('reason');
+        $this->assertFalse($this->thread->fresh()->blocked, 'thread stays unblocked when reason missing');
     }
 
     public function test_assign_to_another_mobile_user_logs_and_notifies(): void
