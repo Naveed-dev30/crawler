@@ -115,8 +115,11 @@
         <div class="d-flex mb-3 {{ $message->direction === 'sent' ? 'justify-content-end' : '' }}">
             <div class="rounded p-3 {{ $message->direction === 'sent' ? 'bg-label-primary' : 'bg-lighter' }}" style="max-width: 85%;">
                 <div class="small text-muted mb-1">
-                    {{ $message->direction === 'sent' ? ($message->sender?->name ?? 'Owner') : 'Client' }}
+                    {{ $message->direction === 'sent' ? ($message->sent_by_ai ? 'AI Assistant' : ($message->sender?->name ?? 'Owner')) : 'Client' }}
                     · {{ $message->message_time?->format('M j, H:i') }}
+                    @if ($message->sent_by_ai)
+                        <span class="badge bg-label-info ms-1">AI</span>
+                    @endif
                     @if ($message->direction === 'received' && $message->is_read === false)
                         <span class="badge bg-label-warning ms-1">Unread</span>
                     @endif
