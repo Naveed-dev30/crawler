@@ -39,9 +39,14 @@ class ThreadResource extends JsonResource
                 ];
             }),
             'client' => $this->resource->client_insight ? [
+                'name' => $this->resource->client_insight->client_name,
+                'avatar' => $this->resource->client_insight->client_avatar,
                 'country' => $this->resource->client_insight->client_country,
+                'country_flag' => $this->resource->client_insight->client_country_flag,
                 'rating' => $this->resource->client_insight->client_rating,
                 'reviews' => $this->resource->client_insight->client_reviews,
+                'member_since' => $this->resource->client_insight->client_member_since?->toIso8601String(),
+                'verification' => $this->resource->client_insight->client_verification,
                 'engagement' => $this->resource->client_insight->client_engagement,
             ] : null,
         ];

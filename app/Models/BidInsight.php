@@ -41,6 +41,11 @@ class BidInsight extends Model
         'description',
         'upgrades',
         'client_country',
+        'client_country_flag',
+        'client_name',
+        'client_avatar',
+        'client_member_since',
+        'client_verification',
         'client_rating',
         'client_reviews',
         'bid_rank',
@@ -60,9 +65,11 @@ class BidInsight extends Model
         'winning_bid_sealed' => 'boolean',
         'actions_taken' => 'array',
         'client_engagement' => 'array',
+        'client_verification' => 'array',
         'upgrades' => 'array',
         'raw' => 'array',
         'time_submitted' => 'datetime',
+        'client_member_since' => 'datetime',
         'last_scraped_at' => 'datetime',
     ];
 
