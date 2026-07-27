@@ -6,6 +6,7 @@ use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
 use App\Jobs\OpenAIJob;
 use App\Models\Bid;
+use App\Models\BidInsight;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Filter;
@@ -108,6 +109,13 @@ class ProposalController extends Controller
             // Without job_details the projects/active payload returns job IDs
             // only (no names), so proposal skills come back empty.
             'job_details' => true,
+            // Client ("About the client") info: adds a result.users map with the
+            // owner's employer reputation (rating/reviews/completed) and country,
+            // plus this project's invited-freelancer count.
+            'user_details' => true,
+            'user_employer_reputation' => true,
+            'user_country_details' => true,
+            'invited_freelancer_details' => true,
             'compact' => true,
         ];
 
@@ -148,6 +156,9 @@ class ProposalController extends Controller
                 $result = $jsonResponse['result'];
 
                 $projects = $result['projects'];
+
+                // user_details=true returns a sibling map keyed by user id.
+                $users = $result['users'] ?? [];
 
                 foreach ($projects as $project) {
                     try {
@@ -234,6 +245,11 @@ class ProposalController extends Controller
                         $proposal->save();
                         $proposal->get();
 
+                        // Capture "About the client" info so the mobile thread
+                        // detail has it even when no extension ingest ran for
+                        // this project. Creates the bid_insights row when absent.
+                        $this->storeClientInsight($project, $users);
+
                         OpenAIJob::dispatch($proposal);
                     } catch (\Throwable $e) {
                         \Log::warning('Skipping project '.($project['id'] ?? '?').': '.$e->getMessage());
@@ -244,6 +260,46 @@ class ProposalController extends Controller
             }
         }
 
+    }
+
+    /**
+     * Upsert the client ("About the client") info for a project into
+     * bid_insights, keyed by project_id. Sourced from the projects/active
+     * user_details + employer-reputation projection. Only non-null fields are
+     * written so a later extension ingest (or an earlier one) is never
+     * clobbered with blanks. Creates the row when absent — otherwise the
+     * mobile thread's client block stays null for crawler-only projects.
+     */
+    private function storeClientInsight(array $project, array $users): void
+    {
+        $ownerId = $project['owner_id'] ?? null;
+        $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
+
+        if (! is_array($owner)) {
+            return;
+        }
+
+        $history = $owner['employer_reputation']['entire_history'] ?? [];
+
+        $engagement = array_filter([
+            'completed' => $history['complete'] ?? null,
+            'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
+        ], fn ($v) => $v !== null);
+
+        $attributes = array_filter([
+            'client_country' => $owner['location']['country']['name'] ?? null,
+            'client_rating' => $history['overall'] ?? null,
+            'client_reviews' => $history['reviews'] ?? null,
+            'client_engagement' => $engagement !== [] ? $engagement : null,
+        ], fn ($v) => $v !== null);
+
+        if ($attributes === []) {
+            return;
+        }
+
+        $attributes['last_scraped_at'] = now();
+
+        BidInsight::updateOrCreate(['project_id' => $project['id']], $attributes);
     }
 
     /**
