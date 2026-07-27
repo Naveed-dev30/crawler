@@ -291,10 +291,15 @@ class ProposalController extends Controller
             return;
         }
 
-        $history = $owner['employer_reputation']['entire_history'] ?? [];
+        // Real owner_info shape (verified against a live projects/active call):
+        // reputation.entire_history holds rating/reviews/complete; country is a
+        // top-level object; status carries the verification badges. Name/avatar
+        // are PII and only appear on token-authenticated requests.
+        $history = $owner['reputation']['entire_history'] ?? [];
+        $country = $owner['country'] ?? [];
 
         // Prefer the project's own client_engagement object; fall back to what
-        // the employer reputation / invited list gives us.
+        // the reputation / invited list gives us.
         $engagement = is_array($project['client_engagement'] ?? null)
             ? $project['client_engagement']
             : array_filter([
@@ -302,12 +307,17 @@ class ProposalController extends Controller
                 'invited' => isset($project['invited_freelancers']) ? count($project['invited_freelancers']) : null,
             ], fn ($v) => $v !== null);
 
+        $registered = $owner['registration_date'] ?? null;
+
         $attributes = array_filter([
             'client_name' => $owner['display_name'] ?? $owner['public_name'] ?? $owner['username'] ?? null,
             'client_avatar' => $owner['avatar_large_cdn'] ?? $owner['avatar_cdn'] ?? $owner['avatar'] ?? null,
-            'client_country' => $owner['location']['country']['name'] ?? null,
+            'client_country' => $country['name'] ?? null,
+            'client_country_flag' => $country['flag_url_cdn'] ?? $country['flag_url'] ?? null,
             'client_rating' => $history['overall'] ?? null,
             'client_reviews' => $history['reviews'] ?? null,
+            'client_member_since' => $registered ? Carbon::createFromTimestamp((int) $registered) : null,
+            'client_verification' => is_array($owner['status'] ?? null) ? $owner['status'] : null,
             'client_engagement' => $engagement !== [] ? $engagement : null,
         ], fn ($v) => $v !== null);
 
