@@ -69,6 +69,25 @@ class ChatAssignTest extends TestCase
         Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $to->id);
     }
 
+    public function test_reassign_pushes_to_both_users_independently_even_if_one_has_no_token(): void
+    {
+        // A missing token on one user must not prevent the other's push:
+        // each user gets its own SendFcmPushJob; the token is only checked
+        // inside the job, per user.
+        Queue::fake();
+        $from = $this->mobile(['name' => 'Has Token', 'fcm_token' => 'tok-abc']);
+        $to = $this->mobile(['name' => 'No Token', 'fcm_token' => null]);
+        $thread = Thread::factory()->create(['assigned_user_id' => $from->id]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/chats/{$thread->id}/assign", ['user_id' => $to->id])
+            ->assertOk();
+
+        Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $to->id);
+        Queue::assertPushed(SendFcmPushJob::class, fn ($job) => $job->userId === $from->id);
+        Queue::assertPushed(SendFcmPushJob::class, 2);
+    }
+
     public function test_assigning_unassigned_thread_works(): void
     {
         Queue::fake();
