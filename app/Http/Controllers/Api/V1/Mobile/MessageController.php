@@ -37,6 +37,10 @@ class MessageController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
+        if ($thread->blocked) {
+            return $this->fail('Thread is blocked; unblock before sending.', 409);
+        }
+
         $validated = $request->validate([
             'message' => 'nullable|string|required_without:attachments',
             'attachments' => 'nullable|array|max:5',

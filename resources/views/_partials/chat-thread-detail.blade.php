@@ -19,6 +19,11 @@
             @endif
         </div>
     </div>
+    @if ($thread->blocked && $thread->block_reason)
+        <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
+            <i class="bx bx-block me-1"></i><strong>Blocked reason:</strong> {{ $thread->block_reason }}
+        </div>
+    @endif
     <p class="text-muted small mb-3">
         <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)

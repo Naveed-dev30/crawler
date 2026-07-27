@@ -143,6 +143,19 @@ class MobileMessagesApiTest extends TestCase
         $this->assertSame('answered', $this->thread->fresh()->status);
     }
 
+    public function test_cannot_send_on_a_blocked_thread(): void
+    {
+        Http::fake(); // fail loudly if any outbound send is attempted
+        $this->thread->update(['blocked' => true, 'block_reason' => 'Spam']);
+
+        $this->postJson("/api/v1/mobile/threads/{$this->thread->id}/messages", [
+            'message' => 'should not go out',
+        ])->assertStatus(409)->assertJsonPath('success', false);
+
+        $this->assertSame(0, ThreadMessage::where('direction', 'sent')->count());
+        Http::assertNothingSent();
+    }
+
     public function test_freelancer_failure_returns_502_and_stores_nothing(): void
     {
         Http::fake([

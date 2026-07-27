@@ -54,6 +54,18 @@ class ChatsPageTest extends TestCase
         $res->assertSee('<td>2</td>', false);
     }
 
+    public function test_thread_detail_shows_block_status_and_reason(): void
+    {
+        $thread = Thread::factory()->create([
+            'blocked' => true,
+            'block_reason' => 'Abusive client language',
+        ]);
+
+        $res = $this->actingAs($this->admin())->get("/chats/{$thread->id}/detail")->assertOk();
+        $res->assertSee('Blocked');
+        $res->assertSee('Abusive client language');
+    }
+
     public function test_unassigned_thread_shows_unassigned(): void
     {
         Thread::factory()->create(['assigned_user_id' => null]);
