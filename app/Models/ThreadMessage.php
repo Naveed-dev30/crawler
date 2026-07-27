@@ -18,11 +18,13 @@ class ThreadMessage extends Model
         'message',
         'message_time',
         'is_read',
+        'sent_by_ai',
     ];
 
     protected $casts = [
         'message_time' => 'datetime',
         'is_read' => 'boolean',
+        'sent_by_ai' => 'boolean',
     ];
 
     public function thread()

@@ -25,6 +25,12 @@ class User extends Authenticatable
         'profile_prompt',
         'escalation_ladder',
         'fcm_token',
+        'ai_schedule_enabled',
+        'ai_window_start',
+        'ai_window_end',
+        'ai_timezone',
+        'ai_manual_state',
+        'ai_manual_until',
     ];
 
     /**
@@ -71,5 +77,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'ai_schedule_enabled' => 'boolean',
+        'ai_manual_state' => 'boolean',
+        'ai_manual_until' => 'datetime',
     ];
 }
