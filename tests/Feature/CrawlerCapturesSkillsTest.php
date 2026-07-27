@@ -60,4 +60,35 @@ class CrawlerCapturesSkillsTest extends TestCase
         $this->assertEquals(1.1, $proposal->exchange_rate);
         $this->assertSame(['PHP', 'Laravel'], $proposal->skills);
     }
+
+    public function test_crawler_requests_job_details_so_skills_are_returned(): void
+    {
+        // The Freelancer projects/active endpoint omits job names (used for
+        // skills) unless job_details=true is sent. Guard the outgoing request.
+        Queue::fake();
+
+        Filter::factory()->create([
+            'id' => 1,
+            'crawler_on' => 1,
+            'useminfix' => 0,
+            'useminhour' => 0,
+            'usekeywords' => 0,
+            'usecountries' => 0,
+        ]);
+
+        Http::fake([
+            '*support*' => Http::response(['result' => null], 200),
+            '*projects/active*' => Http::response([
+                'status' => 'success',
+                'result' => ['projects' => []],
+            ], 200),
+        ]);
+
+        (new ProposalController)->getProposals();
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'projects/active')
+                && str_contains($request->url(), 'job_details=1');
+        });
+    }
 }
