@@ -41,6 +41,8 @@ class BidInsight extends Model
         'description',
         'upgrades',
         'client_country',
+        'client_name',
+        'client_avatar',
         'client_rating',
         'client_reviews',
         'bid_rank',
