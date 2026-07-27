@@ -66,6 +66,7 @@ class CrawlerCapturesClientInfoTest extends TestCase
             $url = $request->url();
 
             return str_contains($url, 'projects/active')
+                && str_contains($url, 'owner_info=1')
                 && str_contains($url, 'user_details=1')
                 && str_contains($url, 'user_avatar=1')
                 && str_contains($url, 'user_display_info=1')
@@ -79,19 +80,19 @@ class CrawlerCapturesClientInfoTest extends TestCase
         Queue::fake();
         $this->filter();
 
+        // owner_info=true attaches the client object directly on the project.
         $project = $this->baseProject();
         $project['invited_freelancers'] = [1, 2];
+        $project['owner_info'] = [
+            'display_name' => 'Acme Corp',
+            'avatar_cdn' => 'https://cdn.freelancer.com/avatar/42.jpg',
+            'location' => ['country' => ['name' => 'Nigeria']],
+            'employer_reputation' => ['entire_history' => [
+                'overall' => 5, 'reviews' => 1, 'complete' => 3,
+            ]],
+        ];
 
-        $this->fakeProjects($project, [
-            '42' => [
-                'display_name' => 'Acme Corp',
-                'avatar_cdn' => 'https://cdn.freelancer.com/avatar/42.jpg',
-                'location' => ['country' => ['name' => 'Nigeria']],
-                'employer_reputation' => ['entire_history' => [
-                    'overall' => 5, 'reviews' => 1, 'complete' => 3,
-                ]],
-            ],
-        ]);
+        $this->fakeProjects($project, []); // no users map — owner_info is primary
 
         (new ProposalController)->getProposals();
 

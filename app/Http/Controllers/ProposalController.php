@@ -113,6 +113,10 @@ class ProposalController extends Controller
             // owner_id on each project) with the owner's profile, employer
             // reputation (rating/reviews/completed), country and status. Note:
             // no `compact` — it strips owner_id, which we need to index users.
+            // owner_info=true attaches the client (project owner) user object
+            // directly on each project as `owner_info` — the reliable source,
+            // since projects/active hides owner_id + the users map.
+            'owner_info' => true,
             'user_details' => true,
             'user_avatar' => true,
             'user_display_info' => true,
@@ -120,7 +124,6 @@ class ProposalController extends Controller
             'user_reputation' => true,
             'user_country_details' => true,
             'user_status' => true,
-            'invited_freelancer_details' => true,
         ];
 
         if ($filter->useminfix) {
@@ -276,8 +279,13 @@ class ProposalController extends Controller
      */
     private function storeClientInsight(array $project, array $users): void
     {
-        $ownerId = $project['owner_id'] ?? null;
-        $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
+        // Prefer the owner object attached directly by owner_info=true; fall
+        // back to the users map (owner_id) when only that projection is present.
+        $owner = $project['owner_info'] ?? null;
+        if (! is_array($owner)) {
+            $ownerId = $project['owner_id'] ?? null;
+            $owner = $ownerId !== null ? ($users[$ownerId] ?? $users[(string) $ownerId] ?? null) : null;
+        }
 
         if (! is_array($owner)) {
             return;
