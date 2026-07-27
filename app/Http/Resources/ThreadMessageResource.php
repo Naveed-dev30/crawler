@@ -22,6 +22,7 @@ class ThreadMessageResource extends JsonResource
                 && (int) $this->sender_user_id === (int) $request->user()?->id,
             'is_sent' => $this->direction === 'sent' ? $this->freelancer_message_id !== null : null,
             'is_read' => $this->is_read,
+            'sent_by_ai' => (bool) $this->sent_by_ai,
             'message_time' => $this->message_time?->toIso8601String(),
             'attachments' => $this->whenLoaded('attachments', function () {
                 return $this->attachments->map(fn ($a) => [
