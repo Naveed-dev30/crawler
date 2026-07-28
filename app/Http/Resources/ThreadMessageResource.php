@@ -16,7 +16,10 @@ class ThreadMessageResource extends JsonResource
             'sender_user_id' => $this->sender_user_id,
             'sender_name' => $this->direction === 'sent'
                 ? ($this->sender?->name ?? 'Owner')
-                : null,
+                : ($this->sender_name ?? 'Sarah Mitchell'),
+            'sender_avatar' => $this->direction === 'sent'
+                ? 'https://i.pravatar.cc/150?u=owner'.($this->sender_user_id ?? 0)
+                : 'https://i.pravatar.cc/150?u=client'.$this->thread_id,
             'is_mine' => $this->direction === 'sent'
                 && $this->sender_user_id !== null
                 && (int) $this->sender_user_id === (int) $request->user()?->id,
