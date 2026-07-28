@@ -44,11 +44,12 @@ class MobileThreadClientInfoTest extends TestCase
         $this->assertSame('5.00', (string) $res->json('data.client.rating'));
     }
 
-    public function test_client_is_null_when_no_insight(): void
+    public function test_client_falls_back_to_static_when_no_insight(): void
     {
         $thread = Thread::factory()->create(['assigned_user_id' => $this->me->id, 'project_id' => 999]);
-        $this->getJson("/api/v1/mobile/threads/{$thread->id}")
-            ->assertOk()
-            ->assertJsonPath('data.client', null);
+        $res = $this->getJson("/api/v1/mobile/threads/{$thread->id}")->assertOk();
+
+        $res->assertJsonPath('data.client.name', 'Sarah Mitchell');
+        $this->assertNotNull($res->json('data.client.avatar'));
     }
 }
