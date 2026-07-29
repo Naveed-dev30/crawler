@@ -57,7 +57,7 @@ class ChatController extends Controller
         return view('_partials.chat-thread-detail', [
             'thread' => $thread,
             'firstAssignee' => $firstAssignee,
-            'mobileUsers' => User::mobile()->orderBy('name')->get(['id', 'name', 'escalation_ladder']),
+            'mobileUsers' => User::mobile()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

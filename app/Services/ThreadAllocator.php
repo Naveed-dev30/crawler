@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Picks a transition number for a project via OpenAI. Same fail-safe idiom as
- * ThreadMatcher: bounded retries, fence/prose-tolerant JSON parsing, never
- * throws, null on failure or when the reply is outside the valid set.
+ * Picks a transition number for a project via OpenAI. Fail-safe idiom:
+ * bounded retries, fence/prose-tolerant JSON parsing, never throws, null
+ * on failure or when the reply is outside the valid set.
  */
 class ThreadAllocator
 {

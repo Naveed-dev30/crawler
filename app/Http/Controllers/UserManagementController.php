@@ -23,7 +23,6 @@ class UserManagementController extends Controller
             })
             ->when(in_array($role, ['admin', 'team', 'mobile'], true), fn ($q) => $q->where('role', $role))
             ->orderByRaw("role = 'mobile'")
-            ->orderBy('escalation_ladder')
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -81,7 +80,6 @@ class UserManagementController extends Controller
             // Team users take no part in chat routing — clear legacy routing fields when switching.
             if ($role !== 'mobile') {
                 $user->profile_prompt = null;
-                $user->escalation_ladder = null;
             }
         }
 

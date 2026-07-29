@@ -81,7 +81,7 @@ class UserUpdateTest extends TestCase
 
     public function test_switching_to_team_clears_routing_fields(): void
     {
-        $user = $this->mobileUser(['profile_prompt' => 'some prompt', 'escalation_ladder' => 2]);
+        $user = $this->mobileUser(['profile_prompt' => 'some prompt']);
 
         $this->actingAs($this->admin())->put("/users/{$user->id}", [
             'name' => $user->name,
@@ -92,7 +92,6 @@ class UserUpdateTest extends TestCase
         $user->refresh();
         $this->assertSame('team', $user->role);
         $this->assertNull($user->profile_prompt);
-        $this->assertNull($user->escalation_ladder);
     }
 
     public function test_own_email_does_not_trip_unique_rule(): void
@@ -114,13 +113,11 @@ class UserUpdateTest extends TestCase
             'name' => 'New Admin Name',
             'email' => $target->email,
             'role' => 'team',
-            'escalation_ladder' => 7,
         ])->assertRedirect(route('users'));
 
         $target->refresh();
         $this->assertSame('New Admin Name', $target->name);
         $this->assertSame('admin', $target->role);
-        $this->assertNull($target->escalation_ladder);
     }
 
     public function test_users_page_shows_action_buttons(): void
