@@ -23,6 +23,8 @@ class ThreadController extends Controller
             ->orderByDesc('last_client_message_at')
             ->paginate(50);
 
+        $this->attachClientInsights($threads->items());
+
         return $this->okPaginated(
             $threads,
             ThreadResource::collection($threads->items()),
@@ -41,6 +43,36 @@ class ThreadController extends Controller
         );
 
         return $this->ok(new ThreadResource($thread), 'Thread fetched successfully.');
+    }
+
+    /**
+     * Attach each thread's matching BidInsight (exposed as `client_insight`,
+     * keyed by project_id) in a single query so the list can render the client
+     * name + avatar without an N+1.
+     *
+     * @param  array<int, Thread>  $threads
+     */
+    private function attachClientInsights(array $threads): void
+    {
+        $projectIds = collect($threads)
+            ->pluck('project_id')
+            ->filter()
+            ->unique();
+
+        if ($projectIds->isEmpty()) {
+            return;
+        }
+
+        $insights = BidInsight::whereIn('project_id', $projectIds)
+            ->get()
+            ->keyBy('project_id');
+
+        foreach ($threads as $thread) {
+            $thread->setAttribute(
+                'client_insight',
+                $insights->get($thread->project_id)
+            );
+        }
     }
 
     public function block(Request $request, Thread $thread)

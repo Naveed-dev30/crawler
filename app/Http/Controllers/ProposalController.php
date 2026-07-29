@@ -14,6 +14,7 @@ use App\Models\Proposal;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ProposalController extends Controller
 {
@@ -288,6 +289,10 @@ class ProposalController extends Controller
         }
 
         if (! is_array($owner)) {
+            Log::debug('BidInsight skipped: no owner data on project', [
+                'project_id' => $project['id'] ?? null,
+            ]);
+
             return;
         }
 
@@ -322,12 +327,23 @@ class ProposalController extends Controller
         ], fn ($v) => $v !== null);
 
         if ($attributes === []) {
+            Log::debug('BidInsight skipped: no client fields extractable', [
+                'project_id' => $project['id'] ?? null,
+            ]);
+
             return;
         }
 
         $attributes['last_scraped_at'] = now();
 
         BidInsight::updateOrCreate(['project_id' => $project['id']], $attributes);
+
+        Log::info('BidInsight client fields written', [
+            'project_id' => $project['id'],
+            'fields' => array_keys($attributes),
+            'has_name' => isset($attributes['client_name']),
+            'has_avatar' => isset($attributes['client_avatar']),
+        ]);
     }
 
     /**
