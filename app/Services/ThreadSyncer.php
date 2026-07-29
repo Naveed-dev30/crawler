@@ -19,7 +19,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ThreadSyncer
 {
-    public function __construct(private FreelancerMessenger $messenger) {}
+    public function __construct(
+        private FreelancerMessenger $messenger,
+        private MobileNotifier $notifier,
+    ) {}
 
     public function run(): void
     {
@@ -39,6 +42,19 @@ class ThreadSyncer
 
         $ourFlUserId = (int) config('variables.flUserId');
 
+        // Resolve every project → proposal in one query. This used to be a
+        // lookup per thread per pass, against an unindexed `proposals.project_id`.
+        $projectIds = [];
+        foreach ($flThreads as $flThread) {
+            $context = $flThread['thread']['context'] ?? $flThread['context'] ?? [];
+            if (($context['type'] ?? null) === 'project' && ($context['id'] ?? 0)) {
+                $projectIds[] = (int) $context['id'];
+            }
+        }
+
+        $proposalIds = Proposal::whereIn('project_id', array_unique($projectIds))
+            ->pluck('id', 'project_id');
+
         foreach ($flThreads as $flThread) {
             $context = $flThread['thread']['context'] ?? $flThread['context'] ?? [];
             if (($context['type'] ?? null) !== 'project') {
@@ -53,7 +69,7 @@ class ThreadSyncer
                 continue;
             }
 
-            $proposalId = Proposal::where('project_id', $projectId)->value('id');
+            $proposalId = $proposalIds[$projectId] ?? null;
             if (! $proposalId) {
                 continue; // not a project we bid on
             }
@@ -69,6 +85,8 @@ class ThreadSyncer
                     'freelancer_time_updated' => $timeUpdated,
                 ]);
 
+                // No assignee yet, so importMessages() sends no push — the
+                // thread_assigned push from AssignThreadJob covers this user.
                 $this->importMessages($thread, $ourFlUserId);
 
                 AssignThreadJob::dispatch($thread->id);
@@ -77,9 +95,13 @@ class ThreadSyncer
             }
 
             if ($timeUpdated > (int) $thread->freelancer_time_updated) {
-                $this->importMessages($thread, $ourFlUserId, (int) $thread->freelancer_time_updated);
-                $thread->freelancer_time_updated = $timeUpdated;
-                $thread->save();
+                // Only advance the watermark when the fetch actually succeeded;
+                // otherwise a transient Freelancer failure would skip this
+                // window's messages permanently.
+                if ($this->importMessages($thread, $ourFlUserId, (int) $thread->freelancer_time_updated)) {
+                    $thread->freelancer_time_updated = $timeUpdated;
+                    $thread->save();
+                }
             }
         }
     }
@@ -95,11 +117,35 @@ class ThreadSyncer
         }
     }
 
-    private function importMessages(Thread $thread, int $ourFlUserId, int $fromTime = 0): void
+    /**
+     * Import a thread's new messages.
+     *
+     * Returns false when the upstream fetch failed, so the caller leaves the
+     * watermark where it was and retries the same window next pass.
+     */
+    private function importMessages(Thread $thread, int $ourFlUserId, int $fromTime = 0): bool
     {
         $messages = $this->messenger->fetchMessages((int) $thread->freelancer_thread_id, $fromTime);
 
+        if ($messages === null) {
+            return false;
+        }
+
         $lastClientMessageAt = $thread->last_client_message_at;
+
+        // One lookup for the whole batch instead of a SELECT per message.
+        $flMessageIds = array_values(array_filter(array_map(
+            static fn ($flMessage) => (int) ($flMessage['id'] ?? 0),
+            $messages,
+        )));
+        $existingMessages = ThreadMessage::whereIn('freelancer_message_id', $flMessageIds)
+            ->get()
+            ->keyBy('freelancer_message_id');
+
+        // Coalesce: a batch carries one push for the newest inbound message,
+        // not one push per message. A 200-message backfill must not fan out.
+        $latestInbound = null;
+        $inboundCount = 0;
 
         foreach ($messages as $flMessage) {
             $fromUser = (int) ($flMessage['from_user'] ?? 0);
@@ -112,7 +158,7 @@ class ThreadSyncer
             $isOurs = $fromUser === $ourFlUserId;
             $messageTime = Carbon::createFromTimestamp((int) ($flMessage['time_created'] ?? now()->timestamp));
 
-            $existing = ThreadMessage::where('freelancer_message_id', $flMessageId)->first();
+            $existing = $existingMessages->get($flMessageId);
             if ($existing) {
                 // App-sent messages come back around in the feed — only their read state can change.
                 if ($isRead !== null && $existing->is_read !== $isRead) {
@@ -148,18 +194,78 @@ class ThreadSyncer
                 ]);
             }
 
-            event(new ThreadMessageCreated($stored));
+            $this->broadcastSafely(static fn () => event(new ThreadMessageCreated($stored)));
 
             $this->maybeQueueAiReply($thread, $stored);
 
-            if (! $isOurs && (! $lastClientMessageAt || $messageTime->gt($lastClientMessageAt))) {
-                $lastClientMessageAt = $messageTime;
+            if (! $isOurs) {
+                $inboundCount++;
+                if ($latestInbound === null || $messageTime->gte($latestInbound->message_time)) {
+                    $latestInbound = $stored;
+                }
+
+                if (! $lastClientMessageAt || $messageTime->gt($lastClientMessageAt)) {
+                    $lastClientMessageAt = $messageTime;
+                }
             }
         }
 
+        $dirty = false;
+
         if ($lastClientMessageAt && ! $lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
             $thread->last_client_message_at = $lastClientMessageAt;
+            $dirty = true;
+        }
+
+        // A client reply reopens the conversation. Without this an 'answered'
+        // thread stays answered forever, and ThreadEscalator — which only scans
+        // 'fresh' threads — can never escalate an ignored follow-up.
+        if ($latestInbound !== null && $thread->status !== 'fresh') {
+            $thread->status = 'fresh';
+            $dirty = true;
+        }
+
+        if ($dirty) {
             $thread->save();
+        }
+
+        $this->notifyAssignee($thread, $latestInbound, $inboundCount);
+
+        return true;
+    }
+
+    /**
+     * One push per thread per sync pass, for the newest inbound message.
+     *
+     * Guards mirror maybeQueueAiReply(): nothing for our own messages, nothing
+     * on a blocked thread, and nothing when no one owns the thread yet (which
+     * is also what keeps a brand-new thread's full history import silent).
+     */
+    private function notifyAssignee(Thread $thread, ?ThreadMessage $latestInbound, int $inboundCount): void
+    {
+        if ($latestInbound === null || $thread->blocked || $thread->assigned_user_id === null) {
+            return;
+        }
+
+        $thread->loadMissing(['assignedUser', 'proposal']);
+
+        if ($thread->assignedUser) {
+            $this->notifier->message($thread->assignedUser, $thread, $latestInbound, $inboundCount);
+        }
+    }
+
+    /**
+     * Broadcasts are ShouldBroadcastNow, so a Soketi outage would throw inline.
+     * sync() wraps the whole pass in one try/catch, so an unguarded failure
+     * would abort every remaining thread and lose the pending saves below.
+     * The socket is an enhancement; the REST + FCM paths must survive it.
+     */
+    private function broadcastSafely(callable $dispatch): void
+    {
+        try {
+            $dispatch();
+        } catch (\Throwable $e) {
+            Log::warning('ThreadSyncer broadcast failed: '.$e->getMessage());
         }
     }
 }
