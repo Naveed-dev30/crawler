@@ -1,14 +1,10 @@
 @extends('layouts.layoutMaster')
 
-@section('title', 'Bids')
+@section('title', 'Opportunities')
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h4 class="page-title mb-0">Bids</h4>
-        <form action="{{ route('expire_bids') }}" method="POST" class="mb-0">
-            @csrf
-            <button type="submit" class="btn btn-danger">Expire Pending</button>
-        </form>
+        <h4 class="page-title mb-0">Opportunities</h4>
     </div>
 
     {{-- Filter bar (sticky on scroll) --}}
