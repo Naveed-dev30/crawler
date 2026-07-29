@@ -34,7 +34,7 @@ class MobileMessagesApiTest extends TestCase
         Sanctum::actingAs($this->me);
     }
 
-    public function test_lists_messages_in_chronological_order(): void
+    public function test_lists_the_newest_messages_first(): void
     {
         ThreadMessage::factory()->create([
             'thread_id' => $this->thread->id,
@@ -49,7 +49,58 @@ class MobileMessagesApiTest extends TestCase
 
         $response = $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
 
-        $this->assertSame(['first', 'second'], collect($response->json('data'))->pluck('message')->all());
+        // Page 1 is the END of the conversation; the client reverses it for
+        // display and prepends older pages.
+        $this->assertSame(['second', 'first'], collect($response->json('data'))->pluck('message')->all());
+    }
+
+    public function test_page_one_holds_the_most_recent_messages(): void
+    {
+        // The bug this replaces: with ascending order, page 1 was the OLDEST
+        // 200, so a long thread opened at its beginning.
+        for ($i = 1; $i <= 205; $i++) {
+            ThreadMessage::factory()->create([
+                'thread_id' => $this->thread->id,
+                'message' => "msg {$i}",
+                'message_time' => now()->subMinutes(300 - $i),
+            ]);
+        }
+
+        $page1 = $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->assertOk();
+        $messages = collect($page1->json('data'))->pluck('message');
+
+        $this->assertCount(200, $messages);
+        $this->assertSame('msg 205', $messages->first());
+        $this->assertTrue($messages->contains('msg 6'));
+        $this->assertFalse($messages->contains('msg 5'), 'the oldest messages belong on page 2');
+
+        $page2 = $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages?page=2")->assertOk();
+        $older = collect($page2->json('data'))->pluck('message');
+
+        $this->assertSame(['msg 5', 'msg 4', 'msg 3', 'msg 2', 'msg 1'], $older->all());
+    }
+
+    public function test_messages_sharing_a_timestamp_do_not_straddle_pages(): void
+    {
+        // Imported messages can share a message_time; without the id tie-break
+        // the sort is unstable and a row can repeat or vanish across pages.
+        $shared = now()->subMinute();
+        for ($i = 1; $i <= 205; $i++) {
+            ThreadMessage::factory()->create([
+                'thread_id' => $this->thread->id,
+                'message' => "msg {$i}",
+                'message_time' => $shared,
+            ]);
+        }
+
+        $page1 = collect(
+            $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages")->json('data')
+        )->pluck('id');
+        $page2 = collect(
+            $this->getJson("/api/v1/mobile/threads/{$this->thread->id}/messages?page=2")->json('data')
+        )->pluck('id');
+
+        $this->assertCount(205, $page1->merge($page2)->unique());
     }
 
     public function test_opening_messages_queues_mark_thread_read(): void
@@ -104,7 +155,8 @@ class MobileMessagesApiTest extends TestCase
             ->assertOk()
             ->json('data');
 
-        [$colleagueMsg, $ownerMsg, $clientMsg, $mineMsg] = $data;
+        // The endpoint returns newest first.
+        [$mineMsg, $clientMsg, $ownerMsg, $colleagueMsg] = $data;
 
         $this->assertTrue($mineMsg['is_mine']);
         $this->assertSame($this->me->name, $mineMsg['sender_name']);
