@@ -50,8 +50,20 @@
         .transition-lane__users { display: flex; flex-wrap: wrap; gap: .75rem; }
         .transition-step { display: flex; align-items: center; gap: .35rem; }
         .transition-step__ord { font-size: .7rem; color: #a1a5b7; min-width: 1.1rem; text-align: right; }
-        .transition-step__select { min-width: 150px; background-color: #fff; color: #566a7f; color-scheme: light; }
-        .transition-step__select option { background-color: #fff; color: #566a7f; }
+        .tstep-dd { position: relative; }
+        .tstep-toggle { min-width: 150px; background-color: #fff; color: #566a7f; text-align: left;
+            display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .tstep-toggle.is-empty { color: #a1a5b7; }
+        .tstep-toggle::after { content: ''; border: solid #a1a5b7; border-width: 0 2px 2px 0;
+            display: inline-block; padding: 2.5px; transform: rotate(45deg); margin-top: -3px; flex: 0 0 auto; }
+        .tstep-menu { position: absolute; z-index: 1080; top: calc(100% + 2px); left: 0; min-width: 100%;
+            background: #fff; border: 1px solid #d9dee3; border-radius: .375rem;
+            box-shadow: 0 .25rem .75rem rgba(0,0,0,.12); padding: .25rem 0; margin: 0;
+            max-height: 220px; overflow-y: auto; display: none; }
+        .tstep-menu.show { display: block; }
+        .tstep-item { padding: .4rem .85rem; cursor: pointer; color: #566a7f; font-size: .85rem; white-space: nowrap; }
+        .tstep-item:hover { background: #f5f5f9; }
+        .tstep-item.active { color: #696cff; font-weight: 600; }
         .transition-empty { color: #a1a5b7; font-size: .85rem; padding: .25rem 0; }
     </style>
     <script>
@@ -63,14 +75,19 @@
         const payload = document.getElementById('transitionsPayload');
 
         const nameOf = id => (mobileUsers.find(u => u.id === Number(id)) || {}).name || '';
+        const stepId = step => { const v = parseInt(step.dataset.userId, 10); return Number.isInteger(v) ? v : null; };
 
-        // Users already chosen in this lane, optionally ignoring one select.
-        function usedInLane(row, exceptSelect) {
+        function closeAllMenus(except) {
+            builder.querySelectorAll('.tstep-menu.show').forEach(m => { if (m !== except) m.classList.remove('show'); });
+        }
+
+        // Users already chosen in this lane, optionally ignoring one step.
+        function usedInLane(row, exceptStep) {
             const set = new Set();
-            row.querySelectorAll('.t-user').forEach(s => {
-                if (s === exceptSelect) return;
-                const v = parseInt(s.value, 10);
-                if (Number.isInteger(v)) set.add(v);
+            row.querySelectorAll('.transition-step').forEach(s => {
+                if (s === exceptStep) return;
+                const id = stepId(s);
+                if (id !== null) set.add(id);
             });
             return set;
         }
@@ -81,43 +98,60 @@
             return free ? free.id : null;
         }
 
-        // Rebuild every select's options so a user never repeats within a lane,
-        // renumber the step ordinals, and toggle the +user button.
+        // Rebuild each step's dropdown menu so a user never repeats within a lane,
+        // refresh the button label + ordinals, and toggle the +user button.
         function refreshLane(row) {
-            const selects = [...row.querySelectorAll('.t-user')];
-            selects.forEach((sel, i) => {
-                const cur = parseInt(sel.value, 10);
-                const used = usedInLane(row, sel);
-                const opts = ['<option value="" disabled' + (Number.isInteger(cur) ? '' : ' selected') + '>Select user…</option>'];
-                mobileUsers.forEach(u => {
-                    if (used.has(u.id) && cur !== u.id) return; // taken by a sibling step
-                    opts.push(`<option value="${u.id}"${cur === u.id ? ' selected' : ''}>${u.name}</option>`);
-                });
-                sel.innerHTML = opts.join('');
-                const ord = sel.closest('.transition-step').querySelector('.transition-step__ord');
+            const steps = [...row.querySelectorAll('.transition-step')];
+            steps.forEach((step, i) => {
+                const cur = stepId(step);
+                const used = usedInLane(row, step);
+                const toggle = step.querySelector('.tstep-toggle');
+                const label = toggle.querySelector('.tstep-label');
+                if (cur !== null) { label.textContent = nameOf(cur); toggle.classList.remove('is-empty'); }
+                else { label.textContent = 'Select user…'; toggle.classList.add('is-empty'); }
+                const menu = step.querySelector('.tstep-menu');
+                menu.innerHTML = mobileUsers
+                    .filter(u => !used.has(u.id) || u.id === cur)
+                    .map(u => `<div class="tstep-item${u.id === cur ? ' active' : ''}" data-id="${u.id}">${u.name}</div>`)
+                    .join('') || '<div class="tstep-item">No users left</div>';
+                const ord = step.querySelector('.transition-step__ord');
                 if (ord) ord.textContent = (i + 1) + '.';
             });
             const addBtn = row.querySelector('.add-user');
-            if (addBtn) addBtn.disabled = selects.length >= mobileUsers.length;
-            row.querySelectorAll('.remove-user').forEach(b => { b.style.display = selects.length <= 1 ? 'none' : ''; });
+            if (addBtn) addBtn.disabled = steps.length >= mobileUsers.length;
+            row.querySelectorAll('.remove-user').forEach(b => { b.style.display = steps.length <= 1 ? 'none' : ''; });
         }
 
         function userColumn(userId) {
             const col = document.createElement('div');
             col.className = 'transition-step';
+            col.dataset.userId = (userId ?? '');
             col.innerHTML =
                 `<span class="transition-step__ord"></span>` +
-                `<select class="form-select form-select-sm t-user transition-step__select">` +
-                    (userId ? `<option value="${userId}" selected>${nameOf(userId)}</option>` : '') +
-                `</select>` +
+                `<div class="tstep-dd">` +
+                    `<button type="button" class="form-select form-select-sm tstep-toggle"><span class="tstep-label"></span></button>` +
+                    `<div class="tstep-menu"></div>` +
+                `</div>` +
                 `<button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Remove step">&times;</button>`;
+            const toggle = col.querySelector('.tstep-toggle');
+            const menu = col.querySelector('.tstep-menu');
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const open = menu.classList.contains('show');
+                closeAllMenus();
+                if (!open) menu.classList.add('show');
+            });
+            menu.addEventListener('click', (e) => {
+                const item = e.target.closest('.tstep-item[data-id]');
+                if (!item) return;
+                col.dataset.userId = item.dataset.id;
+                menu.classList.remove('show');
+                refreshLane(col.closest('.transition-lane')); sync();
+            });
             col.querySelector('.remove-user').addEventListener('click', () => {
                 const row = col.closest('.transition-lane');
-                if (row.querySelectorAll('.t-user').length <= 1) return; // keep ≥1 user per lane
+                if (row.querySelectorAll('.transition-step').length <= 1) return; // keep ≥1 user per lane
                 col.remove(); refreshLane(row); sync();
-            });
-            col.querySelector('.t-user').addEventListener('change', () => {
-                refreshLane(col.closest('.transition-lane')); sync();
             });
             return col;
         }
@@ -156,10 +190,12 @@
         function sync() {
             const rows = [...builder.querySelectorAll('.transition-lane')].map(row => ({
                 number: parseInt(row.querySelector('.t-number').value, 10),
-                user_ids: [...row.querySelectorAll('.t-user')].map(s => parseInt(s.value, 10)).filter(Number.isInteger),
+                user_ids: [...row.querySelectorAll('.transition-step')].map(stepId).filter(v => v !== null),
             })).filter(r => Number.isInteger(r.number) && r.user_ids.length);
             payload.value = JSON.stringify(rows);
         }
+
+        document.addEventListener('click', () => closeAllMenus());
 
         document.getElementById('addTransitionBtn').addEventListener('click', () => {
             builder.appendChild(transitionRow(nextNumber(), [])); sync();
