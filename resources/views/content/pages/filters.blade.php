@@ -38,6 +38,7 @@
         });
     </script>
     <style>
+        :root { color-scheme: light; }
         .transition-lane { border: 1px solid #e4e6f0; border-radius: .5rem; background: #fff;
             padding: 1rem 1.25rem; margin-bottom: 1rem; }
         .transition-lane__head { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
