@@ -58,10 +58,6 @@ class FcmPusher
         $devices = $user->deviceTokens()->get();
 
         if ($devices->isEmpty()) {
-            // Visible skip: a silent no-op here made a missing token look like a
-            // broken pipeline during debugging.
-            Log::info("FcmPusher: user {$user->id} has no registered devices — push skipped.");
-
             return 0;
         }
 

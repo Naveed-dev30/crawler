@@ -25,10 +25,6 @@ class DeviceTokenRegistrar
             // Push permission denied, or an iOS simulator with no APNs token.
             // Never a failure: the user signs in fine and simply receives no
             // pushes until a real token arrives via the refresh endpoint.
-            \Illuminate\Support\Facades\Log::info(
-                "DeviceTokenRegistrar: user {$user->id} signed in without a usable FCM token."
-            );
-
             return null;
         }
 
