@@ -18,8 +18,8 @@ class UserController extends Controller
     {
         $users = User::mobile()
             ->where('id', '!=', $request->user()->id)
-            ->orderBy('escalation_ladder')
-            ->get(['id', 'name', 'email', 'escalation_ladder']);
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         return $this->ok($users, 'Users fetched successfully.');
     }
