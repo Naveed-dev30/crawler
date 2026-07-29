@@ -8,6 +8,7 @@ use App\Jobs\GenerateAiReplyJob;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
+use App\Support\SafeBroadcast;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -194,7 +195,7 @@ class ThreadSyncer
                 ]);
             }
 
-            $this->broadcastSafely(static fn () => event(new ThreadMessageCreated($stored)));
+            SafeBroadcast::event(new ThreadMessageCreated($stored));
 
             $this->maybeQueueAiReply($thread, $stored);
 
@@ -251,21 +252,6 @@ class ThreadSyncer
 
         if ($thread->assignedUser) {
             $this->notifier->message($thread->assignedUser, $thread, $latestInbound, $inboundCount);
-        }
-    }
-
-    /**
-     * Broadcasts are ShouldBroadcastNow, so a Soketi outage would throw inline.
-     * sync() wraps the whole pass in one try/catch, so an unguarded failure
-     * would abort every remaining thread and lose the pending saves below.
-     * The socket is an enhancement; the REST + FCM paths must survive it.
-     */
-    private function broadcastSafely(callable $dispatch): void
-    {
-        try {
-            $dispatch();
-        } catch (\Throwable $e) {
-            Log::warning('ThreadSyncer broadcast failed: '.$e->getMessage());
         }
     }
 }
