@@ -156,7 +156,7 @@ class ChatsPageTest extends TestCase
         $res->assertSee('Escalated');
         $res->assertSeeInOrder(['Ali Raza', 'Sara Malik']);
         $res->assertSee('AI matched to Ali Raza'); // synthetic first row: earliest log's from-user
-        $res->assertSee('ladder 2');
+        $res->assertDontSee('ladder');
     }
 
     public function test_detail_without_logs_uses_current_assignee_for_ai_row(): void
