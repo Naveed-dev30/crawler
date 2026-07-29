@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\GamificationSnapshot;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class GamificationController extends Controller
 {
@@ -13,7 +12,6 @@ class GamificationController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('========================= gamification ingest: payload', ['payload' => $payload]);
 
         $top = $payload['leaderboard']['top'] ?? null;
         if (! is_array($top)) {

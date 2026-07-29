@@ -7,7 +7,6 @@ use App\Models\BidInsightChange;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class BidInsightsController extends Controller
 {
@@ -15,7 +14,6 @@ class BidInsightsController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('========================= bid insights ingest: payload', ['payload' => $payload]);
 
         $bids = $payload['bids'] ?? null;
         if (! is_array($bids)) {
