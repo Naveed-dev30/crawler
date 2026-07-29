@@ -39,6 +39,7 @@
     </script>
     <script>
     (function () {
+        try {
         const mobileUsers = @json($mobileUsers);           // [{id, name}]
         const existing = @json($transitionsData);          // [{number, user_ids:[...]}]
         const builder = document.getElementById('transitionsBuilder');
@@ -93,6 +94,13 @@
 
         (existing.length ? existing : []).forEach(t => builder.appendChild(transitionRow(t.number, t.user_ids)));
         sync();
+        } catch (e) {
+            // Builder failed to initialise — suppress the hidden field so the server
+            // receives no transitions_payload and syncTransitions() returns early (no-op),
+            // leaving existing lanes untouched instead of interpreting "[]" as "wipe all".
+            console.error('Transition builder init error:', e);
+            document.getElementById('transitionsPayload')?.removeAttribute('name');
+        }
     })();
     </script>
 @endsection

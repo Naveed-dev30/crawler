@@ -167,9 +167,9 @@ class FilterController extends Controller
         $mobileIds = \App\Models\User::mobile()->pluck('id')->all();
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($rows, $mobileIds) {
-            \App\Models\Transition::query()->delete(); // cascades to transition_users
-
+            // Build the validated set of incoming lane numbers first.
             $seenNumbers = [];
+            $validRows = [];
             foreach ($rows as $row) {
                 $number = (int) ($row['number'] ?? 0);
                 $userIds = array_values(array_unique(array_map('intval', $row['user_ids'] ?? [])));
@@ -179,8 +179,18 @@ class FilterController extends Controller
                     continue;
                 }
                 $seenNumbers[] = $number;
+                $validRows[] = ['number' => $number, 'user_ids' => $userIds];
+            }
 
-                $transition = \App\Models\Transition::create(['number' => $number]);
+            // Remove only lanes whose number is no longer present; preserve existing ids
+            // for lanes that still exist so in-flight thread pointers remain valid.
+            \App\Models\Transition::whereNotIn('number', $seenNumbers)->delete();
+
+            foreach ($validRows as ['number' => $number, 'user_ids' => $userIds]) {
+                $transition = \App\Models\Transition::firstOrCreate(['number' => $number]);
+
+                // Rewrite the user roster for this transition (positions may change).
+                \App\Models\TransitionUser::where('transition_id', $transition->id)->delete();
                 foreach ($userIds as $position => $userId) {
                     \App\Models\TransitionUser::create([
                         'transition_id' => $transition->id,
