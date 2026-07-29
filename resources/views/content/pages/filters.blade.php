@@ -37,6 +37,64 @@
             }
         });
     </script>
+    <script>
+    (function () {
+        const mobileUsers = @json($mobileUsers);           // [{id, name}]
+        const existing = @json($transitionsData);          // [{number, user_ids:[...]}]
+        const builder = document.getElementById('transitionsBuilder');
+        const payload = document.getElementById('transitionsPayload');
+
+        function userOptions(selected) {
+            return mobileUsers.map(u =>
+                `<option value="${u.id}"${Number(selected) === u.id ? ' selected' : ''}>${u.name}</option>`
+            ).join('');
+        }
+
+        function userColumn(userId) {
+            const col = document.createElement('div');
+            col.className = 'd-flex align-items-center gap-1 transition-user';
+            col.innerHTML =
+                `<select class="form-select form-select-sm t-user">${userOptions(userId)}</select>` +
+                `<button type="button" class="btn btn-sm btn-outline-danger remove-user">&minus;</button>`;
+            col.querySelector('.remove-user').addEventListener('click', () => { col.remove(); sync(); });
+            col.querySelector('.t-user').addEventListener('change', sync);
+            return col;
+        }
+
+        function transitionRow(number, userIds) {
+            const row = document.createElement('div');
+            row.className = 'border rounded p-2 mb-2 transition-row';
+            row.innerHTML =
+                `<div class="d-flex align-items-center gap-2 mb-2">` +
+                `<label class="form-label mb-0 small">Number</label>` +
+                `<input type="number" min="1" step="1" class="form-control form-control-sm t-number" style="width:100px" value="${number ?? ''}">` +
+                `<button type="button" class="btn btn-sm btn-outline-primary add-user">+ user</button>` +
+                `<button type="button" class="btn btn-sm btn-outline-danger remove-transition ms-auto">Remove lane</button>` +
+                `</div><div class="d-flex flex-wrap gap-2 users"></div>`;
+            const users = row.querySelector('.users');
+            (userIds && userIds.length ? userIds : [mobileUsers[0]?.id]).forEach(id => users.appendChild(userColumn(id)));
+            row.querySelector('.add-user').addEventListener('click', () => { users.appendChild(userColumn(mobileUsers[0]?.id)); sync(); });
+            row.querySelector('.remove-transition').addEventListener('click', () => { row.remove(); sync(); });
+            row.querySelector('.t-number').addEventListener('input', sync);
+            return row;
+        }
+
+        function sync() {
+            const rows = [...builder.querySelectorAll('.transition-row')].map(row => ({
+                number: parseInt(row.querySelector('.t-number').value, 10),
+                user_ids: [...row.querySelectorAll('.t-user')].map(s => parseInt(s.value, 10)),
+            })).filter(r => Number.isInteger(r.number) && r.user_ids.length);
+            payload.value = JSON.stringify(rows);
+        }
+
+        document.getElementById('addTransitionBtn').addEventListener('click', () => {
+            builder.appendChild(transitionRow(null, [])); sync();
+        });
+
+        (existing.length ? existing : []).forEach(t => builder.appendChild(transitionRow(t.number, t.user_ids)));
+        sync();
+    })();
+    </script>
 @endsection
 
 @section('content')
@@ -106,14 +164,25 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" for="formValidationProfileMatchPrompt">Step 4 - Profile Match Prompt
+                            <label class="form-label fw-semibold" for="allocationPrompt">Allocation Prompt
                                 <i class="bx bx-info-circle text-muted" tabindex="0"
                                    data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                   title="Profile Match Prompt"
-                                   data-bs-content="Used when a new client thread arrives. Sent to OpenAI together with the project and every mobile user's profile prompt to pick which user the thread is assigned to. Leave empty to use the built-in routing prompt."></i>
+                                   title="Allocation Prompt"
+                                   data-bs-content="Sent to OpenAI on the first assignment of a new client thread. Describe which transition number to return for what kind of project. The AI returns a number that selects a transition; the thread is assigned to that transition's first user."></i>
                             </label>
-                            <textarea class="form-control" id="formValidationProfileMatchPrompt"
-                                      name="formValidationProfileMatchPrompt" rows="10">{{ $filter->profile_match_prompt }}</textarea>
+                            <textarea class="form-control" id="allocationPrompt" name="allocation_prompt"
+                                      rows="8">{{ $filter->allocation_prompt }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Transitions
+                                <small class="text-muted">(escalation lanes)</small>
+                            </label>
+                            <div id="transitionsBuilder"></div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addTransitionBtn">
+                                + Add transition
+                            </button>
+                            <input type="hidden" name="transitions_payload" id="transitionsPayload" value="[]">
                         </div>
                     </div>
 
