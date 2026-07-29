@@ -20,8 +20,6 @@ class UserUpdateTest extends TestCase
     {
         return User::factory()->create(array_merge([
             'role' => 'mobile',
-            'profile_prompt' => 'Laravel expert',
-            'escalation_ladder' => 2,
         ], $overrides));
     }
 
@@ -44,16 +42,13 @@ class UserUpdateTest extends TestCase
                 'name' => 'Updated Name',
                 'email' => 'updated@example.com',
                 'role' => 'mobile',
-                'profile_prompt' => 'Vue expert now',
-                'escalation_ladder' => 5,
             ])
             ->assertRedirect(route('users'));
 
         $user->refresh();
         $this->assertSame('Updated Name', $user->name);
         $this->assertSame('updated@example.com', $user->email);
-        $this->assertSame('Vue expert now', $user->profile_prompt);
-        $this->assertSame(5, (int) $user->escalation_ladder);
+        $this->assertSame('mobile', $user->role);
     }
 
     public function test_blank_password_keeps_current_one(): void
@@ -65,8 +60,6 @@ class UserUpdateTest extends TestCase
             'email' => $user->email,
             'password' => '',
             'role' => 'mobile',
-            'profile_prompt' => $user->profile_prompt,
-            'escalation_ladder' => $user->escalation_ladder,
         ])->assertRedirect(route('users'));
 
         $this->assertTrue(Hash::check('original-pass', $user->refresh()->password));
@@ -81,8 +74,6 @@ class UserUpdateTest extends TestCase
             'email' => $user->email,
             'password' => 'brand-new-pass',
             'role' => 'mobile',
-            'profile_prompt' => $user->profile_prompt,
-            'escalation_ladder' => $user->escalation_ladder,
         ])->assertRedirect(route('users'));
 
         $this->assertTrue(Hash::check('brand-new-pass', $user->refresh()->password));
@@ -90,7 +81,7 @@ class UserUpdateTest extends TestCase
 
     public function test_switching_to_team_clears_routing_fields(): void
     {
-        $user = $this->mobileUser();
+        $user = $this->mobileUser(['profile_prompt' => 'some prompt', 'escalation_ladder' => 2]);
 
         $this->actingAs($this->admin())->put("/users/{$user->id}", [
             'name' => $user->name,
@@ -112,23 +103,7 @@ class UserUpdateTest extends TestCase
             'name' => 'New Name',
             'email' => 'same@example.com',
             'role' => 'mobile',
-            'profile_prompt' => $user->profile_prompt,
-            'escalation_ladder' => $user->escalation_ladder,
         ])->assertRedirect(route('users'))->assertSessionHasNoErrors();
-    }
-
-    public function test_taken_ladder_is_rejected(): void
-    {
-        $this->mobileUser(['escalation_ladder' => 3]);
-        $user = $this->mobileUser(['escalation_ladder' => 4]);
-
-        $this->actingAs($this->admin())->put("/users/{$user->id}", [
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => 'mobile',
-            'profile_prompt' => $user->profile_prompt,
-            'escalation_ladder' => 3,
-        ])->assertSessionHasErrors('escalation_ladder');
     }
 
     public function test_admin_account_update_ignores_role_and_routing_fields(): void
