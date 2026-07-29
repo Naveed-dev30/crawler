@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Drafts an AI reply to a client message using the assigned user's profile
- * prompt and recent thread history. Same fail-safe idiom as ThreadMatcher:
- * bounded retries, never throws, null on failure.
+ * prompt and recent thread history. Fail-safe idiom: bounded retries,
+ * never throws, null on failure.
  */
 class AiReplyGenerator
 {
