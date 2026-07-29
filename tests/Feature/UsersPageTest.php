@@ -25,7 +25,6 @@ class UsersPageTest extends TestCase
         User::factory()->create([
             'role' => 'mobile',
             'name' => 'Mobile Mike',
-            'escalation_ladder' => 3,
         ]);
 
         $this->actingAs($this->admin())
@@ -49,58 +48,14 @@ class UsersPageTest extends TestCase
                 'name' => 'New Mobile',
                 'email' => 'mobile@example.com',
                 'password' => 'secret123',
-                'profile_prompt' => 'Laravel and Vue expert',
-                'escalation_ladder' => 1,
+                'role' => 'mobile',
             ])
             ->assertRedirect();
 
         $user = User::where('email', 'mobile@example.com')->first();
         $this->assertNotNull($user);
         $this->assertSame('mobile', $user->role);
-        $this->assertSame('Laravel and Vue expert', $user->profile_prompt);
-        $this->assertSame(1, (int) $user->escalation_ladder);
         $this->assertNotSame('secret123', $user->password); // hashed
-    }
-
-    public function test_duplicate_escalation_ladder_rejected(): void
-    {
-        User::factory()->create(['role' => 'mobile', 'escalation_ladder' => 2]);
-
-        $this->actingAs($this->admin())
-            ->post('/users', [
-                'name' => 'Second',
-                'email' => 'second@example.com',
-                'password' => 'secret123',
-                'profile_prompt' => 'x',
-                'escalation_ladder' => 2,
-            ])
-            ->assertSessionHasErrors('escalation_ladder');
-
-        $this->assertNull(User::where('email', 'second@example.com')->first());
-    }
-
-    public function test_ladder_out_of_range_rejected(): void
-    {
-        $this->actingAs($this->admin())
-            ->post('/users', [
-                'name' => 'Bad',
-                'email' => 'bad@example.com',
-                'password' => 'secret123',
-                'profile_prompt' => 'x',
-                'escalation_ladder' => 11,
-            ])
-            ->assertSessionHasErrors('escalation_ladder');
-    }
-
-    public function test_used_ladder_numbers_not_offered_in_form(): void
-    {
-        User::factory()->create(['role' => 'mobile', 'escalation_ladder' => 1]);
-
-        $response = $this->actingAs($this->admin())->get('/users');
-
-        $response->assertOk();
-        $response->assertDontSee('<option value="1">', false);
-        $response->assertSee('<option value="2">', false);
     }
 
     public function test_users_table_is_paginated_twenty_per_page(): void
@@ -117,7 +72,7 @@ class UsersPageTest extends TestCase
         $this->assertCount(5, $page2->viewData('users'));
     }
 
-    public function test_admin_can_create_team_user_without_prompt_and_ladder(): void
+    public function test_admin_can_create_team_user(): void
     {
         $this->actingAs($this->admin())
             ->post('/users', [
@@ -131,26 +86,6 @@ class UsersPageTest extends TestCase
         $user = User::where('email', 'team-new@example.com')->first();
         $this->assertNotNull($user);
         $this->assertSame('team', $user->role);
-        $this->assertNull($user->profile_prompt);
-        $this->assertNull($user->escalation_ladder);
-    }
-
-    public function test_team_user_ignores_submitted_prompt_and_ladder(): void
-    {
-        $this->actingAs($this->admin())
-            ->post('/users', [
-                'name' => 'Team Member',
-                'email' => 'team-x@example.com',
-                'password' => 'secret123',
-                'role' => 'team',
-                'profile_prompt' => 'should be ignored',
-                'escalation_ladder' => 3,
-            ])
-            ->assertRedirect();
-
-        $user = User::where('email', 'team-x@example.com')->first();
-        $this->assertNull($user->profile_prompt);
-        $this->assertNull($user->escalation_ladder);
     }
 
     public function test_admin_role_cannot_be_created(): void
@@ -165,18 +100,6 @@ class UsersPageTest extends TestCase
             ->assertSessionHasErrors('role');
 
         $this->assertNull(User::where('email', 'sneak@example.com')->first());
-    }
-
-    public function test_mobile_role_still_requires_prompt_and_ladder(): void
-    {
-        $this->actingAs($this->admin())
-            ->post('/users', [
-                'name' => 'Mobile NoPrompt',
-                'email' => 'mob@example.com',
-                'password' => 'secret123',
-                'role' => 'mobile',
-            ])
-            ->assertSessionHasErrors(['profile_prompt', 'escalation_ladder']);
     }
 
     public function test_search_filters_by_name_or_email(): void
@@ -197,7 +120,7 @@ class UsersPageTest extends TestCase
     public function test_role_filter_limits_results(): void
     {
         User::factory()->create(['role' => 'team', 'name' => 'Team Guy']);
-        User::factory()->create(['role' => 'mobile', 'name' => 'Mobile Guy', 'escalation_ladder' => 1]);
+        User::factory()->create(['role' => 'mobile', 'name' => 'Mobile Guy']);
 
         $response = $this->actingAs($this->admin())->get('/users?role=mobile');
 
