@@ -55,7 +55,7 @@
                 <div>
                     <div class="fw-semibold lh-sm">{{ $assigneeName ?? 'Unassigned' }}</div>
                     <small class="text-muted">
-                        Assigned to{{ $thread->assignedUser?->escalation_ladder !== null && $assigneeName ? " · ladder {$thread->assignedUser->escalation_ladder}" : '' }}
+                        Assigned to
                     </small>
                 </div>
             </div>
@@ -68,7 +68,7 @@
                                 data-current-user-id="{{ $thread->assigned_user_id ?? '' }}">
                             @foreach ($mobileUsers as $user)
                                 <option value="{{ $user->id }}" @selected($thread->assigned_user_id === $user->id)>
-                                    {{ $user->name }}{{ $user->escalation_ladder !== null ? " — ladder {$user->escalation_ladder}" : '' }}
+                                    {{ $user->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -93,12 +93,8 @@
         @endif
         @foreach ($thread->logs as $log)
             @php
-                $fromLabel = $log->fromUser
-                    ? $log->fromUser->name . ($log->fromUser->escalation_ladder !== null ? " (ladder {$log->fromUser->escalation_ladder})" : '')
-                    : '—';
-                $toLabel = $log->toUser
-                    ? $log->toUser->name . ($log->toUser->escalation_ladder !== null ? " (ladder {$log->toUser->escalation_ladder})" : '')
-                    : '—';
+                $fromLabel = $log->fromUser ? $log->fromUser->name : '—';
+                $toLabel = $log->toUser ? $log->toUser->name : '—';
             @endphp
             <li class="mb-2">
                 @if ($log->type === 'escalation')
