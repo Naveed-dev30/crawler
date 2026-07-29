@@ -2,21 +2,15 @@
   "menu": [
     {
       "url": "/",
-      "name": "Home",
+      "name": "Dashboard",
       "icon": "menu-icon tf-icons bx bx-home-circle",
       "slug": "home"
     },
     {
       "url": "/bids",
-      "name": "Bids",
+      "name": "Opportunities",
       "icon": "menu-icon tf-icons bx bx-briefcase",
       "slug": "bids"
-    },
-    {
-      "url": "/review",
-      "name": "Review",
-      "icon": "menu-icon tf-icons bx bx-list-check",
-      "slug": "review"
     },
     {
       "url": "/leaderboard",
@@ -26,7 +20,7 @@
     },
     {
       "url": "/insights",
-      "name": "Insights",
+      "name": "Profile Insights",
       "icon": "menu-icon tf-icons bx bx-line-chart",
       "slug": "insights"
     },
@@ -45,7 +39,7 @@
     },
     {
       "url": "/filters",
-      "name": "Filters",
+      "name": "Configurations",
       "icon": "menu-icon tf-icons bx bx-file",
       "slug": "filters",
       "access": "admin"

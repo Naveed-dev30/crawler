@@ -96,7 +96,7 @@ class FilterController extends Controller
             $filter->profile_match_prompt = $request->formValidationProfileMatchPrompt ?? '';
 
             $escalationMinutes = (int) $request->formValidationEscalationMinutes;
-            $filter->escalation_minutes = in_array($escalationMinutes, [30, 120, 480, 1440], true)
+            $filter->escalation_minutes = $escalationMinutes >= 1
                 ? $escalationMinutes
                 : 30;
 
