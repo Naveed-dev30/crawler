@@ -25,7 +25,9 @@ class User extends Authenticatable
         'role',
         'profile_prompt',
         'escalation_ladder',
-        'fcm_token',
+        // 'fcm_token' is deliberately NOT fillable: device tokens live in the
+        // device_tokens table. The column is kept for one release so a rollback
+        // still finds its tokens, but nothing may write it.
         'ai_schedule_enabled',
         'ai_window_start',
         'ai_window_end',
@@ -58,6 +60,15 @@ class User extends Authenticatable
     public function threads()
     {
         return $this->hasMany(Thread::class, 'assigned_user_id');
+    }
+
+    /**
+     * Every device signed in to this account. Pushes fan out across all of
+     * them; a dead token removes its own row without affecting the others.
+     */
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 
     /**
