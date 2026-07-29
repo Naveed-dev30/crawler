@@ -49,7 +49,8 @@
         .transition-lane__users { display: flex; flex-wrap: wrap; gap: .75rem; }
         .transition-step { display: flex; align-items: center; gap: .35rem; }
         .transition-step__ord { font-size: .7rem; color: #a1a5b7; min-width: 1.1rem; text-align: right; }
-        .transition-step__select { min-width: 150px; }
+        .transition-step__select { min-width: 150px; background-color: #fff; color: #566a7f; color-scheme: light; }
+        .transition-step__select option { background-color: #fff; color: #566a7f; }
         .transition-empty { color: #a1a5b7; font-size: .85rem; padding: .25rem 0; }
     </style>
     <script>
