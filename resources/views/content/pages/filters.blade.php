@@ -109,6 +109,12 @@
             if (hasPicker) jQuery(scope).find('.t-user').selectpicker();
         }
 
+        // Init pickers + first dedupe pass AFTER the row is attached to the DOM.
+        function mountRow(row) {
+            initPickers(row);
+            refreshLane(row);
+        }
+
         function userColumn(userId) {
             const col = document.createElement('div');
             col.className = 'transition-step';
@@ -141,8 +147,6 @@
             const users = row.querySelector('.transition-lane__users');
             const ids = (userIds && userIds.length) ? userIds : [mobileUsers[0] ? mobileUsers[0].id : null].filter(x => x !== null);
             ids.forEach(id => users.appendChild(userColumn(id)));
-            initPickers(row);
-            refreshLane(row);
             row.querySelector('.add-user').addEventListener('click', () => {
                 const id = nextFreeUser(row);
                 if (id === null) return; // all mobile users already placed
@@ -181,14 +185,20 @@
             });
         }
 
+        function addLane(number, userIds) {
+            const row = transitionRow(number, userIds);
+            builder.appendChild(row);   // attach first…
+            mountRow(row);              // …then init the styled picker
+        }
+
         document.getElementById('addTransitionBtn').addEventListener('click', () => {
-            builder.appendChild(transitionRow(nextNumber(), [])); sync();
+            addLane(nextNumber(), []); sync();
         });
 
         if (existing.length) {
-            existing.forEach(t => builder.appendChild(transitionRow(t.number, t.user_ids)));
+            existing.forEach(t => addLane(t.number, t.user_ids));
         } else {
-            builder.appendChild(transitionRow(1, [])); // default: show one lane
+            addLane(1, []); // default: show one lane
         }
         sync();
         } catch (e) {
