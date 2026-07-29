@@ -51,7 +51,7 @@
         .transition-step { display: flex; align-items: center; gap: .35rem; }
         .transition-step__ord { font-size: .7rem; color: #a1a5b7; min-width: 1.1rem; text-align: right; }
         .tstep-dd { position: relative; }
-        .tstep-toggle { min-width: 150px; background-color: #fff; color: #566a7f; text-align: left;
+        .tstep-toggle { min-width: 150px; background-color: #fff; background-image: none; color: #566a7f; text-align: left;
             display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
         .tstep-toggle.is-empty { color: #a1a5b7; }
         .tstep-toggle::after { content: ''; border: solid #a1a5b7; border-width: 0 2px 2px 0;
