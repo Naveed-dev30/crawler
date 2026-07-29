@@ -172,13 +172,13 @@
                                    title="Chat Escalation Time"
                                    data-bs-content="How long an unanswered client thread waits before it escalates to the next user on the escalation ladder."></i>
                             </label>
-                            <select class="selectpicker w-100" data-style="btn-default"
-                                    id="formValidationEscalationMinutes"
-                                    name="formValidationEscalationMinutes">
-                                @foreach ([30 => '30 minutes', 120 => '2 hours', 480 => '8 hours', 1440 => '1 day'] as $minutes => $label)
-                                    <option value="{{ $minutes }}"@selected((int) $filter->escalation_minutes === $minutes)>{{ $label }}</option>
-                                @endforeach
-                            </select>
+                            <div class="input-group">
+                                <input type="number" class="form-control" min="1" step="1"
+                                       id="formValidationEscalationMinutes"
+                                       name="formValidationEscalationMinutes"
+                                       value="{{ (int) ($filter->escalation_minutes ?? 30) }}" />
+                                <span class="input-group-text">minutes</span>
+                            </div>
                         </div>
 
                         <div class="border rounded p-3">
