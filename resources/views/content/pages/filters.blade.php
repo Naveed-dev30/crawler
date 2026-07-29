@@ -37,6 +37,21 @@
             }
         });
     </script>
+    <style>
+        .transition-lane { border: 1px solid #e4e6f0; border-radius: .5rem; background: #fff;
+            padding: 1rem 1.25rem; margin-bottom: 1rem; }
+        .transition-lane__head { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+            padding-bottom: .75rem; margin-bottom: .75rem; border-bottom: 1px dashed #e4e6f0; }
+        .transition-lane__badge { display: inline-flex; align-items: center; justify-content: center;
+            min-width: 1.9rem; height: 1.9rem; padding: 0 .5rem; border-radius: 999px;
+            background: #e7e7ff; color: #696cff; font-weight: 600; font-size: .8rem; }
+        .transition-lane__num { width: 96px; }
+        .transition-lane__users { display: flex; flex-wrap: wrap; gap: .75rem; }
+        .transition-step { display: flex; align-items: center; gap: .35rem; }
+        .transition-step__ord { font-size: .7rem; color: #a1a5b7; min-width: 1.1rem; text-align: right; }
+        .transition-step__select { min-width: 150px; }
+        .transition-empty { color: #a1a5b7; font-size: .85rem; padding: .25rem 0; }
+    </style>
     <script>
     (function () {
         try {
@@ -45,54 +60,114 @@
         const builder = document.getElementById('transitionsBuilder');
         const payload = document.getElementById('transitionsPayload');
 
-        function userOptions(selected) {
-            return mobileUsers.map(u =>
-                `<option value="${u.id}"${Number(selected) === u.id ? ' selected' : ''}>${u.name}</option>`
-            ).join('');
+        const nameOf = id => (mobileUsers.find(u => u.id === Number(id)) || {}).name || '';
+
+        // Users already chosen in this lane, optionally ignoring one select.
+        function usedInLane(row, exceptSelect) {
+            const set = new Set();
+            row.querySelectorAll('.t-user').forEach(s => {
+                if (s === exceptSelect) return;
+                const v = parseInt(s.value, 10);
+                if (Number.isInteger(v)) set.add(v);
+            });
+            return set;
+        }
+
+        function nextFreeUser(row) {
+            const used = usedInLane(row, null);
+            const free = mobileUsers.find(u => !used.has(u.id));
+            return free ? free.id : null;
+        }
+
+        // Rebuild every select's options so a user never repeats within a lane,
+        // renumber the step ordinals, and toggle the +user button.
+        function refreshLane(row) {
+            const selects = [...row.querySelectorAll('.t-user')];
+            selects.forEach((sel, i) => {
+                const cur = parseInt(sel.value, 10);
+                const used = usedInLane(row, sel);
+                const opts = ['<option value="" disabled' + (Number.isInteger(cur) ? '' : ' selected') + '>Select user…</option>'];
+                mobileUsers.forEach(u => {
+                    if (used.has(u.id) && cur !== u.id) return; // taken by a sibling step
+                    opts.push(`<option value="${u.id}"${cur === u.id ? ' selected' : ''}>${u.name}</option>`);
+                });
+                sel.innerHTML = opts.join('');
+                const ord = sel.closest('.transition-step').querySelector('.transition-step__ord');
+                if (ord) ord.textContent = (i + 1) + '.';
+            });
+            const addBtn = row.querySelector('.add-user');
+            if (addBtn) addBtn.disabled = selects.length >= mobileUsers.length;
+            row.querySelectorAll('.remove-user').forEach(b => { b.style.display = selects.length <= 1 ? 'none' : ''; });
         }
 
         function userColumn(userId) {
             const col = document.createElement('div');
-            col.className = 'd-flex align-items-center gap-1 transition-user';
+            col.className = 'transition-step';
             col.innerHTML =
-                `<select class="form-select form-select-sm t-user">${userOptions(userId)}</select>` +
-                `<button type="button" class="btn btn-sm btn-outline-danger remove-user">&minus;</button>`;
-            col.querySelector('.remove-user').addEventListener('click', () => { col.remove(); sync(); });
-            col.querySelector('.t-user').addEventListener('change', sync);
+                `<span class="transition-step__ord"></span>` +
+                `<select class="form-select form-select-sm t-user transition-step__select">` +
+                    (userId ? `<option value="${userId}" selected>${nameOf(userId)}</option>` : '') +
+                `</select>` +
+                `<button type="button" class="btn btn-sm btn-outline-danger remove-user" title="Remove step">&times;</button>`;
+            col.querySelector('.remove-user').addEventListener('click', () => {
+                const row = col.closest('.transition-lane');
+                if (row.querySelectorAll('.t-user').length <= 1) return; // keep ≥1 user per lane
+                col.remove(); refreshLane(row); sync();
+            });
+            col.querySelector('.t-user').addEventListener('change', () => {
+                refreshLane(col.closest('.transition-lane')); sync();
+            });
             return col;
         }
 
         function transitionRow(number, userIds) {
             const row = document.createElement('div');
-            row.className = 'border rounded p-2 mb-2 transition-row';
+            row.className = 'transition-lane';
             row.innerHTML =
-                `<div class="d-flex align-items-center gap-2 mb-2">` +
-                `<label class="form-label mb-0 small">Number</label>` +
-                `<input type="number" min="1" step="1" class="form-control form-control-sm t-number" style="width:100px" value="${number ?? ''}">` +
-                `<button type="button" class="btn btn-sm btn-outline-primary add-user">+ user</button>` +
-                `<button type="button" class="btn btn-sm btn-outline-danger remove-transition ms-auto">Remove lane</button>` +
-                `</div><div class="d-flex flex-wrap gap-2 users"></div>`;
-            const users = row.querySelector('.users');
-            (userIds && userIds.length ? userIds : [mobileUsers[0]?.id]).forEach(id => users.appendChild(userColumn(id)));
-            row.querySelector('.add-user').addEventListener('click', () => { users.appendChild(userColumn(mobileUsers[0]?.id)); sync(); });
+                `<div class="transition-lane__head">` +
+                    `<span class="transition-lane__badge"><i class="bx bx-git-branch"></i></span>` +
+                    `<label class="form-label mb-0 small text-muted">Number</label>` +
+                    `<input type="number" min="1" step="1" class="form-control form-control-sm transition-lane__num t-number" value="${number ?? ''}">` +
+                    `<button type="button" class="btn btn-sm btn-outline-primary add-user"><i class="bx bx-plus"></i> user</button>` +
+                    `<button type="button" class="btn btn-sm btn-outline-danger remove-transition ms-auto"><i class="bx bx-trash"></i> Remove lane</button>` +
+                `</div>` +
+                `<div class="transition-lane__users"></div>`;
+            const users = row.querySelector('.transition-lane__users');
+            const ids = (userIds && userIds.length) ? userIds : [mobileUsers[0] ? mobileUsers[0].id : null].filter(x => x !== null);
+            ids.forEach(id => users.appendChild(userColumn(id)));
+            refreshLane(row);
+            row.querySelector('.add-user').addEventListener('click', () => {
+                const id = nextFreeUser(row);
+                if (id === null) return; // all mobile users already placed
+                users.appendChild(userColumn(id)); refreshLane(row); sync();
+            });
             row.querySelector('.remove-transition').addEventListener('click', () => { row.remove(); sync(); });
             row.querySelector('.t-number').addEventListener('input', sync);
             return row;
         }
 
+        function nextNumber() {
+            const nums = [...builder.querySelectorAll('.t-number')].map(i => parseInt(i.value, 10)).filter(Number.isInteger);
+            return nums.length ? Math.max(...nums) + 1 : 1;
+        }
+
         function sync() {
-            const rows = [...builder.querySelectorAll('.transition-row')].map(row => ({
+            const rows = [...builder.querySelectorAll('.transition-lane')].map(row => ({
                 number: parseInt(row.querySelector('.t-number').value, 10),
-                user_ids: [...row.querySelectorAll('.t-user')].map(s => parseInt(s.value, 10)),
+                user_ids: [...row.querySelectorAll('.t-user')].map(s => parseInt(s.value, 10)).filter(Number.isInteger),
             })).filter(r => Number.isInteger(r.number) && r.user_ids.length);
             payload.value = JSON.stringify(rows);
         }
 
         document.getElementById('addTransitionBtn').addEventListener('click', () => {
-            builder.appendChild(transitionRow(null, [])); sync();
+            builder.appendChild(transitionRow(nextNumber(), [])); sync();
         });
 
-        (existing.length ? existing : []).forEach(t => builder.appendChild(transitionRow(t.number, t.user_ids)));
+        if (existing.length) {
+            existing.forEach(t => builder.appendChild(transitionRow(t.number, t.user_ids)));
+        } else {
+            builder.appendChild(transitionRow(1, [])); // default: show one lane
+        }
         sync();
         } catch (e) {
             // Builder failed to initialise — suppress the hidden field so the server
@@ -183,12 +258,15 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Transitions
+                            <label class="form-label fw-semibold d-block mb-1">Transitions
                                 <small class="text-muted">(escalation lanes)</small>
                             </label>
+                            <div class="form-text mt-0 mb-2">The AI returns a lane <strong>Number</strong> and the
+                                thread is assigned to that lane's first user. If they don't reply within the
+                                escalation time, it moves down the lane, step by step. A user can appear only once per lane.</div>
                             <div id="transitionsBuilder"></div>
-                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addTransitionBtn">
-                                + Add transition
+                            <button type="button" class="btn btn-sm btn-primary mt-1" id="addTransitionBtn">
+                                <i class="bx bx-plus"></i> Add transition
                             </button>
                             <input type="hidden" name="transitions_payload" id="transitionsPayload" value="[]">
                         </div>
