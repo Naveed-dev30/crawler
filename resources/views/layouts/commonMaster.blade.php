@@ -21,8 +21,12 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <!-- Canonical SEO -->
   <link rel="canonical" href="{{ config('variables.productPage') ? config('variables.productPage') : '' }}">
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="{{ asset('assets/branding/alladin-favicon.svg') }}" />
+  <!-- Favicon (same app icon as the mobile app) -->
+  <link rel="icon" type="image/png" sizes="1024x1024" href="{{ asset('assets/branding/alladin-app-icon-1024.png') }}" />
+  <link rel="icon" type="image/png" sizes="512x512" href="{{ asset('assets/branding/alladin-app-icon-512.png') }}" />
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('assets/branding/alladin-app-icon-192.png') }}" />
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/branding/alladin-app-icon-32.png') }}" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/branding/alladin-app-icon-180.png') }}" />
 
   <!-- Include Styles -->
   @include('layouts/sections/styles')
