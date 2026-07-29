@@ -23,21 +23,12 @@ class UserManagementController extends Controller
             })
             ->when(in_array($role, ['admin', 'team', 'mobile'], true), fn ($q) => $q->where('role', $role))
             ->orderByRaw("role = 'mobile'")
-            ->orderBy('escalation_ladder')
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
 
-        $usedLadders = User::whereNotNull('escalation_ladder')
-            ->pluck('escalation_ladder')
-            ->map(fn ($l) => (int) $l)
-            ->all();
-
-        $availableLadders = array_values(array_diff(range(1, 10), $usedLadders));
-
         return view('content.pages.users', [
             'users' => $users,
-            'availableLadders' => $availableLadders,
         ]);
     }
 
@@ -51,11 +42,6 @@ class UserManagementController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', 'in:mobile,team'],
-            'profile_prompt' => ['required_if:role,mobile', 'nullable', 'string'],
-            'escalation_ladder' => [
-                'required_if:role,mobile', 'nullable', 'integer', 'between:1,10',
-                'unique:users,escalation_ladder',
-            ],
         ]);
 
         $role = $validated['role'] ?? 'mobile';
@@ -65,9 +51,6 @@ class UserManagementController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $role,
-            // Team users take no part in chat routing/escalation.
-            'profile_prompt' => $role === 'mobile' ? ($validated['profile_prompt'] ?? null) : null,
-            'escalation_ladder' => $role === 'mobile' ? ($validated['escalation_ladder'] ?? null) : null,
         ]);
 
         return redirect()->route('users')->with('status', 'User created.');
@@ -90,18 +73,14 @@ class UserManagementController extends Controller
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
                 'password' => ['nullable', 'string', 'min:8'],
                 'role' => ['required', 'in:mobile,team'],
-                'profile_prompt' => ['required_if:role,mobile', 'nullable', 'string'],
-                'escalation_ladder' => [
-                    'required_if:role,mobile', 'nullable', 'integer', 'between:1,10',
-                    Rule::unique('users', 'escalation_ladder')->ignore($user->id),
-                ],
             ]);
 
             $role = $validated['role'];
             $user->role = $role;
-            // Team users take no part in chat routing/escalation.
-            $user->profile_prompt = $role === 'mobile' ? ($validated['profile_prompt'] ?? null) : null;
-            $user->escalation_ladder = $role === 'mobile' ? ($validated['escalation_ladder'] ?? null) : null;
+            // Team users take no part in chat routing — clear legacy routing fields when switching.
+            if ($role !== 'mobile') {
+                $user->profile_prompt = null;
+            }
         }
 
         $user->name = $validated['name'];

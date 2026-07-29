@@ -24,7 +24,6 @@ class User extends Authenticatable
         'password',
         'role',
         'profile_prompt',
-        'escalation_ladder',
         'fcm_token',
         'ai_schedule_enabled',
         'ai_window_start',
