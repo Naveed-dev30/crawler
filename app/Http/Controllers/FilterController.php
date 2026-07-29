@@ -24,8 +24,13 @@ class FilterController extends Controller
         $filter = Filter::find(1);
         $countries = Country::all();
         $currencies = Currency::all();
+        $mobileUsers = \App\Models\User::mobile()->get(['id', 'name']);
+        $transitionsData = \App\Models\Transition::with('users')->get()->map(fn ($t) => [
+            'number' => (int) $t->number,
+            'user_ids' => $t->users->pluck('user_id')->map(fn ($id) => (int) $id)->all(),
+        ]);
 
-        return view('content.pages.filters', ['filter' => $filter, 'countries' => $countries, 'currencies' => $currencies]);
+        return view('content.pages.filters', compact('filter', 'countries', 'currencies', 'mobileUsers', 'transitionsData'));
     }
 
     /**
@@ -93,7 +98,7 @@ class FilterController extends Controller
 
             $filter->summary_prompt = $request->formValidationSummaryPrompt ?? '';
 
-            $filter->profile_match_prompt = $request->formValidationProfileMatchPrompt ?? '';
+            $filter->allocation_prompt = $request->input('allocation_prompt', '') ?? '';
 
             $escalationMinutes = (int) $request->formValidationEscalationMinutes;
             $filter->escalation_minutes = $escalationMinutes >= 1
@@ -134,6 +139,8 @@ class FilterController extends Controller
 
             $filter->save();
 
+            $this->syncTransitions($request->input('transitions_payload'));
+
             return redirect('/filters')->with('status', 'Filters saved successfully.');
         } catch (Exception $exception) {
             Log::error("Something went wrong ar update fileters: {$exception->getMessage()}");
@@ -148,5 +155,40 @@ class FilterController extends Controller
     public function destroy(Filter $filter)
     {
         //
+    }
+
+    private function syncTransitions(?string $payload): void
+    {
+        $rows = json_decode((string) $payload, true);
+        if (! is_array($rows)) {
+            return;
+        }
+
+        $mobileIds = \App\Models\User::mobile()->pluck('id')->all();
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($rows, $mobileIds) {
+            \App\Models\Transition::query()->delete(); // cascades to transition_users
+
+            $seenNumbers = [];
+            foreach ($rows as $row) {
+                $number = (int) ($row['number'] ?? 0);
+                $userIds = array_values(array_unique(array_map('intval', $row['user_ids'] ?? [])));
+                $userIds = array_values(array_filter($userIds, fn ($id) => in_array($id, $mobileIds, true)));
+
+                if ($number < 1 || $userIds === [] || in_array($number, $seenNumbers, true)) {
+                    continue;
+                }
+                $seenNumbers[] = $number;
+
+                $transition = \App\Models\Transition::create(['number' => $number]);
+                foreach ($userIds as $position => $userId) {
+                    \App\Models\TransitionUser::create([
+                        'transition_id' => $transition->id,
+                        'user_id' => $userId,
+                        'position' => $position,
+                    ]);
+                }
+            }
+        });
     }
 }
