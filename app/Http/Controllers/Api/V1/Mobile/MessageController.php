@@ -18,8 +18,12 @@ class MessageController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
-        // Opening the conversation counts as reading it on Freelancer.
-        MarkThreadReadJob::dispatch($thread->id);
+        // Opening the conversation counts as reading it on Freelancer. Only on
+        // the first page: paging back through history fired this per page,
+        // hitting the Freelancer API and re-broadcasting each time.
+        if ($request->integer('page', 1) <= 1) {
+            MarkThreadReadJob::dispatch($thread->id);
+        }
 
         $messages = $thread->messages()
             ->with('attachments')

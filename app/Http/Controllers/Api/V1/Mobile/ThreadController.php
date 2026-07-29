@@ -20,7 +20,10 @@ class ThreadController extends Controller
         $threads = Thread::where('assigned_user_id', $request->user()->id)
             ->where('blocked', $request->boolean('blocked'))
             ->with(['proposal.bid'])
-            ->orderByDesc('last_client_message_at')
+            // A freshly assigned thread has no client message yet, and NULL
+            // sorts last in a DESC order — so a brand-new project landed at the
+            // BOTTOM of the list. Fall back to when the thread was created.
+            ->orderByRaw('COALESCE(last_client_message_at, created_at) DESC')
             ->paginate(50);
 
         $this->attachClientInsights($threads->items());

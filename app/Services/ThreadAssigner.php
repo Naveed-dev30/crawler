@@ -6,6 +6,7 @@ use App\Events\ThreadAssigned;
 use App\Models\ActivityLog;
 use App\Models\Thread;
 use App\Models\User;
+use App\Support\SafeBroadcast;
 
 /**
  * Single write-path for every thread assignment (AI match, escalation,
@@ -51,7 +52,7 @@ class ThreadAssigner
             ]);
         }
 
-        event(new ThreadAssigned($thread, $to, $type, $from));
+        SafeBroadcast::event(new ThreadAssigned($thread, $to, $type, $from));
 
         if ($type === self::TYPE_ESCALATION) {
             $this->notifier->escalated($to, $thread, $from);

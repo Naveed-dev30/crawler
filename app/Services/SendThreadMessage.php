@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\ThreadMessageCreated;
+use App\Support\SafeBroadcast;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use Illuminate\Http\UploadedFile;
@@ -45,7 +46,7 @@ class SendThreadMessage
             ]);
         }
 
-        event(new ThreadMessageCreated($stored));
+        SafeBroadcast::event(new ThreadMessageCreated($stored));
 
         if ($thread->status === 'fresh') {
             $thread->status = 'answered';

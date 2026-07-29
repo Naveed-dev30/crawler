@@ -10,6 +10,7 @@ use App\Models\ThreadMessage;
 use App\Models\User;
 use App\Support\NotificationType;
 use App\Support\PushContent;
+use App\Support\SafeBroadcast;
 
 /**
  * The single write-path for every mobile notification.
@@ -60,7 +61,7 @@ class MobileNotifier
         $row = $this->storeRow($user, $content, $thread);
 
         if ($row) {
-            event(new MobileNotificationCreated($row));
+            SafeBroadcast::event(new MobileNotificationCreated($row));
         }
 
         SendFcmPushJob::dispatch($user->id, $content->title, $content->body, array_filter([
