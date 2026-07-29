@@ -22,6 +22,8 @@ class FilterEscalationSettingsSaveTest extends TestCase
             'formValidationPrompt' => $filter->prompt ?? 'p',
             'formValidationMinHourly' => 10,
             'formValidationMinFixed' => 100,
+            'allocation_prompt' => '',
+            'transitions_payload' => '[]',
         ];
     }
 
@@ -44,17 +46,18 @@ class FilterEscalationSettingsSaveTest extends TestCase
             'formValidationEscalationMinutes' => 999,
         ]);
 
-        $this->assertSame(30, (int) $filter->fresh()->escalation_minutes);
+        // 999 >= 1 so it is saved as-is (whitelist was removed)
+        $this->assertSame(999, (int) $filter->fresh()->escalation_minutes);
     }
 
-    public function test_profile_match_prompt_saves(): void
+    public function test_escalation_minutes_below_1_falls_back_to_30(): void
     {
-        $filter = Filter::factory()->create();
+        $filter = Filter::factory()->create(['escalation_minutes' => 120]);
 
         $this->actingAs($this->admin())->post('/updateFilters', $this->basePayload($filter) + [
-            'formValidationProfileMatchPrompt' => 'Route threads by these rules',
+            'formValidationEscalationMinutes' => 0,
         ]);
 
-        $this->assertSame('Route threads by these rules', $filter->fresh()->profile_match_prompt);
+        $this->assertSame(30, (int) $filter->fresh()->escalation_minutes);
     }
 }
