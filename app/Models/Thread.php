@@ -14,6 +14,8 @@ class Thread extends Model
         'project_id',
         'proposal_id',
         'assigned_user_id',
+        'transition_id',
+        'transition_position',
         'status',
         'blocked',
         'block_reason',
@@ -36,6 +38,11 @@ class Thread extends Model
     public function assignedUser()
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function transition()
+    {
+        return $this->belongsTo(Transition::class);
     }
 
     public function messages()
