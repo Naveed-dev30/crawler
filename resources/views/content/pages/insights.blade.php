@@ -195,7 +195,7 @@
                     </div></div>
                 </div>
             @endif
-            <div class="col-md-6">
+            <div class="col-12">
                 <div class="card"><div class="card-body">
                     <h5 class="mb-3">Earnings History (Snapshots)</h5>
                     <div id="chart-history"></div>
