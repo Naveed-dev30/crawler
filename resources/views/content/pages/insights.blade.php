@@ -385,6 +385,13 @@
             const rangeFrom = @json($from);
             const rangeTo = @json($to);
             const modalEl = document.querySelector('#skillGraphModal');
+            // The themed content wrapper uses a CSS transform, which becomes the
+            // containing block for the modal's position:fixed backdrop and leaves a
+            // stray overlay that blocks clicks. Reparent the modal to <body> so the
+            // backdrop covers/stacks correctly and is removed cleanly on close.
+            if (modalEl && modalEl.parentNode !== document.body) {
+                document.body.appendChild(modalEl);
+            }
             let skillChart = null;
 
             document.querySelectorAll('.skill-graph-btn').forEach(function (btn) {
