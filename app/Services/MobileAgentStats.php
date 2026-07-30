@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class MobileAgentStats
 {
@@ -52,6 +54,49 @@ class MobileAgentStats
                 'avg_response_seconds' => $this->avgResponseSeconds($uid, $from, $to),
             ];
         })->all();
+    }
+
+    /**
+     * @return array<int, array{time:string,type:string,project_id:?int,detail:string}>
+     */
+    public function activityFor(User $user, Carbon $from, Carbon $to): array
+    {
+        $uid = (int) $user->id;
+
+        $logs = ActivityLog::involving($uid)
+            ->whereBetween('created_at', [$from, $to])
+            ->get(['thread_id', 'type', 'message', 'created_at']);
+
+        $messages = ThreadMessage::where('sender_user_id', $uid)
+            ->where('direction', 'sent')
+            ->where('sent_by_ai', false)
+            ->whereBetween('message_time', [$from, $to])
+            ->get(['thread_id', 'message', 'message_time']);
+
+        $threadIds = $logs->pluck('thread_id')->merge($messages->pluck('thread_id'))->filter()->unique();
+        $projects = Thread::whereIn('id', $threadIds)->pluck('project_id', 'id');
+
+        $items = [];
+        foreach ($logs as $log) {
+            $items[] = [
+                'time' => Carbon::parse($log->created_at)->toIso8601String(),
+                'type' => $log->type,
+                'project_id' => $log->thread_id ? ($projects[$log->thread_id] ?? null) : null,
+                'detail' => (string) $log->message,
+            ];
+        }
+        foreach ($messages as $msg) {
+            $items[] = [
+                'time' => Carbon::parse($msg->message_time)->toIso8601String(),
+                'type' => 'responded',
+                'project_id' => $msg->thread_id ? ($projects[$msg->thread_id] ?? null) : null,
+                'detail' => Str::limit((string) $msg->message, 120),
+            ];
+        }
+
+        usort($items, fn ($a, $b) => strcmp($b['time'], $a['time']));
+
+        return $items;
     }
 
     private function avgResponseSeconds(int $uid, Carbon $from, Carbon $to): ?int
