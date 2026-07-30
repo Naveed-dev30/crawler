@@ -397,18 +397,37 @@
                     if (rangeFrom) { params.set('from', rangeFrom); }
                     if (rangeTo) { params.set('to', rangeTo); }
 
+                    const empty = document.querySelector('#skill-graph-empty');
+                    const chartEl = document.querySelector('#skill-graph-chart');
+
+                    // Tear down the previous skill's chart immediately so it never
+                    // lingers while the new data loads.
+                    if (skillChart) { skillChart.destroy(); skillChart = null; }
+                    chartEl.innerHTML = '';
+                    chartEl.classList.remove('d-none');
+                    empty.textContent = 'Loading…';
+                    empty.classList.remove('d-none');
+
+                    // Guard against out-of-order responses: only the latest click renders.
+                    window.__skillGraphReq = (window.__skillGraphReq || 0) + 1;
+                    const requestId = window.__skillGraphReq;
+
                     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                     modal.show();
 
                     fetch(skillRoute + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
-                            const empty = document.querySelector('#skill-graph-empty');
-                            const chartEl = document.querySelector('#skill-graph-chart');
+                            if (requestId !== window.__skillGraphReq) { return; }
                             if (skillChart) { skillChart.destroy(); skillChart = null; }
 
                             const hasData = (data.values || []).some(function (v) { return v !== null; });
-                            if (! hasData) { empty.classList.remove('d-none'); chartEl.classList.add('d-none'); return; }
+                            if (! hasData) {
+                                empty.textContent = 'No history for this skill.';
+                                empty.classList.remove('d-none');
+                                chartEl.classList.add('d-none');
+                                return;
+                            }
                             empty.classList.add('d-none'); chartEl.classList.remove('d-none');
 
                             skillChart = new ApexCharts(chartEl, {
