@@ -222,7 +222,7 @@
                             <table class="table table-sm mb-0">
                                 <thead><tr><th>Skill</th><th class="text-end">{{ $table['col'] }}</th></tr></thead>
                                 <tbody>
-                                    @foreach (array_slice($table['rows'], 0, 20) as $row)
+                                    @foreach ($table['rows'] as $row)
                                         @php
                                             $lbl = $row['label'] ?? $row['name'] ?? '';
                                             $d = $deltas[$table['section']][$lbl] ?? ['direction' => 'even', 'number' => null];
@@ -253,9 +253,6 @@
                                 </tbody>
                             </table>
                             </div>
-                            @if (count($table['rows']) > 20)
-                                <small class="text-muted">Showing 20 of {{ count($table['rows']) }}</small>
-                            @endif
                         @else
                             <p class="text-muted mb-0">No data</p>
                         @endif
@@ -271,7 +268,7 @@
                     @if (count($trending))
                         <div class="skill-scroll">
                         <ul class="list-group list-group-flush">
-                            @foreach (array_slice($trending, 0, 20) as $i => $row)
+                            @foreach ($trending as $i => $row)
                                 @php
                                     $lbl = $row['label'] ?? $row['name'] ?? '';
                                     $d = $deltas['trending_skills'][$lbl] ?? ['direction' => 'even', 'number' => null];
@@ -296,9 +293,6 @@
                             @endforeach
                         </ul>
                         </div>
-                        @if (count($trending) > 20)
-                            <small class="text-muted">Showing 20 of {{ count($trending) }}</small>
-                        @endif
                     @else
                         <p class="text-muted mb-0">No data</p>
                     @endif
