@@ -62,12 +62,31 @@ class GamificationController extends Controller
         return response()->json(['success' => true, 'id' => $snapshot->id]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $latest = GamificationSnapshot::orderByDesc('scraped_at')->first();
+        $minRaw = GamificationSnapshot::min('scraped_at');
+        $maxRaw = GamificationSnapshot::max('scraped_at');
+        $dateBounds = [
+            'min' => $minRaw ? Carbon::parse($minRaw) : null,
+            'max' => $maxRaw ? Carbon::parse($maxRaw) : null,
+        ];
 
-        $history = GamificationSnapshot::orderBy('scraped_at')
-            ->limit(90)
+        [$from, $to] = $this->range($request);
+
+        $latestQuery = GamificationSnapshot::orderByDesc('scraped_at');
+        if ($to) {
+            $latestQuery->whereDate('scraped_at', '<=', $to);
+        }
+        $latest = $latestQuery->first();
+
+        $historyQuery = GamificationSnapshot::orderBy('scraped_at');
+        if ($from) {
+            $historyQuery->whereDate('scraped_at', '>=', $from);
+        }
+        if ($to) {
+            $historyQuery->whereDate('scraped_at', '<=', $to);
+        }
+        $history = $historyQuery->limit(365)
             ->get(['scraped_at', 'self_rank', 'self_score'])
             ->map(fn ($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
@@ -79,6 +98,27 @@ class GamificationController extends Controller
         return view('content.pages.leaderboard', [
             'latest' => $latest,
             'history' => $history,
+            'refreshedAt' => $latest?->scraped_at,
+            'snapshotCount' => GamificationSnapshot::count(),
+            'dateBounds' => $dateBounds,
+            'from' => $from,
+            'to' => $to,
         ]);
+    }
+
+    private function range(Request $request): array
+    {
+        $parse = function ($value) {
+            if (! is_string($value) || $value === '') {
+                return null;
+            }
+            try {
+                return Carbon::parse($value)->toDateString();
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        return [$parse($request->query('from')), $parse($request->query('to'))];
     }
 }
