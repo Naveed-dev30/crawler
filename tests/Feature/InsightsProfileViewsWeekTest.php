@@ -11,7 +11,7 @@ class InsightsProfileViewsWeekTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function seedData(): void
+    private function seedData(): void
     {
         InsightSnapshot::create([
             'scraped_at' => '2026-06-01 09:00:00',
@@ -39,6 +39,15 @@ class InsightsProfileViewsWeekTest extends TestCase
         $this->seedData();
         $this->actingAs(User::factory()->create())
             ->getJson('/insights/profile-views-week')
+            ->assertOk()
+            ->assertJson(['date' => '2026-07-01', 'values' => [7, 8]]);
+    }
+
+    public function test_invalid_date_returns_latest(): void
+    {
+        $this->seedData();
+        $this->actingAs(User::factory()->create())
+            ->getJson('/insights/profile-views-week?date=not-a-date')
             ->assertOk()
             ->assertJson(['date' => '2026-07-01', 'values' => [7, 8]]);
     }
