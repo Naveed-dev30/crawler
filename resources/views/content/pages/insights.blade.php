@@ -442,6 +442,16 @@
                         });
                 });
             });
+
+            // On close, tear down the chart and defensively clear any stray
+            // Bootstrap backdrop / body lock that would otherwise block clicks.
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                if (skillChart) { skillChart.destroy(); skillChart = null; }
+                document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+            });
         })();
     </script>
 @endsection
