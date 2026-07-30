@@ -40,6 +40,10 @@ class BidNowJob implements ShouldQueue
             'description' => $this->bid->cover_letter,
         ];
 
+        if ($this->bid->profile_id !== null) {
+            $data['profile_id'] = (int) $this->bid->profile_id;
+        }
+
         // Set the headers for the request
         $headers = [
             'content-type' => 'application/json',
