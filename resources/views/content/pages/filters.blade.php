@@ -251,6 +251,30 @@
     @endif
 
     <h4 class="page-title">Filters</h4>
+    <div class="card mb-4">
+        <h5 class="card-header d-flex justify-content-between align-items-center">
+            Freelancer Profiles
+            <form method="POST" action="{{ route('profiles.sync') }}" class="mb-0">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-primary">Sync now</button>
+            </form>
+        </h5>
+        <div class="card-body">
+            @if ($profiles->isEmpty())
+                <p class="text-muted mb-0">No profiles synced yet.</p>
+            @else
+                <p class="text-muted small mb-2">Last synced: {{ $profiles->max('updated_at')?->format('Y-m-d H:i') }}</p>
+                <ul class="list-group list-group-flush">
+                    @foreach ($profiles as $profile)
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span>{{ $profile->title }}</span>
+                            <span class="text-muted">#{{ $profile->id }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    </div>
     <div class="row">
         <!-- FormValidation -->
         <div class="col-12">
