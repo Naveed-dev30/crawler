@@ -5,17 +5,12 @@
             <span class="text-muted">{{ $title }}</span>
             <h3 class="fw-bold mb-0" data-metric-value="{{ $metric }}">{{ $value }}</h3>
         </div>
-        <div class="d-flex align-items-end gap-1 insight-trend-filter"
+        <div class="insight-trend-filter"
              data-metric="{{ $metric }}" data-type="{{ $chartType }}" data-reversed="{{ $reversed ? '1' : '0' }}">
-            <div>
-                <label class="form-label small text-muted mb-0">From</label>
-                <input type="date" class="form-control form-control-sm trend-from" min="{{ $min }}" max="{{ $max }}">
-            </div>
-            <div>
-                <label class="form-label small text-muted mb-0">To</label>
-                <input type="date" class="form-control form-control-sm trend-to" min="{{ $min }}" max="{{ $max }}">
-            </div>
+            <label class="form-label small text-muted mb-0">Since</label>
+            <input type="date" class="form-control form-control-sm trend-date" style="width:9.5rem"
+                   min="{{ $min }}" max="{{ $max }}">
         </div>
     </div>
-    <div data-metric-chart="{{ $metric }}" style="min-height: 130px;"></div>
+    <div data-metric-chart="{{ $metric }}"></div>
 </div></div>
