@@ -599,8 +599,9 @@
                         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No mobile agents.</td></tr>';
                         return;
                     }
-                    tbody.innerHTML = rows.map(r =>
-                        '<tr style="cursor:pointer" data-user-id="' + r.user_id + '" data-name="' + esc(r.name) + '">' +
+                    tbody.innerHTML = rows.map(r => {
+                        const uid = parseInt(r.user_id, 10);
+                        return '<tr style="cursor:pointer" data-user-id="' + uid + '" data-name="' + esc(r.name) + '">' +
                         '<td>' + esc(r.name) + '</td>' +
                         '<td class="text-end">' + r.assigned + '</td>' +
                         '<td class="text-end">' + r.responded + '</td>' +
@@ -615,7 +616,8 @@
             document.querySelector('#agent-rows').addEventListener('click', async function (ev) {
                 const tr = ev.target.closest('tr[data-user-id]');
                 if (!tr) { return; }
-                const uid = tr.dataset.userId;
+                const uid = parseInt(tr.dataset.userId, 10);
+                if (!Number.isInteger(uid)) { return; }
                 document.querySelector('#agentActivityTitle').textContent = tr.dataset.name + ' — activity';
                 const list = document.querySelector('#agent-activity-list');
                 const empty = document.querySelector('#agent-activity-empty');
