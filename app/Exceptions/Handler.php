@@ -73,11 +73,21 @@ class Handler extends ExceptionHandler
         $this->renderable(function (HttpException $e, $request) {
             if ($request->is('api/v1/mobile/*')) {
                 $messages = [403 => 'Forbidden.', 404 => 'Not found.'];
+                $status = $e->getStatusCode();
+                $message = $e->getMessage();
+
+                // Route-model binding raises "No query results for model
+                // [App\Models\Thread] 5", which handed the client our internal
+                // class names. Deliberate abort(404, '...') messages still pass
+                // through.
+                if ($message === '' || str_contains($message, 'No query results for model')) {
+                    $message = $messages[$status] ?? 'Request failed.';
+                }
 
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage() ?: ($messages[$e->getStatusCode()] ?? 'Request failed.'),
-                ], $e->getStatusCode());
+                    'message' => $message,
+                ], $status);
             }
         });
     }

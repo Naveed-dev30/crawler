@@ -60,7 +60,6 @@ class InsightsController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('========================= insights ingest: payload', ['payload' => $payload]);
 
         $userStats = is_array($payload['userStats'] ?? null) ? $payload['userStats'] : null;
         $marketStats = is_array($payload['marketplaceStats'] ?? null) ? $payload['marketplaceStats'] : null;

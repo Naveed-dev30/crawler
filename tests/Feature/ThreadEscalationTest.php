@@ -101,4 +101,25 @@ class ThreadEscalationTest extends TestCase
 
         $this->assertSame($a->id, (int) $thread->fresh()->assigned_user_id);
     }
+
+    public function test_a_future_dated_client_message_does_not_escalate_immediately(): void
+    {
+        // Freelancer clock skew puts last_client_message_at in the future.
+        // diffInMinutes() is ABSOLUTE in Carbon 2, so the old check read such a
+        // timestamp as long overdue and escalated on the very next pass.
+        $a = User::factory()->create(['role' => 'mobile']);
+        $b = User::factory()->create(['role' => 'mobile']);
+        $lane = $this->lane(1, [$a, $b]);
+        $thread = Thread::factory()->create([
+            'status' => 'fresh', 'blocked' => false, 'assigned_user_id' => $a->id,
+            'transition_id' => $lane->id, 'transition_position' => 0,
+            'last_client_message_at' => now()->addHours(2),
+        ]);
+
+        app(ThreadEscalator::class)->run();
+
+        $fresh = $thread->fresh();
+        $this->assertSame($a->id, (int) $fresh->assigned_user_id);
+        $this->assertSame(0, (int) $fresh->transition_position);
+    }
 }

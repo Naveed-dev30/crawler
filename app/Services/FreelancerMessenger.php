@@ -49,9 +49,18 @@ class FreelancerMessenger
     }
 
     /**
-     * @return array<int, array> result.messages, [] on failure
+     * Fetch a thread's messages.
+     *
+     * Returns NULL on failure — deliberately distinct from an empty array,
+     * which means "fetched fine, nothing new". Callers advance a per-thread
+     * watermark (`threads.freelancer_time_updated`) after importing; if a
+     * transient 5xx were reported as "no new messages" the watermark would move
+     * past messages that were never stored, and they would never be imported,
+     * broadcast or pushed again.
+     *
+     * @return array<int, array>|null result.messages, or null if the call failed
      */
-    public function fetchMessages(int $flThreadId, int $fromTime = 0): array
+    public function fetchMessages(int $flThreadId, int $fromTime = 0): ?array
     {
         try {
             $params = ['threads[]' => $flThreadId, 'limit' => 200];
@@ -64,14 +73,14 @@ class FreelancerMessenger
             if (! $response->successful()) {
                 Log::warning('FreelancerMessenger messages: HTTP '.$response->status());
 
-                return [];
+                return null;
             }
 
             return $response->json('result.messages') ?? [];
         } catch (\Throwable $e) {
             Log::warning('FreelancerMessenger messages exception: '.$e->getMessage());
 
-            return [];
+            return null;
         }
     }
 
