@@ -437,15 +437,18 @@
                             }
                             empty.classList.add('d-none'); chartEl.classList.remove('d-none');
 
+                            // Assign the instance (NOT the .render() promise) so later
+                            // destroy() calls work and don't abort the next open.
                             skillChart = new ApexCharts(chartEl, {
-                                chart: { type: 'line', height: 320, toolbar: { show: false } },
+                                chart: { type: 'line', height: 320, toolbar: { show: false }, animations: { enabled: false } },
                                 stroke: { curve: 'smooth', width: 3 },
                                 colors: ['#696cff'],
                                 dataLabels: { enabled: false },
                                 series: [{ name: label, data: data.values.map(function (v) { return v === null ? null : Number(v); }) }],
                                 xaxis: { categories: data.labels },
                                 yaxis: { reversed: data.higherIsBetter === false },
-                            }).render();
+                            });
+                            skillChart.render();
                         });
                 });
             });
