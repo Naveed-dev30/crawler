@@ -47,7 +47,8 @@ class FreelancerProfileClient
                 if (! is_numeric($id)) {
                     continue;
                 }
-                $title = $entry['title'] ?? $entry['name'] ?? $entry['headline'] ?? $entry['tagline'] ?? '';
+                // Freelancer's profiles payload names the title `profile_name`.
+                $title = $entry['profile_name'] ?? $entry['title'] ?? $entry['name'] ?? $entry['headline'] ?? $entry['tagline'] ?? '';
                 $out[] = ['id' => (int) $id, 'title' => (string) $title];
             }
 

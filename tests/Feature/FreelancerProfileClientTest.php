@@ -28,6 +28,21 @@ class FreelancerProfileClientTest extends TestCase
         );
     }
 
+    public function test_parses_real_freelancer_shape_with_profile_name(): void
+    {
+        // Real Freelancer payload: the title is under `profile_name`.
+        Http::fake([
+            '*/api/users/0.1/profiles*' => Http::response([
+                'status' => 'success',
+                'result' => ['profiles' => [
+                    ['id' => 137284, 'user_id' => 55555, 'profile_name' => 'General', 'tagline' => '', 'is_default' => true],
+                ]],
+            ], 200),
+        ]);
+
+        $this->assertSame([['id' => 137284, 'title' => 'General']], (new FreelancerProfileClient)->fetch());
+    }
+
     public function test_parses_profiles_as_list(): void
     {
         Http::fake([
