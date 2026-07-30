@@ -7,7 +7,34 @@
 @endsection
 
 @section('content')
-    <h4 class="page-title">Leaderboard</h4>
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
+        <div>
+            <h4 class="page-title mb-1">Leaderboard</h4>
+            @if ($refreshedAt)
+                <small class="text-muted">Refreshed: {{ $refreshedAt->format('Y-m-d H:i') }} · {{ $snapshotCount }} snapshots</small>
+            @endif
+        </div>
+        <form method="GET" action="{{ route('leaderboard') }}" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">From</label>
+                <input type="date" name="from" class="form-control form-control-sm"
+                       value="{{ $from }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">To</label>
+                <input type="date" name="to" class="form-control form-control-sm"
+                       value="{{ $to }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                <a href="{{ route('leaderboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
 
     @if (! $latest)
         <div class="card"><div class="card-body">

@@ -42,4 +42,28 @@ class LeaderboardPageTest extends TestCase
             ->assertOk()
             ->assertSee('No leaderboard data yet');
     }
+
+    public function test_shows_refreshed_line_and_filter(): void
+    {
+        GamificationSnapshot::create(['scraped_at' => '2026-06-01 09:00:00', 'self_rank' => 300, 'self_score' => 305000, 'raw' => '{}']);
+        GamificationSnapshot::create(['scraped_at' => '2026-07-01 09:00:00', 'self_rank' => 269, 'self_score' => 310000, 'raw' => '{}']);
+
+        $this->actingAs(User::factory()->create())->get('/leaderboard')
+            ->assertOk()
+            ->assertSee('Refreshed:')
+            ->assertSee('2026-07-01')
+            ->assertSee('2 snapshots')
+            ->assertSee('name="from"', false)
+            ->assertSee('name="to"', false);
+    }
+
+    public function test_date_range_selects_latest_in_range(): void
+    {
+        GamificationSnapshot::create(['scraped_at' => '2026-06-01 09:00:00', 'self_rank' => 300, 'self_score' => 305000, 'raw' => '{}']);
+        GamificationSnapshot::create(['scraped_at' => '2026-07-01 09:00:00', 'self_rank' => 269, 'self_score' => 310000, 'raw' => '{}']);
+
+        $res = $this->actingAs(User::factory()->create())->get('/leaderboard?to=2026-06-15')->assertOk();
+        $res->assertSee('305,000');
+        $res->assertDontSee('310,000');
+    }
 }

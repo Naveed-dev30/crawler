@@ -30,3 +30,6 @@ db.sql
 .DS_Store
 
 storage/app/firebase/service-account.json
+
+/database/seeders/InsightHistorySeeder.php
+/database/seeders/GamificationHistorySeeder.php
