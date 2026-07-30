@@ -240,6 +240,44 @@
             </div></div>
         </div>
     </div>
+
+    <div class="card mb-4">
+        <h5 class="card-header">Mobile Agent Activity</h5>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th class="text-end">Assigned</th>
+                            <th class="text-end">Responded</th>
+                            <th class="text-end">Blocked</th>
+                            <th class="text-end">Reassigned</th>
+                            <th class="text-end">Avg response</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agent-rows">
+                        <tr><td colspan="6" class="text-center text-muted py-3">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="agentActivityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="agentActivityTitle">Agent activity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group list-group-flush" id="agent-activity-list"></ul>
+                    <p id="agent-activity-empty" class="text-muted text-center py-4 d-none mb-0">No activity in this range.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('page-script')
@@ -495,6 +533,7 @@
                 loadAllOutcomes(currentGranularity);
                 loadCountries();
                 loadStatus();
+                loadMobileAgents();
             }
 
             document.querySelectorAll('#granularity-group button').forEach(btn => {
@@ -538,6 +577,65 @@
                 reloadRangeCharts();
             });
 
+            // Mobile agent activity table + modal
+            const agentRoute = @json(route('stats.mobile-agents'));
+            const agentActivityBase = '/stats/mobile-agents/';
+
+            function fmtDuration(sec) {
+                if (sec === null || sec === undefined) { return '—'; }
+                const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+                return h ? (h + 'h ' + m + 'm') : (m + 'm');
+            }
+            function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+            async function loadMobileAgents() {
+                const tbody = document.querySelector('#agent-rows');
+                try {
+                    const res = await fetch(agentRoute + '?' + rangeParams().replace(/^&/, ''), { headers: { Accept: 'application/json' } });
+                    if (!res.ok) { return; }
+                    const data = await res.json();
+                    const rows = data.rows || [];
+                    if (!rows.length) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No mobile agents.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = rows.map(r =>
+                        '<tr style="cursor:pointer" data-user-id="' + r.user_id + '" data-name="' + esc(r.name) + '">' +
+                        '<td>' + esc(r.name) + '</td>' +
+                        '<td class="text-end">' + r.assigned + '</td>' +
+                        '<td class="text-end">' + r.responded + '</td>' +
+                        '<td class="text-end">' + r.blocked + '</td>' +
+                        '<td class="text-end">' + r.reassigned + '</td>' +
+                        '<td class="text-end">' + fmtDuration(r.avg_response_seconds) + '</td>' +
+                        '</tr>'
+                    ).join('');
+                } catch (e) { /* keep last render */ }
+            }
+
+            document.querySelector('#agent-rows').addEventListener('click', async function (ev) {
+                const tr = ev.target.closest('tr[data-user-id]');
+                if (!tr) { return; }
+                const uid = tr.dataset.userId;
+                document.querySelector('#agentActivityTitle').textContent = tr.dataset.name + ' — activity';
+                const list = document.querySelector('#agent-activity-list');
+                const empty = document.querySelector('#agent-activity-empty');
+                list.innerHTML = '';
+                empty.classList.add('d-none');
+                bootstrap.Modal.getOrCreateInstance(document.querySelector('#agentActivityModal')).show();
+
+                const res = await fetch(agentActivityBase + uid + '/activity?' + rangeParams().replace(/^&/, ''), { headers: { Accept: 'application/json' } });
+                if (!res.ok) { return; }
+                const items = (await res.json()).items || [];
+                if (!items.length) { empty.classList.remove('d-none'); return; }
+                list.innerHTML = items.map(it =>
+                    '<li class="list-group-item px-0">' +
+                    '<div class="d-flex justify-content-between"><span class="badge bg-label-primary">' + esc(it.type) + '</span>' +
+                    '<small class="text-muted">' + esc(new Date(it.time).toLocaleString()) + '</small></div>' +
+                    '<div class="small mt-1">' + (it.project_id ? '<span class="text-muted">#' + esc(it.project_id) + '</span> ' : '') + esc(it.detail) + '</div>' +
+                    '</li>'
+                ).join('');
+            });
+
             // Initial load — default last 30 days (matches backend default).
             setRange(30);
             markPreset(30);
@@ -545,6 +643,7 @@
             loadCountries();
             loadStatus();
             loadSnapshot();
+            loadMobileAgents();
         })();
     </script>
 @endsection
