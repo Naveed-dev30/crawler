@@ -101,7 +101,7 @@ class InsightsPageTest extends TestCase
         $res->assertSee('+27%');
         $res->assertSee('Graphic Design');
         $res->assertSee('18.50');
-        $res->assertSee('How many bids our best freelancers need');
+        $res->assertSee('data-metric="bids_per_milestone"', false); // trend box replaces old plain card
         $res->assertSee('trend-up', false);
         $res->assertSee('trend-down', false);
         $res->assertSee('trend-arrow', false);
@@ -120,5 +120,23 @@ class InsightsPageTest extends TestCase
         $this->actingAs(User::factory()->create())->get('/insights')
             ->assertOk()
             ->assertSee('210');
+    }
+
+    public function test_total_earnings_is_full_width_trend_box(): void
+    {
+        \App\Models\InsightSnapshot::create([
+            'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 363600.05,
+            'bids_remaining' => 203, 'overall_ranking' => '25%',
+            'bids_per_milestone' => ['user' => null, 'marketplace' => '19.93'], 'raw' => '{}',
+        ]);
+
+        $res = $this->actingAs(\App\Models\User::factory()->create())->get('/insights')->assertOk();
+        // Total Earnings rendered as a full-width trend box
+        $res->assertSee('data-metric="earnings_total"', false);
+        $res->assertSee('data-metric-chart="earnings_total"', false);
+        // The four trend metrics each expose a picker
+        $res->assertSee('data-metric="bids_remaining"', false);
+        $res->assertSee('data-metric="overall_ranking"', false);
+        $res->assertSee('data-metric="bids_per_milestone"', false);
     }
 }
