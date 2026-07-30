@@ -26,11 +26,46 @@
             border-radius: 3px;
             background: #a1acb8;
         }
+        .trend-even-orange {
+            width: 18px; height: 5px;
+            border-radius: 3px;
+            background: #ff9f43;
+        }
+        .insight-indicator { display: inline-flex; align-items: center; gap: 4px; }
+        .skill-graph-btn { border: 0; background: transparent; padding: 2px 4px; cursor: pointer; color: #696cff; }
+        .skill-scroll { max-height: 340px; overflow-y: auto; }
     </style>
 @endsection
 
 @section('content')
-    <h4 class="page-title">Insights</h4>
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
+        <div>
+            <h4 class="page-title mb-1">Insights</h4>
+            @if ($refreshedAt)
+                <small class="text-muted">Refreshed: {{ $refreshedAt->format('Y-m-d H:i') }} · {{ $snapshotCount }} snapshots</small>
+            @endif
+        </div>
+        <form method="GET" action="{{ route('insights') }}" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">From</label>
+                <input type="date" name="from" class="form-control form-control-sm"
+                       value="{{ $from }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">To</label>
+                <input type="date" name="to" class="form-control form-control-sm"
+                       value="{{ $to }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                <a href="{{ route('insights') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
 
     @if (! $latest)
         <div class="card"><div class="card-body">
@@ -172,10 +207,10 @@
         <div class="row gy-4">
             @php
                 $skillTables = [
-                    ['title' => 'Earnings per Skill', 'rows' => $latest->earnings_per_skill ?? [], 'col' => 'Earnings', 'value' => fn ($r) => $r['value'] ?? '—'],
-                    ['title' => 'Rating per Skill', 'rows' => $latest->rating_per_skill ?? [], 'col' => 'Rating', 'value' => fn ($r) => isset($r['value']) ? number_format((float) $r['value'], 1) : '—'],
-                    ['title' => 'Ranking per Skill', 'rows' => $latest->ranking_per_skill ?? [], 'col' => 'Rank', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
-                    ['title' => 'High Demand Skills', 'rows' => $latest->high_demand_skills ?? [], 'col' => 'Change', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
+                    ['title' => 'Earnings per Skill', 'section' => 'earnings_per_skill', 'rows' => $latest->earnings_per_skill ?? [], 'col' => 'Earnings', 'value' => fn ($r) => $r['value'] ?? '—'],
+                    ['title' => 'Rating per Skill', 'section' => 'rating_per_skill', 'rows' => $latest->rating_per_skill ?? [], 'col' => 'Rating', 'value' => fn ($r) => isset($r['value']) ? number_format((float) $r['value'], 1) : '—'],
+                    ['title' => 'Ranking per Skill', 'section' => 'ranking_per_skill', 'rows' => $latest->ranking_per_skill ?? [], 'col' => 'Rank', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
+                    ['title' => 'High Demand Skills', 'section' => 'high_demand_skills', 'rows' => $latest->high_demand_skills ?? [], 'col' => 'Change', 'value' => fn ($r) => $r['displayValue'] ?? $r['value'] ?? '—'],
                 ];
             @endphp
             @foreach ($skillTables as $table)
@@ -183,24 +218,41 @@
                     <div class="card"><div class="card-body">
                         <h5 class="mb-3">{{ $table['title'] }}</h5>
                         @if (count($table['rows']))
-                            <table class="table table-sm">
-                                @if ($table['col'] !== null)
-                                    <thead><tr><th>Skill</th><th class="text-end">{{ $table['col'] }}</th></tr></thead>
-                                @endif
+                            <div class="skill-scroll">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Skill</th><th class="text-end">{{ $table['col'] }}</th></tr></thead>
                                 <tbody>
                                     @foreach (array_slice($table['rows'], 0, 20) as $row)
+                                        @php
+                                            $lbl = $row['label'] ?? $row['name'] ?? '';
+                                            $d = $deltas[$table['section']][$lbl] ?? ['direction' => 'even', 'number' => null];
+                                        @endphp
                                         <tr>
                                             <td>
                                                 <span class="badge rounded-pill {{ $loop->first ? 'bg-warning' : 'bg-primary' }} me-2">{{ $loop->iteration }}</span>
-                                                {{ $row['label'] ?? $row['name'] ?? '' }}
+                                                {{ $lbl }}
                                             </td>
-                                            @if ($table['col'] !== null)
-                                                <td class="text-end">{{ $table['value']($row) }}</td>
-                                            @endif
+                                            <td class="text-end">
+                                                <span class="insight-indicator me-2">
+                                                    @if ($d['direction'] === 'up')
+                                                        <span class="trend-arrow trend-up" title="Up vs 30 days ago"></span>
+                                                    @elseif ($d['direction'] === 'down')
+                                                        <span class="trend-arrow trend-down" title="Down vs 30 days ago"></span>
+                                                    @else
+                                                        <span class="trend-arrow trend-even-orange" title="No 30-day change"></span>
+                                                    @endif
+                                                    <small class="text-muted">{{ $d['number'] ?? '—' }}</small>
+                                                </span>
+                                                {{ $table['value']($row) }}
+                                                <button type="button" class="skill-graph-btn" data-section="{{ $table['section'] }}" data-label="{{ $lbl }}" title="Show history">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+                                                </button>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
+                            </div>
                             @if (count($table['rows']) > 20)
                                 <small class="text-muted">Showing 20 of {{ count($table['rows']) }}</small>
                             @endif
@@ -217,25 +269,33 @@
                     <h5 class="mb-3">Trending Skills</h5>
                     @php $trending = $latest->trending_skills ?? []; @endphp
                     @if (count($trending))
+                        <div class="skill-scroll">
                         <ul class="list-group list-group-flush">
                             @foreach (array_slice($trending, 0, 20) as $i => $row)
                                 @php
-                                    // Crawler omits direction for steady skills; Freelancer shows a dash there.
-                                    $dir = strtolower((string) ($row['direction'] ?? 'even'));
+                                    $lbl = $row['label'] ?? $row['name'] ?? '';
+                                    $d = $deltas['trending_skills'][$lbl] ?? ['direction' => 'even', 'number' => null];
                                 @endphp
                                 <li class="list-group-item d-flex align-items-center px-0">
                                     <span class="badge rounded-pill {{ $i === 0 ? 'bg-warning' : 'bg-primary' }} me-3">{{ $i + 1 }}</span>
-                                    <span class="flex-grow-1">{{ $row['label'] ?? $row['name'] ?? '' }}</span>
-                                    @if ($dir === 'up')
-                                        <span class="trend-arrow trend-up" title="Trending up"></span>
-                                    @elseif ($dir === 'down')
-                                        <span class="trend-arrow trend-down" title="Trending down"></span>
-                                    @else
-                                        <span class="trend-arrow trend-even" title="Steady"></span>
-                                    @endif
+                                    <span class="flex-grow-1">{{ $lbl }}</span>
+                                    <span class="insight-indicator me-2">
+                                        @if ($d['direction'] === 'up')
+                                            <span class="trend-arrow trend-up" title="Moved up vs 30 days ago"></span>
+                                        @elseif ($d['direction'] === 'down')
+                                            <span class="trend-arrow trend-down" title="Moved down vs 30 days ago"></span>
+                                        @else
+                                            <span class="trend-arrow trend-even-orange" title="No 30-day change"></span>
+                                        @endif
+                                        <small class="text-muted">{{ $d['number'] ?? '—' }}</small>
+                                    </span>
+                                    <button type="button" class="skill-graph-btn" data-section="trending_skills" data-label="{{ $lbl }}" title="Show history">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+                                    </button>
                                 </li>
                             @endforeach
                         </ul>
+                        </div>
                         @if (count($trending) > 20)
                             <small class="text-muted">Showing 20 of {{ count($trending) }}</small>
                         @endif
@@ -246,6 +306,21 @@
             </div>
         </div>
     @endif
+
+    <div class="modal fade" id="skillGraphModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="skillGraphTitle">Skill history</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="skill-graph-chart" style="min-height: 320px;"></div>
+                    <p id="skill-graph-empty" class="text-muted text-center py-5 d-none mb-0">No history for this skill.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('page-script')
@@ -304,6 +379,50 @@
                     xaxis: { categories: history.map(h => h.date) },
                 }).render();
             }
+
+            // Per-skill history modal
+            const skillRoute = @json(route('insights.skill-history'));
+            const rangeFrom = @json($from);
+            const rangeTo = @json($to);
+            const modalEl = document.querySelector('#skillGraphModal');
+            let skillChart = null;
+
+            document.querySelectorAll('.skill-graph-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const section = btn.getAttribute('data-section');
+                    const label = btn.getAttribute('data-label');
+                    document.querySelector('#skillGraphTitle').textContent = label + ' — history';
+
+                    const params = new URLSearchParams({ section: section, label: label });
+                    if (rangeFrom) { params.set('from', rangeFrom); }
+                    if (rangeTo) { params.set('to', rangeTo); }
+
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+
+                    fetch(skillRoute + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            const empty = document.querySelector('#skill-graph-empty');
+                            const chartEl = document.querySelector('#skill-graph-chart');
+                            if (skillChart) { skillChart.destroy(); skillChart = null; }
+
+                            const hasData = (data.values || []).some(function (v) { return v !== null; });
+                            if (! hasData) { empty.classList.remove('d-none'); chartEl.classList.add('d-none'); return; }
+                            empty.classList.add('d-none'); chartEl.classList.remove('d-none');
+
+                            skillChart = new ApexCharts(chartEl, {
+                                chart: { type: 'line', height: 320, toolbar: { show: false } },
+                                stroke: { curve: 'smooth', width: 3 },
+                                colors: ['#696cff'],
+                                dataLabels: { enabled: false },
+                                series: [{ name: label, data: data.values.map(function (v) { return v === null ? null : Number(v); }) }],
+                                xaxis: { categories: data.labels },
+                                yaxis: { reversed: data.higherIsBetter === false },
+                            }).render();
+                        });
+                });
+            });
         })();
     </script>
 @endsection
