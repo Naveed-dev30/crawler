@@ -609,7 +609,7 @@
                         '<td class="text-end">' + r.reassigned + '</td>' +
                         '<td class="text-end">' + fmtDuration(r.avg_response_seconds) + '</td>' +
                         '</tr>'
-                    ).join('');
+                    }).join('');
                 } catch (e) { /* keep last render */ }
             }
 
