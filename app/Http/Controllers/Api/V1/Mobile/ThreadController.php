@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadResource;
+use App\Models\ActivityLog;
 use App\Models\BidInsight;
 use App\Models\Thread;
 use App\Models\User;
@@ -90,6 +91,14 @@ class ThreadController extends Controller
         $thread->block_reason = $validated['reason'];
         $thread->save();
 
+        ActivityLog::create([
+            'thread_id' => $thread->id,
+            'from_user_id' => $request->user()->id,
+            'to_user_id' => $thread->assigned_user_id,
+            'type' => 'block',
+            'message' => "thread {$thread->project_id} blocked by user({$request->user()->name}): {$thread->block_reason}",
+        ]);
+
         return $this->ok(['blocked' => true, 'reason' => $thread->block_reason], 'Thread blocked.');
     }
 
@@ -100,6 +109,14 @@ class ThreadController extends Controller
         $thread->blocked = false;
         $thread->block_reason = null;
         $thread->save();
+
+        ActivityLog::create([
+            'thread_id' => $thread->id,
+            'from_user_id' => $request->user()->id,
+            'to_user_id' => $thread->assigned_user_id,
+            'type' => 'unblock',
+            'message' => "thread {$thread->project_id} unblocked by user({$request->user()->name})",
+        ]);
 
         return $this->ok(['blocked' => false], 'Thread unblocked.');
     }

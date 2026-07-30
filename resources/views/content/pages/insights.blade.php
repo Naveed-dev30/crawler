@@ -72,39 +72,51 @@
             <p class="text-muted mb-0 py-4 text-center">No insights data yet</p>
         </div></div>
     @else
-        {{-- Stat cards --}}
+        @php
+            $bMin = optional($dateBounds['min'])->format('Y-m-d');
+            $bMax = optional($dateBounds['max'])->format('Y-m-d');
+        @endphp
+
+        {{-- Plain stat cards --}}
         <div class="row gy-4 mb-4">
             <div class="col-md">
-                <div class="card h-100"><div class="card-body">
-                    <span class="text-muted">Total Earnings</span>
-                    <h3 class="fw-bold mb-0">{{ $latest->earnings_total !== null ? '$' . number_format($latest->earnings_total, 2) : '—' }}</h3>
-                </div></div>
-            </div>
-            <div class="col-md">
-                <div class="card h-100"><div class="card-body">
+                <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
                     <span class="text-muted">Last 30 Days</span>
                     <h3 class="fw-bold mb-0">{{ $latest->earnings_30d !== null ? '$' . number_format($latest->earnings_30d, 2) : '—' }}</h3>
                 </div></div>
             </div>
-            <div class="col-md">
-                <div class="card h-100"><div class="card-body">
-                    <span class="text-muted">Bids Remaining</span>
-                    <h3 class="fw-bold mb-0">{{ $latest->bids_remaining ?? '—' }}</h3>
-                </div></div>
-            </div>
             @if ($latest->unearned_bids !== null)
                 <div class="col-md">
-                    <div class="card h-100"><div class="card-body">
+                    <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
                         <span class="text-muted">Unearned Bids</span>
                         <h3 class="fw-bold mb-0">{{ $latest->unearned_bids }}</h3>
                     </div></div>
                 </div>
             @endif
             <div class="col-md">
-                <div class="card h-100"><div class="card-body">
-                    <span class="text-muted">Overall Ranking</span>
-                    <h3 class="fw-bold mb-0">{{ $latest->overall_ranking ? 'Top ' . $latest->overall_ranking : '—' }}</h3>
-                </div></div>
+                @include('_partials.insight-trend-box', [
+                    'title' => 'Bids Remaining', 'metric' => 'bids_remaining',
+                    'value' => $latest->bids_remaining ?? '—',
+                    'chartType' => 'line', 'reversed' => false, 'min' => $bMin, 'max' => $bMax,
+                ])
+            </div>
+            <div class="col-md">
+                @include('_partials.insight-trend-box', [
+                    'title' => 'Overall Ranking', 'metric' => 'overall_ranking',
+                    'value' => $latest->overall_ranking ? 'Top ' . $latest->overall_ranking : '—',
+                    'chartType' => 'line', 'reversed' => true, 'min' => $bMin, 'max' => $bMax,
+                ])
+            </div>
+        </div>
+
+        {{-- Total Earnings — full-width trend box --}}
+        <div class="row gy-4 mb-4">
+            <div class="col-12">
+                @include('_partials.insight-trend-box', [
+                    'title' => 'Total Earnings', 'metric' => 'earnings_total',
+                    'value' => $latest->earnings_total !== null ? '$' . number_format($latest->earnings_total, 2) : '—',
+                    'chartType' => 'line', 'reversed' => false, 'min' => $bMin, 'max' => $bMax,
+                ])
             </div>
         </div>
 
@@ -135,29 +147,16 @@
                 </div></div>
             </div>
             <div class="col-md-4">
-                <div class="card h-100"><div class="card-body">
-                    <h5 class="mb-3">Bids per Milestone</h5>
-                    @php
-                        $bpm = $latest->bids_per_milestone ?? [];
-                        $bpmMarketRaw = $bpm['marketplace'] ?? null;
-                        $bpmMarket = is_array($bpmMarketRaw)
-                            ? ($bpmMarketRaw[0] ?? null)
-                            : ($bpmMarketRaw !== null ? ['value' => $bpmMarketRaw] : null);
-                    @endphp
-                    @if ($bpmMarket)
-                        <div class="text-center py-3">
-                            <h1 class="fw-bold text-primary display-5 mb-2">{{ $bpmMarket['value'] ?? '—' }}</h1>
-                            <p class="text-muted text-uppercase small mb-0">
-                                {{ $bpmMarket['label'] ?? 'How many bids our best freelancers need to make before receiving a milestone' }}
-                            </p>
-                        </div>
-                        @if (($bpm['user'] ?? null) !== null)
-                            <p class="text-center text-muted mb-0">You: <span class="fw-bold">{{ $bpm['user'] }}</span></p>
-                        @endif
-                    @else
-                        <p class="text-muted mb-0">No marketplace benchmark</p>
-                    @endif
-                </div></div>
+                @php
+                    $bpm = $latest->bids_per_milestone ?? [];
+                    $bpmRaw = $bpm['marketplace'] ?? null;
+                    $bpmVal = is_array($bpmRaw) ? ($bpmRaw[0]['value'] ?? null) : $bpmRaw;
+                @endphp
+                @include('_partials.insight-trend-box', [
+                    'title' => 'Bids per Milestone', 'metric' => 'bids_per_milestone',
+                    'value' => $bpmVal ?? '—',
+                    'chartType' => 'line', 'reversed' => false, 'min' => $bMin, 'max' => $bMax,
+                ])
             </div>
         </div>
 
@@ -179,22 +178,18 @@
                     </div></div>
                 </div>
             @endif
-            @if ($latest->profile_views_week)
-                <div class="col-md-6">
-                    <div class="card"><div class="card-body">
-                        <h5 class="mb-3">Profile Views (Past Week)</h5>
-                        <div id="chart-views-week"></div>
-                    </div></div>
-                </div>
-            @endif
-            @if ($latest->profile_views_year)
-                <div class="col-md-6">
-                    <div class="card"><div class="card-body">
-                        <h5 class="mb-3">Profile Views (Past Year)</h5>
-                        <div id="chart-views-year"></div>
-                    </div></div>
-                </div>
-            @endif
+            <div class="col-12">
+                <div class="card"><div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h5 class="mb-0">Profile Views — week of <span id="pv-week-label">{{ optional($refreshedAt)->format('Y-m-d') }}</span></h5>
+                        <input type="date" id="pv-week-date" class="form-control form-control-sm" style="width:auto"
+                               value="{{ optional($refreshedAt)->format('Y-m-d') }}"
+                               min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                               max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+                    </div>
+                    <div id="chart-views-week"></div>
+                </div></div>
+            </div>
             <div class="col-12">
                 <div class="card"><div class="card-body">
                     <h5 class="mb-3">Earnings History (Snapshots)</h5>
@@ -352,14 +347,41 @@
             const latest = {
                 earnings: @json($latest?->earnings_over_time),
                 conversion: @json($latest?->bid_conversion),
-                viewsWeek: @json($latest?->profile_views_week),
-                viewsYear: @json($latest?->profile_views_year),
             };
 
             render('chart-earnings', 'line', latest.earnings, ['#28c76f'], 'Amount Earned');
             render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff'], 'Bids');
-            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff'], 'Views');
-            render('chart-views-year', 'line', latest.viewsYear, ['#696cff'], 'Views');
+
+            // Profile Views week picker
+            const pvWeekRoute = @json(route('insights.profile-views-week'));
+            let pvWeekChart = null;
+
+            function loadWeek(date) {
+                const params = new URLSearchParams();
+                if (date) { params.set('date', date); }
+                fetch(pvWeekRoute + '?' + params.toString(), { headers: { Accept: 'application/json' } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (!data) { return; }
+                        if (data.date) { document.querySelector('#pv-week-label').textContent = data.date; }
+                        const el = document.querySelector('#chart-views-week');
+                        if (pvWeekChart) { pvWeekChart.destroy(); pvWeekChart = null; }
+                        pvWeekChart = new ApexCharts(el, {
+                            chart: { type: 'bar', height: 300, toolbar: { show: false }, animations: { enabled: false } },
+                            colors: ['#696cff'],
+                            dataLabels: { enabled: false },
+                            series: [{ name: 'Views', data: (data.values || []).map(Number) }],
+                            xaxis: { categories: data.labels || [] },
+                        });
+                        pvWeekChart.render();
+                    });
+            }
+
+            const pvDateEl = document.querySelector('#pv-week-date');
+            if (pvDateEl) {
+                pvDateEl.addEventListener('change', () => loadWeek(pvDateEl.value));
+                loadWeek(pvDateEl.value);
+            }
 
             const history = @json($history);
             const el = document.querySelector('#chart-history');
@@ -455,6 +477,69 @@
                 document.body.classList.remove('modal-open');
                 document.body.style.removeProperty('overflow');
                 document.body.style.removeProperty('padding-right');
+            });
+
+            // Per-box metric trend charts
+            const metricRoute = @json(route('insights.metric-history'));
+            const metricCharts = {};
+
+            function formatMetric(metric, v) {
+                if (v === null || v === undefined) { return '—'; }
+                if (metric === 'earnings_total') { return '$' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+                if (metric === 'overall_ranking') { return 'Top ' + v + '%'; }
+                return String(v);
+            }
+
+            function loadTrend(box) {
+                const metric = box.getAttribute('data-metric');
+                const reversed = box.getAttribute('data-reversed') === '1';
+                const since = box.querySelector('.trend-date').value;
+                const wide = metric === 'earnings_total';
+                const params = new URLSearchParams({ metric: metric });
+                if (since) { params.set('from', since); }
+
+                fetch(metricRoute + '?' + params.toString(), { headers: { Accept: 'application/json' } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (!data) { return; }
+                        const el = document.querySelector('[data-metric-chart="' + metric + '"]');
+                        if (metricCharts[metric]) { metricCharts[metric].destroy(); metricCharts[metric] = null; }
+
+                        const labels = data.labels || [];
+                        const vals = (data.values || []).map(v => v === null ? null : Number(v));
+                        const last = [...vals].reverse().find(v => v !== null);
+                        const valEl = document.querySelector('[data-metric-value="' + metric + '"]');
+                        if (valEl && last !== undefined) { valEl.textContent = formatMetric(metric, last); }
+                        if (!vals.some(v => v !== null)) { el.innerHTML = ''; return; }
+
+                        const opts = {
+                            chart: { type: 'area', height: wide ? 240 : 90,
+                                sparkline: { enabled: ! wide }, toolbar: { show: false }, animations: { enabled: false } },
+                            stroke: { curve: 'smooth', width: 2 },
+                            fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.35, opacityTo: 0.02 } },
+                            colors: ['#696cff'],
+                            dataLabels: { enabled: false },
+                            series: [{ name: metric, data: vals }],
+                            yaxis: { reversed: reversed, labels: { formatter: v => formatMetric(metric, Math.round(v * 100) / 100) } },
+                            tooltip: { x: { formatter: (_v, o) => labels[o.dataPointIndex] ?? '' },
+                                y: { formatter: v => formatMetric(metric, v) } },
+                        };
+                        if (wide) {
+                            opts.xaxis = { categories: labels, tickAmount: 12,
+                                labels: { rotate: -45, hideOverlappingLabels: true, style: { fontSize: '10px' } } };
+                            opts.grid = { borderColor: '#f0f0f5', strokeDashArray: 3 };
+                        } else {
+                            opts.xaxis = { categories: labels };
+                        }
+
+                        metricCharts[metric] = new ApexCharts(el, opts);
+                        metricCharts[metric].render();
+                    });
+            }
+
+            document.querySelectorAll('.insight-trend-filter').forEach(box => {
+                box.querySelector('.trend-date').addEventListener('change', () => loadTrend(box));
+                loadTrend(box);
             });
         })();
     </script>
