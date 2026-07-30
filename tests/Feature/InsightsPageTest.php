@@ -105,8 +105,8 @@ class InsightsPageTest extends TestCase
         $res->assertSee('trend-up', false);
         $res->assertSee('trend-down', false);
         $res->assertSee('trend-arrow', false);
-        $res->assertSee('Profile Views (Past Week)');
-        $res->assertSee('"values":[39,17]', false);
+        $res->assertSee('Profile Views — week of', false);
+        $res->assertSee('id="pv-week-date"', false);
     }
 
     public function test_partial_snapshot_does_not_error(): void
@@ -120,6 +120,21 @@ class InsightsPageTest extends TestCase
         $this->actingAs(User::factory()->create())->get('/insights')
             ->assertOk()
             ->assertSee('210');
+    }
+
+    public function test_profile_views_week_picker_and_no_past_year(): void
+    {
+        \App\Models\InsightSnapshot::create([
+            'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 1,
+            'profile_views_week' => ['labels' => ['16/7'], 'values' => [39]],
+            'profile_views_year' => ['labels' => ['Jul 26'], 'values' => [221]], 'raw' => '{}',
+        ]);
+
+        $res = $this->actingAs(\App\Models\User::factory()->create())->get('/insights')->assertOk();
+        $res->assertSee('Profile Views — week of', false);
+        $res->assertSee('id="pv-week-date"', false);
+        $res->assertDontSee('Profile Views (Past Year)');
+        $res->assertDontSee('chart-views-year', false);
     }
 
     public function test_total_earnings_is_full_width_trend_box(): void
