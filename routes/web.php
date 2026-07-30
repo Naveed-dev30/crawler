@@ -53,6 +53,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');
     Route::get('/stats/overview', [StatisticsController::class, 'overview'])->name('stats.overview');
+    Route::get('/stats/mobile-agents', [StatisticsController::class, 'mobileAgents'])->name('stats.mobile-agents');
+    Route::get('/stats/mobile-agents/{user}/activity', [StatisticsController::class, 'mobileAgentActivity'])->name('stats.mobile-agents.activity');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
