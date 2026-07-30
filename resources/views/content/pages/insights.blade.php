@@ -492,13 +492,11 @@
 
             function loadTrend(box) {
                 const metric = box.getAttribute('data-metric');
-                const type = box.getAttribute('data-type') || 'line';
                 const reversed = box.getAttribute('data-reversed') === '1';
-                const from = box.querySelector('.trend-from').value;
-                const to = box.querySelector('.trend-to').value;
+                const since = box.querySelector('.trend-date').value;
+                const wide = metric === 'earnings_total';
                 const params = new URLSearchParams({ metric: metric });
-                if (from) { params.set('from', from); }
-                if (to) { params.set('to', to); }
+                if (since) { params.set('from', since); }
 
                 fetch(metricRoute + '?' + params.toString(), { headers: { Accept: 'application/json' } })
                     .then(r => r.ok ? r.json() : null)
@@ -507,28 +505,40 @@
                         const el = document.querySelector('[data-metric-chart="' + metric + '"]');
                         if (metricCharts[metric]) { metricCharts[metric].destroy(); metricCharts[metric] = null; }
 
+                        const labels = data.labels || [];
                         const vals = (data.values || []).map(v => v === null ? null : Number(v));
                         const last = [...vals].reverse().find(v => v !== null);
                         const valEl = document.querySelector('[data-metric-value="' + metric + '"]');
                         if (valEl && last !== undefined) { valEl.textContent = formatMetric(metric, last); }
                         if (!vals.some(v => v !== null)) { el.innerHTML = ''; return; }
 
-                        metricCharts[metric] = new ApexCharts(el, {
-                            chart: { type: type, height: 130, sparkline: { enabled: false }, toolbar: { show: false }, animations: { enabled: false } },
-                            stroke: { curve: 'smooth', width: type === 'line' ? 2 : 0 },
+                        const opts = {
+                            chart: { type: 'area', height: wide ? 240 : 90,
+                                sparkline: { enabled: ! wide }, toolbar: { show: false }, animations: { enabled: false } },
+                            stroke: { curve: 'smooth', width: 2 },
+                            fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.35, opacityTo: 0.02 } },
                             colors: ['#696cff'],
                             dataLabels: { enabled: false },
                             series: [{ name: metric, data: vals }],
-                            xaxis: { categories: data.labels, labels: { rotate: -45, style: { fontSize: '9px' } } },
-                            yaxis: { reversed: reversed },
-                        });
+                            yaxis: { reversed: reversed, labels: { formatter: v => formatMetric(metric, Math.round(v * 100) / 100) } },
+                            tooltip: { x: { formatter: (_v, o) => labels[o.dataPointIndex] ?? '' },
+                                y: { formatter: v => formatMetric(metric, v) } },
+                        };
+                        if (wide) {
+                            opts.xaxis = { categories: labels, tickAmount: 12,
+                                labels: { rotate: -45, hideOverlappingLabels: true, style: { fontSize: '10px' } } };
+                            opts.grid = { borderColor: '#f0f0f5', strokeDashArray: 3 };
+                        } else {
+                            opts.xaxis = { categories: labels };
+                        }
+
+                        metricCharts[metric] = new ApexCharts(el, opts);
                         metricCharts[metric].render();
                     });
             }
 
             document.querySelectorAll('.insight-trend-filter').forEach(box => {
-                box.querySelectorAll('.trend-from, .trend-to').forEach(inp =>
-                    inp.addEventListener('change', () => loadTrend(box)));
+                box.querySelector('.trend-date').addEventListener('change', () => loadTrend(box));
                 loadTrend(box);
             });
         })();
