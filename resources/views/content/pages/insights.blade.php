@@ -178,22 +178,18 @@
                     </div></div>
                 </div>
             @endif
-            @if ($latest->profile_views_week)
-                <div class="col-md-6">
-                    <div class="card"><div class="card-body">
-                        <h5 class="mb-3">Profile Views (Past Week)</h5>
-                        <div id="chart-views-week"></div>
-                    </div></div>
-                </div>
-            @endif
-            @if ($latest->profile_views_year)
-                <div class="col-md-6">
-                    <div class="card"><div class="card-body">
-                        <h5 class="mb-3">Profile Views (Past Year)</h5>
-                        <div id="chart-views-year"></div>
-                    </div></div>
-                </div>
-            @endif
+            <div class="col-md-6">
+                <div class="card"><div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <h5 class="mb-0">Profile Views — week of <span id="pv-week-label">{{ optional($refreshedAt)->format('Y-m-d') }}</span></h5>
+                        <input type="date" id="pv-week-date" class="form-control form-control-sm" style="width:auto"
+                               value="{{ optional($refreshedAt)->format('Y-m-d') }}"
+                               min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                               max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+                    </div>
+                    <div id="chart-views-week"></div>
+                </div></div>
+            </div>
             <div class="col-12">
                 <div class="card"><div class="card-body">
                     <h5 class="mb-3">Earnings History (Snapshots)</h5>
@@ -351,14 +347,41 @@
             const latest = {
                 earnings: @json($latest?->earnings_over_time),
                 conversion: @json($latest?->bid_conversion),
-                viewsWeek: @json($latest?->profile_views_week),
-                viewsYear: @json($latest?->profile_views_year),
             };
 
             render('chart-earnings', 'line', latest.earnings, ['#28c76f'], 'Amount Earned');
             render('chart-conversion', 'bar', latest.conversion, ['#ffab00', '#00cfe8', '#696cff'], 'Bids');
-            render('chart-views-week', 'bar', latest.viewsWeek, ['#696cff'], 'Views');
-            render('chart-views-year', 'line', latest.viewsYear, ['#696cff'], 'Views');
+
+            // Profile Views week picker
+            const pvWeekRoute = @json(route('insights.profile-views-week'));
+            let pvWeekChart = null;
+
+            function loadWeek(date) {
+                const params = new URLSearchParams();
+                if (date) { params.set('date', date); }
+                fetch(pvWeekRoute + '?' + params.toString(), { headers: { Accept: 'application/json' } })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (!data) { return; }
+                        if (data.date) { document.querySelector('#pv-week-label').textContent = data.date; }
+                        const el = document.querySelector('#chart-views-week');
+                        if (pvWeekChart) { pvWeekChart.destroy(); pvWeekChart = null; }
+                        pvWeekChart = new ApexCharts(el, {
+                            chart: { type: 'bar', height: 300, toolbar: { show: false }, animations: { enabled: false } },
+                            colors: ['#696cff'],
+                            dataLabels: { enabled: false },
+                            series: [{ name: 'Views', data: (data.values || []).map(Number) }],
+                            xaxis: { categories: data.labels || [] },
+                        });
+                        pvWeekChart.render();
+                    });
+            }
+
+            const pvDateEl = document.querySelector('#pv-week-date');
+            if (pvDateEl) {
+                pvDateEl.addEventListener('change', () => loadWeek(pvDateEl.value));
+                loadWeek(pvDateEl.value);
+            }
 
             const history = @json($history);
             const el = document.querySelector('#chart-history');
