@@ -35,12 +35,41 @@ class InsightsController extends Controller
         ]);
     }
 
-    public function page()
+    public function page(Request $request)
     {
-        $latest = InsightSnapshot::orderByDesc('scraped_at')->first();
+        $minRaw = InsightSnapshot::min('scraped_at');
+        $maxRaw = InsightSnapshot::max('scraped_at');
+        $dateBounds = [
+            'min' => $minRaw ? Carbon::parse($minRaw) : null,
+            'max' => $maxRaw ? Carbon::parse($maxRaw) : null,
+        ];
 
-        $history = InsightSnapshot::orderByDesc('scraped_at')
-            ->limit(90)
+        [$from, $to] = $this->range($request);
+
+        $latestQuery = InsightSnapshot::orderByDesc('scraped_at');
+        if ($to) {
+            $latestQuery->whereDate('scraped_at', '<=', $to);
+        }
+        $latest = $latestQuery->first();
+
+        $prior = null;
+        if ($latest) {
+            $target = $latest->scraped_at->copy()->subDays(30)->toDateString();
+            $prior = InsightSnapshot::whereDate('scraped_at', '<=', $target)
+                ->orderByDesc('scraped_at')
+                ->first();
+        }
+
+        $deltas = $this->buildDeltas($latest, $prior);
+
+        $historyQuery = InsightSnapshot::orderByDesc('scraped_at');
+        if ($from) {
+            $historyQuery->whereDate('scraped_at', '>=', $from);
+        }
+        if ($to) {
+            $historyQuery->whereDate('scraped_at', '<=', $to);
+        }
+        $history = $historyQuery->limit(365)
             ->get(['scraped_at', 'earnings_total', 'bids_remaining'])
             ->reverse()
             ->values()
@@ -54,7 +83,63 @@ class InsightsController extends Controller
         return view('content.pages.insights', [
             'latest' => $latest,
             'history' => $history,
+            'deltas' => $deltas,
+            'refreshedAt' => $latest?->scraped_at,
+            'snapshotCount' => InsightSnapshot::count(),
+            'dateBounds' => $dateBounds,
+            'from' => $from,
+            'to' => $to,
         ]);
+    }
+
+    /**
+     * section => (skill label => ['direction' => ..., 'number' => ...]).
+     */
+    private function buildDeltas(?InsightSnapshot $latest, ?InsightSnapshot $prior): array
+    {
+        $out = [];
+
+        foreach (InsightSkillMetric::SECTIONS as $section) {
+            $map = [];
+            $nowRows = $latest?->{$section} ?? [];
+            $pastRows = $prior?->{$section} ?? [];
+
+            if ($section === 'trending_skills') {
+                $pastPos = [];
+                foreach (array_values($pastRows) as $i => $row) {
+                    if (is_array($row) && ($lbl = InsightSkillMetric::label($row)) !== null) {
+                        $pastPos[$lbl] = $i + 1;
+                    }
+                }
+                foreach (array_values($nowRows) as $i => $row) {
+                    if (! is_array($row) || ($lbl = InsightSkillMetric::label($row)) === null) {
+                        continue;
+                    }
+                    $map[$lbl] = InsightSkillMetric::delta($section, $i + 1, $pastPos[$lbl] ?? null);
+                }
+            } else {
+                $pastVal = [];
+                foreach ($pastRows as $row) {
+                    if (is_array($row) && ($lbl = InsightSkillMetric::label($row)) !== null) {
+                        $pastVal[$lbl] = InsightSkillMetric::value($section, $row);
+                    }
+                }
+                foreach ($nowRows as $row) {
+                    if (! is_array($row) || ($lbl = InsightSkillMetric::label($row)) === null) {
+                        continue;
+                    }
+                    $map[$lbl] = InsightSkillMetric::delta(
+                        $section,
+                        InsightSkillMetric::value($section, $row),
+                        $pastVal[$lbl] ?? null
+                    );
+                }
+            }
+
+            $out[$section] = $map;
+        }
+
+        return $out;
     }
 
     public function ingest(Request $request)
