@@ -104,7 +104,7 @@ class InsightsPageTest extends TestCase
         $res->assertSee('How many bids our best freelancers need');
         $res->assertSee('trend-up', false);
         $res->assertSee('trend-down', false);
-        $res->assertSee('trend-even', false);
+        $res->assertSee('trend-arrow', false);
         $res->assertSee('Profile Views (Past Week)');
         $res->assertSee('"values":[39,17]', false);
     }
