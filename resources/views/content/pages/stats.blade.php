@@ -241,7 +241,7 @@
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div class="card mt-4 mb-4">
         <h5 class="card-header">Mobile Agent Activity</h5>
         <div class="card-body">
             <div class="table-responsive">
