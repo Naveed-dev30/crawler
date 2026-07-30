@@ -78,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/review/load', [ReviewController::class, 'load'])->name('review.load');
     Route::get('/leaderboard', [GamificationController::class, 'index'])->name('leaderboard');
     Route::get('/insights', [\App\Http\Controllers\InsightsController::class, 'page'])->name('insights');
+    Route::get('/insights/skill-history', [\App\Http\Controllers\InsightsController::class, 'skillHistory'])->name('insights.skill-history');
     Route::get('/insights/bids', [\App\Http\Controllers\BidInsightsController::class, 'page'])->name('insights.bids');
 });
 

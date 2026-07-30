@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\InsightSnapshot;
+use App\Support\InsightSkillMetric;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -156,5 +157,74 @@ class InsightsController extends Controller
     private function stringOrNull(mixed $value): ?string
     {
         return (is_string($value) || is_numeric($value)) ? (string) $value : null;
+    }
+
+    public function skillHistory(Request $request)
+    {
+        $section = (string) $request->query('section');
+
+        if (! in_array($section, InsightSkillMetric::SECTIONS, true)) {
+            return response()->json(['message' => 'Unknown section'], 422);
+        }
+
+        $label = (string) $request->query('label');
+        [$from, $to] = $this->range($request);
+
+        $query = InsightSnapshot::orderBy('scraped_at');
+        if ($from) {
+            $query->whereDate('scraped_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('scraped_at', '<=', $to);
+        }
+        $snapshots = $query->get(['scraped_at', $section]);
+
+        $labels = [];
+        $values = [];
+        foreach ($snapshots as $snap) {
+            $labels[] = $snap->scraped_at->format('Y-m-d');
+            $rows = $snap->{$section} ?? [];
+            $val = null;
+
+            if ($section === 'trending_skills') {
+                foreach (array_values($rows) as $i => $row) {
+                    if (is_array($row) && InsightSkillMetric::label($row) === $label) {
+                        $val = $i + 1;
+                        break;
+                    }
+                }
+            } else {
+                foreach ($rows as $row) {
+                    if (is_array($row) && InsightSkillMetric::label($row) === $label) {
+                        $val = InsightSkillMetric::value($section, $row);
+                        break;
+                    }
+                }
+            }
+            $values[] = $val;
+        }
+
+        return response()->json([
+            'labels' => $labels,
+            'values' => $values,
+            'higherIsBetter' => InsightSkillMetric::higherIsBetter($section),
+            'label' => $label,
+        ]);
+    }
+
+    private function range(Request $request): array
+    {
+        $parse = function ($value) {
+            if (! is_string($value) || $value === '') {
+                return null;
+            }
+            try {
+                return Carbon::parse($value)->toDateString();
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        return [$parse($request->query('from')), $parse($request->query('to'))];
     }
 }
