@@ -38,10 +38,10 @@
                         @foreach ($bids as $bid)
                             <tr>
                                 <td>
+                                    {{-- Link the project to its row in the Bids (Opportunities) tab. --}}
+                                    <a href="{{ route('bids', ['q' => $bid->project_id]) }}">{{ $bid->project_id }}</a>
                                     @if ($bid->project_url)
-                                        <a href="{{ $bid->project_url }}" target="_blank" rel="noopener">{{ $bid->project_id }}</a>
-                                    @else
-                                        {{ $bid->project_id }}
+                                        <a href="{{ $bid->project_url }}" target="_blank" rel="noopener" class="ms-1 text-muted" title="Open on Freelancer">↗</a>
                                     @endif
                                 </td>
                                 <td>
