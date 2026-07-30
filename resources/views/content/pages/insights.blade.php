@@ -80,14 +80,14 @@
         {{-- Plain stat cards --}}
         <div class="row gy-4 mb-4">
             <div class="col-md">
-                <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center">
+                <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
                     <span class="text-muted">Last 30 Days</span>
                     <h3 class="fw-bold mb-0">{{ $latest->earnings_30d !== null ? '$' . number_format($latest->earnings_30d, 2) : '—' }}</h3>
                 </div></div>
             </div>
             @if ($latest->unearned_bids !== null)
                 <div class="col-md">
-                    <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center">
+                    <div class="card h-100"><div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
                         <span class="text-muted">Unearned Bids</span>
                         <h3 class="fw-bold mb-0">{{ $latest->unearned_bids }}</h3>
                     </div></div>
