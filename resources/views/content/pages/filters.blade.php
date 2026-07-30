@@ -1,7 +1,7 @@
 @extends('layouts.layoutMaster')
 
 
-@section('title', 'Filters')
+@section('title', 'Configurations')
 
 
 @section('vendor-style')
@@ -250,7 +250,54 @@
         </div>
     @endif
 
-    <h4 class="page-title">Filters</h4>
+    <h4 class="page-title">Configurations</h4>
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center">
+                <h5 class="mb-0 me-2">Freelancer Profiles</h5>
+                <span class="badge bg-label-primary rounded-pill">{{ $profiles->count() }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                @if ($profiles->isNotEmpty())
+                    <small class="text-muted d-none d-sm-inline">
+                        <i class="bx bx-time-five me-1"></i>Last synced {{ $profiles->max('updated_at')?->format('Y-m-d H:i') }}
+                    </small>
+                @endif
+                <form method="POST" action="{{ route('profiles.sync') }}" class="mb-0">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bx bx-refresh me-1"></i>Sync now
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            @if ($profiles->isEmpty())
+                <div class="text-center text-muted py-4">
+                    <i class="bx bx-user-pin bx-lg mb-2 d-block"></i>
+                    No profiles synced yet. Click <strong>Sync now</strong> to pull them from Freelancer.
+                </div>
+            @else
+                <div class="row g-3">
+                    @foreach ($profiles as $profile)
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="d-flex align-items-center border rounded p-3 h-100">
+                                <div class="avatar avatar-sm me-3 flex-shrink-0">
+                                    <span class="avatar-initial rounded-circle bg-label-primary">
+                                        {{ strtoupper(mb_substr($profile->title ?: '?', 0, 1)) }}
+                                    </span>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <div class="fw-semibold text-truncate">{{ $profile->title ?: 'Untitled' }}</div>
+                                    <small class="text-muted">#{{ $profile->id }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
     <div class="row">
         <!-- FormValidation -->
         <div class="col-12">

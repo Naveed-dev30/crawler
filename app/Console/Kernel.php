@@ -28,6 +28,11 @@ class Kernel extends ConsoleKernel
             ->everyTwoMinutes()
             ->runInBackground()
             ->withoutOverlapping(5);
+
+        $schedule->command('profiles:sync')
+            ->daily()
+            ->runInBackground()
+            ->withoutOverlapping(30);
     }
 
     /**
