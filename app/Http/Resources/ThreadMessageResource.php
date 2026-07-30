@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ThreadMessageResource extends JsonResource
+{
+    public function toArray($request)
+    {
+        return [
+            'id' => $this->id,
+            'thread_id' => $this->thread_id,
+            'direction' => $this->direction,
+            'message' => $this->message,
+            'sender_user_id' => $this->sender_user_id,
+            'sender_name' => $this->direction === 'sent'
+                ? ($this->sender?->name ?? 'Owner')
+                : ($this->sender_name ?? 'Sarah Mitchell'),
+            'sender_avatar' => $this->direction === 'sent'
+                ? 'https://i.pravatar.cc/150?u=owner'.($this->sender_user_id ?? 0)
+                : 'https://i.pravatar.cc/150?u=client'.$this->thread_id,
+            'is_mine' => $this->direction === 'sent'
+                && $this->sender_user_id !== null
+                && (int) $this->sender_user_id === (int) $request->user()?->id,
+            'is_sent' => $this->direction === 'sent' ? $this->freelancer_message_id !== null : null,
+            'is_read' => $this->is_read,
+            'sent_by_ai' => (bool) $this->sent_by_ai,
+            'message_time' => $this->message_time?->toIso8601String(),
+            'attachments' => $this->whenLoaded('attachments', function () {
+                return $this->attachments->map(fn ($a) => [
+                    'id' => $a->id,
+                    'filename' => $a->filename,
+                    'url' => $a->url,
+                    'mime_type' => $a->mime_type,
+                    'size' => $a->size,
+                ]);
+            }),
+        ];
+    }
+}

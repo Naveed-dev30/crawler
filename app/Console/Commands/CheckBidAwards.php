@@ -13,7 +13,7 @@ class CheckBidAwards extends Command
 
     public function handle(): int
     {
-        (new BidAwardChecker())->run();
+        (new BidAwardChecker)->run();
         $this->info('Award check complete.');
 
         return self::SUCCESS;

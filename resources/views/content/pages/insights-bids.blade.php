@@ -2,6 +2,13 @@
 
 @section('title', 'Bid Insights')
 
+@section('page-style')
+    <style>
+        /* Old/new values can be long JSON blobs — wrap, don't overflow. */
+        #changesModal td { word-break: break-word; white-space: normal; }
+    </style>
+@endsection
+
 @section('content')
     <h4 class="page-title">Bid Insights</h4>
 
@@ -17,6 +24,7 @@
                         <tr>
                             <th>Project</th>
                             <th>Time to Bid</th>
+                            <th>Submitted</th>
                             <th>Bid Amount</th>
                             <th>Client</th>
                             <th>Bid Rank</th>
@@ -45,6 +53,7 @@
                                         —
                                     @endif
                                 </td>
+                                <td>{{ $bid->time_submitted?->format('Y-m-d H:i') ?? '—' }}</td>
                                 <td>{{ $bid->bid_amount !== null ? number_format($bid->bid_amount, 2) . ' ' . ($bid->bid_currency ?? '') : '—' }}</td>
                                 <td>
                                     {{ $bid->client_country ?? '—' }}
@@ -79,14 +88,17 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card-body">
-                {{ $bids->links() }}
-            </div>
         </div>
+
+        @if ($bids->hasPages())
+            <div class="mt-4 card px-4 pt-3">
+                {{ $bids->links('vendor.pagination.bootstrap-5') }}
+            </div>
+        @endif
 
         {{-- Audit log modal --}}
         <div class="modal fade" id="changesModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Change History — Project <span id="changesProjectId"></span></h5>

@@ -32,26 +32,27 @@ class BidAwardChecker
         $flKey = config('variables.flKey');
 
         foreach (array_chunk(array_keys($byProject), 100) as $chunk) {
-            $query = 'compact=true&bidders[]=' . $flUserId;
+            $query = 'compact=true&bidders[]='.$flUserId;
             foreach ($chunk as $pid) {
-                $query .= '&projects[]=' . $pid;
+                $query .= '&projects[]='.$pid;
             }
-            $url = 'https://www.freelancer.com/api/projects/0.1/bids/?' . $query;
+            $url = rtrim(config('variables.flBase'), '/').'/api/projects/0.1/bids/?'.$query;
 
             try {
                 $response = Http::timeout(60)
                     ->withHeaders(['Freelancer-OAuth-V1' => $flKey])
                     ->get($url);
 
-                if (!$response->successful()) {
-                    Log::warning('Award check: HTTP ' . $response->status());
+                if (! $response->successful()) {
+                    Log::warning('Award check: HTTP '.$response->status());
+
                     continue;
                 }
 
                 $returnedBids = $response->json('result.bids') ?? [];
                 foreach ($returnedBids as $rb) {
                     $pid = $rb['project_id'] ?? null;
-                    if (!$pid || !isset($byProject[$pid])) {
+                    if (! $pid || ! isset($byProject[$pid])) {
                         continue;
                     }
                     if (($rb['award_status'] ?? null) !== 'awarded') {
@@ -64,7 +65,8 @@ class BidAwardChecker
                     $bid->save();
                 }
             } catch (\Throwable $e) {
-                Log::warning('Award check exception: ' . $e->getMessage());
+                Log::warning('Award check exception: '.$e->getMessage());
+
                 continue;
             }
         }

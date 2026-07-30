@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class ProposalQualifier
 {
     private const MODEL = 'gpt-3.5-turbo';
+
     private const MAX_ATTEMPTS = 2; // initial try + 1 retry
 
     /**
@@ -21,16 +22,16 @@ class ProposalQualifier
      */
     public function qualify(string $negativePrompt, string $description): array
     {
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
         $system = 'You are a strict project filter. The user does NOT want to bid on '
-            . 'projects matching these negative criteria: ' . $negativePrompt . '. '
-            . 'Given the project description, decide whether to skip it. Reply with ONLY a '
-            . 'JSON object of the form {"qualified": <true|false>, "reason": "<short reason>"}. '
-            . 'Set "qualified" to false if the project MATCHES the negative criteria (skip it), '
-            . 'or true if it does NOT match (safe to proceed). "reason" is a short phrase '
-            . 'naming the criteria matched or why it is safe. Output nothing but the JSON.';
+            .'projects matching these negative criteria: '.$negativePrompt.'. '
+            .'Given the project description, decide whether to skip it. Reply with ONLY a '
+            .'JSON object of the form {"qualified": <true|false>, "reason": "<short reason>"}. '
+            .'Set "qualified" to false if the project MATCHES the negative criteria (skip it), '
+            .'or true if it does NOT match (safe to proceed). "reason" is a short phrase '
+            .'naming the criteria matched or why it is safe. Output nothing but the JSON.';
 
         $payload = [
             'model' => self::MODEL,
@@ -52,12 +53,12 @@ class ProposalQualifier
                     if ($parsed !== null) {
                         return $parsed;
                     }
-                    Log::warning('ProposalQualifier: unparseable reply (attempt ' . $attempt . ')');
+                    Log::warning('ProposalQualifier: unparseable reply (attempt '.$attempt.')');
                 } else {
-                    Log::warning('ProposalQualifier: HTTP ' . $response->status() . " (attempt {$attempt})");
+                    Log::warning('ProposalQualifier: HTTP '.$response->status()." (attempt {$attempt})");
                 }
             } catch (\Throwable $e) {
-                Log::warning('ProposalQualifier: exception ' . $e->getMessage() . " (attempt {$attempt})");
+                Log::warning('ProposalQualifier: exception '.$e->getMessage()." (attempt {$attempt})");
             }
         }
 

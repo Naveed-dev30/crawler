@@ -1,14 +1,10 @@
 @extends('layouts.layoutMaster')
 
-@section('title', 'Bids')
+@section('title', 'Opportunities')
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h4 class="page-title mb-0">Bids</h4>
-        <form action="{{ route('expire_bids') }}" method="POST" class="mb-0">
-            @csrf
-            <button type="submit" class="btn btn-danger">Expire Pending</button>
-        </form>
+        <h4 class="page-title mb-0">Opportunities</h4>
     </div>
 
     {{-- Filter bar (sticky on scroll) --}}
@@ -204,12 +200,33 @@
         }
     </style>
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
                 <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Bids Placed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
                 <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
+            </ul>
+            <span class="badge bg-label-primary d-inline-flex align-items-center text-nowrap d-none"
+                  style="font-size: .8rem; padding: .45rem .75rem;" id="bids-last-updated-wrap">
+                <i class="bx bx-time-five me-1"></i>
+                <span id="bids-last-updated"></span>
+            </span>
+        </div>
+        {{-- Bids Placed only: review-state sub-tabs --}}
+        <div class="px-3 py-2 border-bottom" id="bids-check-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Correct">Correct</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Incorrect">Incorrect</button></li>
+            </ul>
+        </div>
+        {{-- Skills Not Matched only: interest sub-tabs --}}
+        <div class="px-3 py-2 border-bottom d-none" id="bids-interest-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Interested">Interested</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Not Interested">Not Interested</button></li>
             </ul>
         </div>
         <div class="table-responsive">
@@ -221,8 +238,8 @@
                         <th>Price</th>
                         <th>Status</th>
                         <th>Type</th>
-                        <th class="completed-col d-none">Awarded</th>
-                        <th class="completed-col d-none">Awarded Price</th>
+                        <th class="completed-col d-none text-nowrap">Awarded</th>
+                        <th class="completed-col d-none text-nowrap">Awarded Price</th>
                         <th>Time</th>
                         <th>Review</th>
                     </tr>
@@ -265,6 +282,8 @@
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             let currentTab = 'completed';
+            let currentCheck = 'all';
+            let currentInterest = 'all';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -274,6 +293,8 @@
                 const p = new URLSearchParams();
                 p.set('tab', currentTab);
                 p.set('page', currentPage);
+                if (currentTab === 'completed' && currentCheck !== 'all') p.set('check', currentCheck);
+                if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
                 const min = el('f-min').value; if (min) p.set('min', min);
@@ -304,12 +325,32 @@
                 el('sub-expired').textContent = sc.expired || 0;
                 document.querySelectorAll('.completed-col').forEach(th =>
                     th.classList.toggle('d-none', currentTab !== 'completed'));
+                el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
+                el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
+                el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
+                el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
                 const nq = currentTab === 'not-qualified';
                 el('thead-bids').classList.toggle('d-none', nq);
                 el('thead-nq').classList.toggle('d-none', !nq);
                 document.querySelectorAll('.bid-only-filter').forEach(d => d.classList.toggle('d-none', nq));
                 el('bids-cards').classList.toggle('d-none', nq);
+                // Auto-refresh replaces the rows — remember which More/Less blocks
+                // the user expanded (keyed by proposal id + cell) and restore them.
+                const expandedKeys = [...el('bids-tbody').querySelectorAll('.nq-clamp.expanded')].map(span => {
+                    const tr = span.closest('tr');
+                    const id = tr?.querySelector('.js-nq-view')?.dataset.proposalId;
+                    return id ? id + ':' + [...tr.children].indexOf(span.closest('td')) : null;
+                }).filter(Boolean);
                 el('bids-tbody').innerHTML = data.rowsHtml;
+                expandedKeys.forEach(key => {
+                    const [id, tdIndex] = key.split(':');
+                    const tr = el('bids-tbody').querySelector('.js-nq-view[data-proposal-id="' + id + '"]')?.closest('tr');
+                    const td = tr?.children[tdIndex];
+                    const span = td?.querySelector('.nq-clamp');
+                    const link = td?.querySelector('.nq-more');
+                    if (span) { span.classList.add('expanded'); }
+                    if (link) { link.textContent = 'Less'; }
+                });
                 el('bids-pagination').innerHTML = data.paginationHtml;
                 el('bids-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
                 initTooltips();
@@ -337,8 +378,87 @@
                     document.querySelectorAll('#bids-tabs .nav-link').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
+                    // Switching main tabs resets both sub-tab groups
+                    currentCheck = 'all';
+                    currentInterest = 'all';
+                    document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.checkTab === 'all'));
+                    document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.interestTab === 'all'));
                     reload();
                 });
+            });
+
+            // Review sub-tabs (Bids Placed only)
+            document.querySelectorAll('#bids-check-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCheck = this.dataset.checkTab;
+                    reload();
+                });
+            });
+
+            // Interest sub-tabs (Skills Not Matched only)
+            document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentInterest = this.dataset.interestTab;
+                    reload();
+                });
+            });
+
+            // Delegated: Interested/Not Interested buttons on table rows
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.bid-interest-btn');
+                if (!btn) return;
+                const interest = btn.dataset.interest;
+                const res = await fetch('/updateBidInterest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ bid_id: btn.dataset.bidId, interest: interest })
+                });
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    interest === 'Interested' ? 'Marked Interested' : 'Marked Not Interested',
+                    'Saved.',
+                    interest === 'Interested' ? '#28c76f' : '#ff3e1d'
+                );
+                loadData();
+            });
+
+            // Delegated: Correct/Incorrect buttons on table rows
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.bid-check-btn');
+                if (!btn) return;
+                const check = btn.dataset.check;
+                const res = await fetch('/updateBidCheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ bid_id: btn.dataset.bidId, check: check })
+                });
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Bid review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
+                // If the slide-over is open on this bid, re-fetch it so badge + buttons match
+                const panelBody = el('bidOffcanvasContent').querySelector('[data-bid-id="' + btn.dataset.bidId + '"]');
+                if (panelBody && el('bidOffcanvas').classList.contains('show')) {
+                    const detail = await fetch('/bids/' + btn.dataset.bidId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (detail.ok) {
+                        el('bidOffcanvasContent').innerHTML = await detail.text();
+                    }
+                }
+                loadData();
             });
 
             // Delegated: pagination links
@@ -403,20 +523,13 @@
                     'Bid review saved.',
                     check === 'Correct' ? '#28c76f' : '#ff3e1d'
                 );
-                const badge = el('bidOffcanvasContent').querySelector('[data-check-badge]');
-                if (badge) {
-                    badge.textContent = check;
-                    badge.className = 'badge ' + (check === 'Correct' ? 'bg-success' : 'bg-danger');
+                // Re-fetch the panel so badge and buttons reflect the new state,
+                // and reload the table so the row buttons flip too.
+                const detail = await fetch('/bids/' + id + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (detail.ok) {
+                    el('bidOffcanvasContent').innerHTML = await detail.text();
                 }
-                const dot = document.querySelector('[data-check-dot="' + id + '"]');
-                if (dot) {
-                    dot.className = (check === 'Correct' ? 'fa fa-check text-success' : 'fa fa-close text-danger');
-                    dot.setAttribute('data-check-dot', id);
-                    const label = check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect';
-                    dot.setAttribute('title', label);
-                    const tip = bootstrap.Tooltip.getOrCreateInstance(dot);
-                    tip.setContent({ '.tooltip-inner': label });
-                }
+                loadData();
             });
 
             // Auto-refresh: skip while typing search or past page 1

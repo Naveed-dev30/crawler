@@ -59,6 +59,56 @@ class InsightsPageTest extends TestCase
         $res->assertSee('21.70');
     }
 
+    public function test_renders_live_crawler_shape(): void
+    {
+        InsightSnapshot::create([
+            'scraped_at' => '2026-07-21 06:42:51',
+            'earnings_total' => 363473.34,
+            'earnings_30d' => 0,
+            'bids_remaining' => 48,
+            'job_proficiency' => [
+                ['label' => 'Completed Jobs', 'value' => '99%'],
+                ['label' => 'Rehire Rate', 'value' => '24%'],
+            ],
+            'earnings_per_skill' => [
+                ['name' => 'PHP', 'value' => '$264,759.91'],
+                ['name' => 'Website Design', 'value' => '$231,679.90'],
+            ],
+            'overall_ranking' => '25%',
+            'ranking_per_skill' => [['name' => 'JSON', 'value' => 'Top 9%']],
+            'high_demand_skills' => [['name' => 'Data Entry', 'value' => '+27%']],
+            'trending_skills' => [
+                ['name' => 'Graphic Design', 'direction' => 'up'],
+                ['name' => 'Data Entry', 'direction' => 'down'],
+                ['name' => 'After Effects', 'direction' => 'even'],
+                ['name' => 'PHP'],
+            ],
+            'bids_per_milestone' => ['user' => null, 'marketplace' => '18.50'],
+            'profile_views_week' => ['labels' => ['16/7', '17/7'], 'values' => [39, 17]],
+            'profile_views_year' => ['labels' => ['Jun 26', 'Jul 26'], 'values' => [0, 221]],
+            'raw' => '{}',
+        ]);
+
+        $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
+        $res->assertSee('Completed Jobs');
+        $res->assertSee('99%');
+        $res->assertSee('width: 99%', false);
+        $res->assertSee('Earnings per Skill');
+        $res->assertSee('PHP');
+        $res->assertSee('$264,759.91');
+        $res->assertSee('Top 25%');
+        $res->assertSee('Top 9%');
+        $res->assertSee('+27%');
+        $res->assertSee('Graphic Design');
+        $res->assertSee('18.50');
+        $res->assertSee('How many bids our best freelancers need');
+        $res->assertSee('trend-up', false);
+        $res->assertSee('trend-down', false);
+        $res->assertSee('trend-even', false);
+        $res->assertSee('Profile Views (Past Week)');
+        $res->assertSee('"values":[39,17]', false);
+    }
+
     public function test_partial_snapshot_does_not_error(): void
     {
         InsightSnapshot::create([
