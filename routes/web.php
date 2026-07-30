@@ -53,6 +53,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');
     Route::get('/stats/overview', [StatisticsController::class, 'overview'])->name('stats.overview');
+    Route::get('/stats/mobile-agents', [StatisticsController::class, 'mobileAgents'])->name('stats.mobile-agents');
+    Route::get('/stats/mobile-agents/{user}/activity', [StatisticsController::class, 'mobileAgentActivity'])->name('stats.mobile-agents.activity');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
@@ -79,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/leaderboard', [GamificationController::class, 'index'])->name('leaderboard');
     Route::get('/insights', [\App\Http\Controllers\InsightsController::class, 'page'])->name('insights');
     Route::get('/insights/skill-history', [\App\Http\Controllers\InsightsController::class, 'skillHistory'])->name('insights.skill-history');
+    Route::get('/insights/metric-history', [\App\Http\Controllers\InsightsController::class, 'metricHistory'])->name('insights.metric-history');
+    Route::get('/insights/profile-views-week', [\App\Http\Controllers\InsightsController::class, 'profileViewsWeek'])->name('insights.profile-views-week');
     Route::get('/insights/bids', [\App\Http\Controllers\BidInsightsController::class, 'page'])->name('insights.bids');
 });
 

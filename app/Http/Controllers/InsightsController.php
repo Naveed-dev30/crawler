@@ -296,6 +296,88 @@ class InsightsController extends Controller
         ]);
     }
 
+    public function metricHistory(Request $request)
+    {
+        $metric = (string) $request->query('metric');
+        $allowed = ['earnings_total', 'bids_remaining', 'overall_ranking', 'bids_per_milestone'];
+
+        if (! in_array($metric, $allowed, true)) {
+            return response()->json(['message' => 'Unknown metric'], 422);
+        }
+
+        [$from, $to] = $this->range($request);
+
+        $query = InsightSnapshot::orderBy('scraped_at');
+        if ($from) {
+            $query->whereDate('scraped_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('scraped_at', '<=', $to);
+        }
+        $snapshots = $query->get(['scraped_at', $metric]);
+
+        $labels = [];
+        $values = [];
+        foreach ($snapshots as $snap) {
+            $labels[] = $snap->scraped_at->format('Y-m-d');
+            $values[] = $this->metricValue($metric, $snap);
+        }
+
+        return response()->json(['labels' => $labels, 'values' => $values]);
+    }
+
+    private function metricValue(string $metric, InsightSnapshot $snap): int|float|null
+    {
+        switch ($metric) {
+            case 'earnings_total':
+                return $snap->earnings_total === null ? null : (float) $snap->earnings_total;
+            case 'bids_remaining':
+                return $snap->bids_remaining === null ? null : (int) $snap->bids_remaining;
+            case 'overall_ranking':
+                return preg_match('/-?\d+(\.\d+)?/', (string) $snap->overall_ranking, $m) ? (float) $m[0] : null;
+            case 'bids_per_milestone':
+                $bpm = $snap->bids_per_milestone ?? [];
+                $raw = $bpm['marketplace'] ?? null;
+                if (is_array($raw)) {
+                    $raw = $raw[0]['value'] ?? null;
+                }
+
+                return ($raw !== null && preg_match('/-?\d+(\.\d+)?/', (string) $raw, $m)) ? (float) $m[0] : null;
+        }
+
+        return null;
+    }
+
+    public function profileViewsWeek(Request $request)
+    {
+        $raw = $request->query('date');
+        $date = null;
+        if (is_string($raw) && $raw !== '') {
+            try {
+                $date = Carbon::parse($raw)->toDateString();
+            } catch (\Throwable $e) {
+                $date = null;
+            }
+        }
+
+        $snap = null;
+        if ($date) {
+            $snap = InsightSnapshot::whereDate('scraped_at', '<=', $date)->orderByDesc('scraped_at')->first()
+                ?? InsightSnapshot::whereDate('scraped_at', '>=', $date)->orderBy('scraped_at')->first();
+        }
+        $snap = $snap ?? InsightSnapshot::orderByDesc('scraped_at')->first();
+
+        $pv = $snap?->profile_views_week ?? [];
+        $labels = $pv['labels'] ?? [];
+        $values = $pv['values'] ?? ($pv['datasets'][0]['data'] ?? []);
+
+        return response()->json([
+            'date' => $snap?->scraped_at?->format('Y-m-d'),
+            'labels' => array_values($labels),
+            'values' => array_values($values),
+        ]);
+    }
+
     private function range(Request $request): array
     {
         $parse = function ($value) {
