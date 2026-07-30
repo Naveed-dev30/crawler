@@ -59,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
         Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+        Route::post('/profiles/sync', [FilterController::class, 'syncProfiles'])->name('profiles.sync');
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
