@@ -19,7 +19,6 @@
             }
 
             const usersBase = @json(url('/users'));
-            const availableLadders = @json($availableLadders);
 
             // ---- View user modal ----
             const roleBadges = {
@@ -43,16 +42,11 @@
                 badge.className = 'badge ' + badgeClass;
                 badge.textContent = badgeText;
 
-                // Routing + push fields only apply to mobile users. d-none class,
+                // Push field only applies to mobile users. d-none class,
                 // not inline display — rows are flex via utility classes below.
-                ['view-row-fcm', 'view-row-ladder', 'view-row-prompt'].forEach(id => {
-                    document.getElementById(id).classList.toggle('d-none', !isMobile);
-                });
+                document.getElementById('view-row-fcm').classList.toggle('d-none', !isMobile);
                 document.getElementById('view-row-fcm').classList.toggle('d-flex', isMobile);
-                document.getElementById('view-row-ladder').classList.toggle('d-flex', isMobile);
                 if (isMobile) {
-                    set('view-user-ladder', btn.dataset.ladder);
-                    set('view-user-prompt', btn.dataset.prompt);
                     const fcm = document.getElementById('view-user-fcm');
                     fcm.className = 'badge ' + (btn.dataset.fcm ? 'bg-label-success' : 'bg-label-secondary');
                     fcm.textContent = btn.dataset.fcm ? 'Registered' : 'Not registered';
@@ -66,22 +60,9 @@
             const editForm = document.getElementById('edit-user-form');
             const editRoleSelect = document.getElementById('edit-user-role');
 
-            const buildLadderOptions = (current) => {
-                const sel = document.getElementById('edit-user-ladder');
-                const opts = [...availableLadders];
-                const cur = current ? Number(current) : null;
-                if (cur && !opts.includes(cur)) opts.push(cur);
-                opts.sort((a, b) => a - b);
-                sel.innerHTML = '<option value="">Choose position…</option>'
-                    + opts.map(l => `<option value="${l}">${l}</option>`).join('');
-                sel.value = cur ?? '';
-            };
-
             const toggleEditMobileFields = () => {
                 const isAdmin = editForm.dataset.role === 'admin';
-                const isMobile = !isAdmin && editRoleSelect.value === 'mobile';
                 document.getElementById('edit-role-field').style.display = isAdmin ? 'none' : '';
-                document.getElementById('edit-mobile-only-fields').style.display = isMobile ? '' : 'none';
             };
 
             const openEdit = (btn) => {
@@ -93,8 +74,6 @@
                 document.getElementById('edit-user-password').value = '';
                 if (btn.dataset.role !== 'admin') {
                     editRoleSelect.value = btn.dataset.role;
-                    document.getElementById('edit-user-profile-prompt').value = btn.dataset.prompt || '';
-                    buildLadderOptions(btn.dataset.ladder);
                 }
                 toggleEditMobileFields();
                 [...editForm.querySelectorAll('.is-invalid')].forEach(clearFieldError);
@@ -108,20 +87,14 @@
                 const name = document.getElementById('edit-user-name');
                 const email = document.getElementById('edit-user-email');
                 const password = document.getElementById('edit-user-password');
-                const prompt = document.getElementById('edit-user-profile-prompt');
-                const ladder = document.getElementById('edit-user-ladder');
-                const isAdmin = editForm.dataset.role === 'admin';
-                const isMobile = !isAdmin && editRoleSelect.value === 'mobile';
 
-                [name, email, password, prompt, ladder].forEach(clearFieldError);
+                [name, email, password].forEach(clearFieldError);
 
                 const errors = [];
                 if (!name.value.trim()) errors.push([name, 'Full name is required.']);
                 if (!email.value.trim()) errors.push([email, 'Email is required.']);
                 else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) errors.push([email, 'Enter a valid email address.']);
                 if (password.value && password.value.length < 8) errors.push([password, 'Password must be at least 8 characters.']);
-                if (isMobile && !prompt.value.trim()) errors.push([prompt, 'Profile prompt is required for mobile users.']);
-                if (isMobile && !ladder.value) errors.push([ladder, 'Choose an escalation ladder position.']);
 
                 if (errors.length) {
                     ev.preventDefault();
@@ -132,31 +105,7 @@
             editForm.addEventListener('input', ev => clearFieldError(ev.target));
             editForm.addEventListener('change', ev => clearFieldError(ev.target));
 
-            // Team users take no part in chat routing — hide mobile-only fields.
             const roleSelect = document.getElementById('user-role');
-            const mobileFields = document.getElementById('mobile-only-fields');
-            const toggleMobileFields = () => {
-                const isMobile = roleSelect.value === 'mobile';
-                mobileFields.style.display = isMobile ? '' : 'none';
-                // Only visibility + required. No disabled toggle / selectpicker
-                // refresh — refresh on a hidden select duplicates its options,
-                // and the server already nulls these fields for team users.
-                mobileFields.querySelectorAll('textarea, select').forEach(el => {
-                    el.toggleAttribute('required', isMobile);
-                });
-                if (!isMobile) {
-                    document.getElementById('user-profile-prompt').value = '';
-                    if (window.jQuery && jQuery.fn.selectpicker) {
-                        jQuery('#user-ladder').selectpicker('val', '');
-                    } else {
-                        document.getElementById('user-ladder').value = '';
-                    }
-                }
-                if (!isMobile) {
-                    clearFieldError(document.getElementById('user-profile-prompt'));
-                    clearFieldError(document.getElementById('user-ladder'));
-                }
-            };
 
             // Inline validation below each field instead of the browser bubbles.
             const setFieldError = (el, message) => {
@@ -181,11 +130,8 @@
                 const name = document.getElementById('user-name');
                 const email = document.getElementById('user-email');
                 const password = document.getElementById('user-password');
-                const prompt = document.getElementById('user-profile-prompt');
-                const ladder = document.getElementById('user-ladder');
-                const isMobile = roleSelect.value === 'mobile';
 
-                [name, email, password, prompt, ladder].forEach(clearFieldError);
+                [name, email, password].forEach(clearFieldError);
 
                 const errors = [];
                 if (!name.value.trim()) errors.push([name, 'Full name is required.']);
@@ -193,8 +139,6 @@
                 else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) errors.push([email, 'Enter a valid email address.']);
                 if (!password.value) errors.push([password, 'Password is required.']);
                 else if (password.value.length < 8) errors.push([password, 'Password must be at least 8 characters.']);
-                if (isMobile && !prompt.value.trim()) errors.push([prompt, 'Profile prompt is required for mobile users.']);
-                if (isMobile && !ladder.value) errors.push([ladder, 'Choose an escalation ladder position.']);
 
                 if (errors.length) {
                     ev.preventDefault();
@@ -206,8 +150,6 @@
             // Clear a field's error as soon as the user fixes it.
             addUserForm.addEventListener('input', ev => clearFieldError(ev.target));
             addUserForm.addEventListener('change', ev => clearFieldError(ev.target));
-            roleSelect.addEventListener('change', toggleMobileFields);
-            toggleMobileFields();
 
             // Debounced search: submit the filter form 400ms after typing stops.
             const searchInput = document.getElementById('users-search');
@@ -228,8 +170,6 @@
                         @if (old('role'))
                             editRoleSelect.value = @json(old('role'));
                         @endif
-                        document.getElementById('edit-user-profile-prompt').value = @json(old('profile_prompt') ?? '');
-                        buildLadderOptions(@json(old('escalation_ladder')));
                         toggleEditMobileFields();
                     }
                 @else
@@ -289,7 +229,6 @@
                     <th>Name</th>
                     <th>Email</th>
                     <th>Role</th>
-                    <th>Escalation Ladder</th>
                     <th>FCM</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -309,7 +248,6 @@
                                 <span class="badge bg-label-secondary">{{ ucfirst($user->role) }}</span>
                             @endif
                         </td>
-                        <td>{{ $user->escalation_ladder ?? '—' }}</td>
                         <td>
                             @if ($user->device_tokens_count)
                                 <span class="badge bg-label-success">
@@ -326,8 +264,7 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-secondary js-view-user"
                                     title="View user"
                                     data-name="{{ $user->name }}" data-email="{{ $user->email }}"
-                                    data-role="{{ $user->role }}" data-ladder="{{ $user->escalation_ladder }}"
-                                    data-prompt="{{ $user->profile_prompt }}"
+                                    data-role="{{ $user->role }}"
                                     data-fcm="{{ $user->device_tokens_count ? '1' : '' }}"
                                     data-created="{{ $user->created_at?->format('M j, Y') }}">
                                 <i class="bx bx-show"></i>
@@ -335,16 +272,14 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-primary js-edit-user"
                                     title="Update user"
                                     data-id="{{ $user->id }}" data-name="{{ $user->name }}"
-                                    data-email="{{ $user->email }}" data-role="{{ $user->role }}"
-                                    data-ladder="{{ $user->escalation_ladder }}"
-                                    data-prompt="{{ $user->profile_prompt }}">
+                                    data-email="{{ $user->email }}" data-role="{{ $user->role }}">
                                 <i class="bx bx-edit-alt"></i>
                             </button>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No users yet.</td>
+                        <td colspan="6" class="text-center text-muted py-4">No users yet.</td>
                     </tr>
                 @endforelse
                 </tbody>
@@ -378,14 +313,6 @@
                         <li class="list-group-item justify-content-between align-items-center px-0 d-none" id="view-row-fcm">
                             <span class="text-muted">Push Notifications</span>
                             <span id="view-user-fcm"></span>
-                        </li>
-                        <li class="list-group-item justify-content-between align-items-center px-0 d-none" id="view-row-ladder">
-                            <span class="text-muted">Escalation Ladder</span>
-                            <span class="fw-semibold" id="view-user-ladder"></span>
-                        </li>
-                        <li class="list-group-item px-0 d-none" id="view-row-prompt">
-                            <div class="text-muted mb-1">Profile Prompt</div>
-                            <div class="bg-lighter rounded p-3 small" id="view-user-prompt" style="white-space: pre-wrap;"></div>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                             <span class="text-muted">Member Since</span>
@@ -442,18 +369,6 @@
                                 <option value="team"@selected(old('role') === 'team')>Team</option>
                             </select>
                         </div>
-                        <div id="edit-mobile-only-fields">
-                            <div class="mb-3">
-                                <label class="form-label" for="edit-user-profile-prompt">Profile Prompt</label>
-                                <textarea class="form-control" id="edit-user-profile-prompt" name="profile_prompt"
-                                          rows="4">{{ old('edit_user_id') ? old('profile_prompt') : '' }}</textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="edit-user-ladder">Escalation Ladder</label>
-                                <select class="form-select" id="edit-user-ladder" name="escalation_ladder"></select>
-                                <div class="form-text">Unanswered threads escalate to the next higher number. 1 is the first responder.</div>
-                            </div>
-                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -500,28 +415,6 @@
                                 <option value="team"@selected(old('role') === 'team')>Team</option>
                             </select>
                             @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div id="mobile-only-fields">
-                            <div class="mb-3">
-                                <label class="form-label" for="user-profile-prompt">Profile Prompt</label>
-                                <textarea class="form-control @error('profile_prompt') is-invalid @enderror"
-                                          id="user-profile-prompt" name="profile_prompt" rows="4"
-                                          placeholder="Describe this user's skills and specialties — used by AI to route matching project threads to them"
-                                          required>{{ old('profile_prompt') }}</textarea>
-                                @error('profile_prompt')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="user-ladder">Escalation Ladder</label>
-                                <select class="selectpicker w-100 @error('escalation_ladder') is-invalid @enderror"
-                                        data-style="btn-default" title="Choose position…"
-                                        id="user-ladder" name="escalation_ladder" required>
-                                    @foreach ($availableLadders as $ladder)
-                                        <option value="{{ $ladder }}"@selected((int) old('escalation_ladder') === $ladder)>{{ $ladder }}</option>
-                                    @endforeach
-                                </select>
-                                @error('escalation_ladder')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                <div class="form-text">Unanswered threads escalate to the next higher number. 1 is the first responder.</div>
-                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

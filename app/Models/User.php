@@ -24,7 +24,8 @@ class User extends Authenticatable
         'password',
         'role',
         'profile_prompt',
-        'escalation_ladder',
+        // 'escalation_ladder' is no longer fillable: the escalation order now
+        // comes from the transition lanes configured on the config page.
         // 'fcm_token' is deliberately NOT fillable: device tokens live in the
         // device_tokens table. The column is kept for one release so a rollback
         // still finds its tokens, but nothing may write it.

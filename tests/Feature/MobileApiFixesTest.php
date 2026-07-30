@@ -2,16 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Filter;
 use App\Models\MobileNotification;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\User;
-use App\Services\ThreadEscalator;
 use App\Support\NotificationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -115,68 +112,5 @@ class MobileApiFixesTest extends TestCase
 
         $this->assertSame('Not found.', $res->json('message'));
         $this->assertStringNotContainsString('App\\Models', (string) $res->json('message'));
-    }
-
-    public function test_escalation_skips_over_a_gap_in_the_ladder(): void
-    {
-        Queue::fake();
-        Filter::factory()->create(['id' => 1, 'escalation_minutes' => 30]);
-
-        $first = User::factory()->mobile()->create(['escalation_ladder' => 1]);
-        // No user at rung 2 — escalation used to stop dead here.
-        $third = User::factory()->mobile()->create(['escalation_ladder' => 4]);
-
-        $thread = Thread::factory()->create([
-            'status' => 'fresh',
-            'blocked' => false,
-            'assigned_user_id' => $first->id,
-            'last_client_message_at' => now()->subHours(2),
-        ]);
-
-        app(ThreadEscalator::class)->run();
-
-        $this->assertSame($third->id, (int) $thread->fresh()->assigned_user_id);
-    }
-
-    public function test_a_future_dated_client_message_does_not_escalate_immediately(): void
-    {
-        Queue::fake();
-        Filter::factory()->create(['id' => 1, 'escalation_minutes' => 30]);
-
-        $first = User::factory()->mobile()->create(['escalation_ladder' => 1]);
-        User::factory()->mobile()->create(['escalation_ladder' => 2]);
-
-        // Freelancer clock skew. diffInMinutes() is ABSOLUTE in Carbon 2, so a
-        // timestamp in the future read as long overdue.
-        $thread = Thread::factory()->create([
-            'status' => 'fresh',
-            'blocked' => false,
-            'assigned_user_id' => $first->id,
-            'last_client_message_at' => now()->addHours(2),
-        ]);
-
-        app(ThreadEscalator::class)->run();
-
-        $this->assertSame($first->id, (int) $thread->fresh()->assigned_user_id);
-    }
-
-    public function test_a_thread_still_inside_the_window_is_not_escalated(): void
-    {
-        Queue::fake();
-        Filter::factory()->create(['id' => 1, 'escalation_minutes' => 30]);
-
-        $first = User::factory()->mobile()->create(['escalation_ladder' => 1]);
-        User::factory()->mobile()->create(['escalation_ladder' => 2]);
-
-        $thread = Thread::factory()->create([
-            'status' => 'fresh',
-            'blocked' => false,
-            'assigned_user_id' => $first->id,
-            'last_client_message_at' => now()->subMinutes(5),
-        ]);
-
-        app(ThreadEscalator::class)->run();
-
-        $this->assertSame($first->id, (int) $thread->fresh()->assigned_user_id);
     }
 }
