@@ -18,14 +18,15 @@ services:
       LARAVEL_SAIL: 1
     volumes:
       - '.:/var/www/html'
-    # First boot: install PHP deps if vendor/ is missing, then serve on :80.
-    # (vendor/ is git-ignored, so it won't exist on a fresh clone.)
+    # Every boot: sync PHP deps with composer.lock (no-op in seconds when current),
+    # then stamp vendor/.installed.lock so the worker services know deps are fresh.
     # Scheduling lives in the dedicated 'scheduler' service below.
     command:
       - bash
       - -c
       - |
-        if [ ! -d vendor ]; then composer install --no-interaction --prefer-dist --optimize-autoloader; fi
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+        cp composer.lock vendor/.installed.lock
         # Normalize ownership so the sail (uid 1000) process can always write logs/cache.
         # Self-heals root-owned files that would otherwise crash logging (see logging.php).
         chown -R sail:sail storage bootstrap/cache || true
@@ -53,8 +54,59 @@ services:
       - bash
       - -c
       - |
-        until [ -d vendor ]; do sleep 5; done
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
         php artisan schedule:work
+    networks:
+      - crawler
+    depends_on:
+      laravel.test:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  queue-worker:
+    image: crawler-app
+    restart: unless-stopped
+    environment:
+      WWWUSER: '${WWWUSER:-1000}'
+      LARAVEL_SAIL: 1
+    volumes:
+      - '.:/var/www/html'
+    # Drains the database queue (OpenAI matching, FCM pushes). --max-time
+    # recycles the worker hourly so restarts pick up new code.
+    command:
+      - bash
+      - -c
+      - |
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
+        php artisan queue:work --tries=3 --backoff=10 --sleep=3 --max-time=3600
+    networks:
+      - crawler
+    depends_on:
+      laravel.test:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  thread-sync:
+    image: crawler-app
+    restart: unless-stopped
+    environment:
+      WWWUSER: '${WWWUSER:-1000}'
+      LARAVEL_SAIL: 1
+    volumes:
+      - '.:/var/www/html'
+    # 10-second Freelancer thread/message sync loop (threads:sync).
+    command:
+      - bash
+      - -c
+      - |
+        until cmp -s composer.lock vendor/.installed.lock; do sleep 5; done
+        php artisan threads:sync
     networks:
       - crawler
     depends_on:
@@ -105,6 +157,18 @@ services:
       test: ['CMD', 'redis-cli', 'ping']
       retries: 3
       timeout: 5s
+
+  soketi:
+    image: 'quay.io/soketi/soketi:latest-16-alpine'
+    restart: unless-stopped
+    ports:
+      - '6001:6001'
+    environment:
+      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
+    networks:
+      - crawler
 
   mailpit:
     image: 'axllent/mailpit:latest'

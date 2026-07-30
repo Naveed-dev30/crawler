@@ -40,7 +40,7 @@ class GamificationIngestTest extends TestCase
 
     public function test_valid_token_stores_extracted_snapshot(): void
     {
-        $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)
             ->postJson('/api/gamification/ingest', $this->payload())
             ->assertOk()
             ->assertJson(['success' => true]);
@@ -67,7 +67,7 @@ class GamificationIngestTest extends TestCase
 
     public function test_rejects_payload_without_leaderboard_top(): void
     {
-        $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)
             ->postJson('/api/gamification/ingest', ['source' => ['scraped_at' => '2026-07-16T11:35:45Z']])
             ->assertStatus(422);
         $this->assertSame(0, GamificationSnapshot::count());
@@ -76,16 +76,51 @@ class GamificationIngestTest extends TestCase
     public function test_reposting_same_scraped_at_is_idempotent(): void
     {
         $p = $this->payload();
-        $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
-        $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
         $this->assertSame(1, GamificationSnapshot::count());
+    }
+
+    public function test_second_run_same_day_overrides_previous_snapshot(): void
+    {
+        $p = $this->payload();
+        $p['source']['scraped_at'] = '2026-07-16T08:00:00Z';
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+
+        $p['source']['scraped_at'] = '2026-07-16T18:30:00Z';
+        foreach ($p['leaderboard']['nearby'] as &$entry) {
+            if ($entry['is_current_user'] ?? false) {
+                $entry['rank'] = 250;
+                $entry['score'] = 310500;
+            }
+        }
+        unset($entry);
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+
+        $this->assertSame(1, GamificationSnapshot::count());
+        $snap = GamificationSnapshot::firstOrFail();
+        $this->assertSame(250, $snap->self_rank);
+        $this->assertSame(310500, $snap->self_score);
+        $this->assertSame('2026-07-16 18:30:00', $snap->scraped_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_runs_on_different_days_create_separate_snapshots(): void
+    {
+        $p = $this->payload();
+        $p['source']['scraped_at'] = '2026-07-16T08:00:00Z';
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+
+        $p['source']['scraped_at'] = '2026-07-17T08:00:00Z';
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)->postJson('/api/gamification/ingest', $p)->assertOk();
+
+        $this->assertSame(2, GamificationSnapshot::count());
     }
 
     public function test_invalid_scraped_at_does_not_500(): void
     {
         $p = $this->payload();
         $p['source']['scraped_at'] = 'not-a-date';
-        $this->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+        $this->withHeader('Authorization', 'Bearer '.self::TOKEN)
             ->postJson('/api/gamification/ingest', $p)
             ->assertSuccessful();
         $this->assertSame(1, GamificationSnapshot::count());

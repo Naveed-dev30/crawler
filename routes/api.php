@@ -10,9 +10,6 @@ use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\ProposalController;
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\BidController as ApiBidController;
-use App\Http\Controllers\Api\V1\ReviewController as ApiReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +24,12 @@ use App\Http\Controllers\Api\V1\ReviewController as ApiReviewController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
   return $request->user();
+});
+
+// Socket private-channel auth for token clients (mobile). Web uses the
+// session-authenticated /broadcasting/auth registered by the provider.
+Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
+  return \Illuminate\Support\Facades\Broadcast::auth($request);
 });
 
 Route::get('getProposals', [ProposalController::class, 'getProposals']);
@@ -47,17 +50,28 @@ Route::get('insights/bids', [BidInsightsController::class, 'index']);
 Route::get('insights/bids/{bidInsight}/changes', [BidInsightsController::class, 'changes']);
 
 Route::prefix('v1')->group(function () {
-    Route::post('login', [AuthController::class, 'login']);
+    // Mobile chat app
+    Route::prefix('mobile')->group(function () {
+        Route::post('login', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'login']);
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('user', [AuthController::class, 'me']);
-        Route::post('logout', [AuthController::class, 'logout']);
-
-        Route::get('bids', [ApiBidController::class, 'index']);
-        Route::get('bids/{bid}', [ApiBidController::class, 'show']);
-        Route::post('bids/{bid}/check', [ApiBidController::class, 'updateCheck']);
-
-        Route::get('review', [ApiReviewController::class, 'index']);
-        Route::post('review/feedback', [ApiReviewController::class, 'storeFeedback']);
+        Route::middleware(['auth:sanctum', 'mobile'])->group(function () {
+            Route::get('user', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'me']);
+            Route::post('logout', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'logout']);
+            Route::post('fcm-token', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'updateFcmToken']);
+            Route::get('threads', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'index']);
+            Route::get('threads/{thread}', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'show']);
+            Route::post('threads/{thread}/block', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'block']);
+            Route::post('threads/{thread}/unblock', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'unblock']);
+            Route::post('threads/{thread}/assign', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'assign']);
+            Route::get('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'index']);
+            Route::post('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'store']);
+            Route::get('logs', [\App\Http\Controllers\Api\V1\Mobile\LogController::class, 'index']);
+            Route::get('notifications', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'index']);
+            Route::post('notifications/{notification}/read', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'markRead']);
+            Route::get('users', [\App\Http\Controllers\Api\V1\Mobile\UserController::class, 'index']);
+            Route::get('ai-assistant', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'show']);
+            Route::put('ai-assistant', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'toggle']);
+            Route::put('ai-assistant/schedule', [\App\Http\Controllers\Api\V1\Mobile\AiAssistantController::class, 'schedule']);
+        });
     });
 });

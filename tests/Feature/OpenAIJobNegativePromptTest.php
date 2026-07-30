@@ -53,6 +53,7 @@ class OpenAIJobNegativePromptTest extends TestCase
             if (str_contains($system, 'strict project filter')) {
                 return Http::response(['choices' => [['message' => ['content' => $verdict]]]], $qualifyStatus);
             }
+
             return Http::response(['choices' => [['message' => ['content' => 'Generated cover letter']]]], 200);
         });
     }

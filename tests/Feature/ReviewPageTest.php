@@ -26,7 +26,7 @@ class ReviewPageTest extends TestCase
 
     private function makeProposal(int $projectId, string $createdAt): void
     {
-        $proposal = new Proposal();
+        $proposal = new Proposal;
         $proposal->project_id = $projectId;
         $proposal->title = "Project {$projectId}";
         $proposal->description = 'desc';

@@ -12,7 +12,7 @@ class ReviewColumnTest extends TestCase
 
     private function makeProposal(?string $label, int $projectId): Proposal
     {
-        $proposal = new Proposal();
+        $proposal = new Proposal;
         $proposal->project_id = $projectId;
         $proposal->title = 'Test Project';
         $proposal->description = 'Test project description';

@@ -18,7 +18,7 @@ class InsightsController extends Controller
             ->get(['scraped_at', 'earnings_total', 'earnings_30d', 'bids_remaining', 'unearned_bids', 'overall_ranking'])
             ->reverse()
             ->values()
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
                 'earnings_total' => $s->earnings_total,
                 'earnings_30d' => $s->earnings_30d,
@@ -43,7 +43,7 @@ class InsightsController extends Controller
             ->get(['scraped_at', 'earnings_total', 'bids_remaining'])
             ->reverse()
             ->values()
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
                 'earnings_total' => $s->earnings_total,
                 'bids_remaining' => $s->bids_remaining,
@@ -79,37 +79,44 @@ class InsightsController extends Controller
             $scrapedAt = now();
         }
 
-        $snapshot = InsightSnapshot::updateOrCreate(
-            ['scraped_at' => $scrapedAt],
-            [
-                'earnings_total' => $this->parseMoney($userStats['totalEarnings'][0]['value'] ?? null),
-                'earnings_30d' => $this->parseMoney($userStats['totalEarnings'][1]['value'] ?? null),
-                'bids_remaining' => $this->bidSummaryValue($userStats['bidSummary'] ?? null, 'Bids Remaining'),
-                'unearned_bids' => $this->bidSummaryValue($userStats['bidSummary'] ?? null, 'Unearned Bids'),
-                'overall_ranking' => $this->stringOrNull($marketStats['overallRanking'][0]['value'] ?? null),
-                'job_proficiency' => $this->arrayOrNull($userStats['jobProficiency'] ?? null),
-                'rating_per_skill' => $this->arrayOrNull($userStats['ratingPerSkill'] ?? null),
-                'ranking_per_skill' => $this->arrayOrNull($marketStats['rankingPerSkill'] ?? null),
-                'high_demand_skills' => $this->arrayOrNull($marketStats['highDemandSkills'] ?? null),
-                'trending_skills' => $this->arrayOrNull($marketStats['trendingSkills'] ?? null),
-                'bids_per_milestone' => [
-                    'user' => $userStats['bidsPerMilestone'] ?? null,
-                    'marketplace' => $marketStats['bidsPerMilestoneMarketplace'] ?? null,
-                ],
-                'profile_views_week' => $this->arrayOrNull($marketStats['profileViewCountPastWeek'] ?? null),
-                'profile_views_year' => $this->arrayOrNull($marketStats['profileViewCountPastYear'] ?? null),
-                'earnings_over_time' => $this->arrayOrNull($userStats['earningsOverTime'] ?? null),
-                'bid_conversion' => $this->arrayOrNull($userStats['bidConversion'] ?? null),
-                'raw' => json_encode($payload),
-            ]
-        );
+        $attributes = [
+            'scraped_at' => $scrapedAt,
+            'earnings_total' => $this->parseMoney($userStats['totalEarnings'][0]['value'] ?? null),
+            'earnings_30d' => $this->parseMoney($userStats['totalEarnings'][1]['value'] ?? null),
+            'bids_remaining' => $this->bidSummaryValue($userStats['bidSummary'] ?? null, 'Bids Remaining'),
+            'unearned_bids' => $this->bidSummaryValue($userStats['bidSummary'] ?? null, 'Unearned Bids'),
+            'overall_ranking' => $this->stringOrNull($marketStats['overallRanking'][0]['value'] ?? null),
+            'job_proficiency' => $this->arrayOrNull($userStats['jobProficiency'] ?? null),
+            'rating_per_skill' => $this->arrayOrNull($userStats['ratingPerSkill'] ?? null),
+            'earnings_per_skill' => $this->arrayOrNull($userStats['earningsPerSkill'] ?? null),
+            'ranking_per_skill' => $this->arrayOrNull($marketStats['rankingPerSkill'] ?? null),
+            'high_demand_skills' => $this->arrayOrNull($marketStats['highDemandSkills'] ?? null),
+            'trending_skills' => $this->arrayOrNull($marketStats['trendingSkills'] ?? null),
+            'bids_per_milestone' => [
+                'user' => $userStats['bidsPerMilestone'] ?? null,
+                'marketplace' => $marketStats['bidsPerMilestoneMarketplace'] ?? null,
+            ],
+            'profile_views_week' => $this->arrayOrNull($marketStats['profileViewCountPastWeek'] ?? null),
+            'profile_views_year' => $this->arrayOrNull($marketStats['profileViewCountPastYear'] ?? null),
+            'earnings_over_time' => $this->arrayOrNull($userStats['earningsOverTime'] ?? null),
+            'bid_conversion' => $this->arrayOrNull($userStats['bidConversion'] ?? null),
+            'raw' => json_encode($payload),
+        ];
+
+        // One snapshot per calendar day: a later crawl run overrides the same-day row.
+        $snapshot = InsightSnapshot::whereDate('scraped_at', $scrapedAt->toDateString())->first();
+        if ($snapshot) {
+            $snapshot->fill($attributes)->save();
+        } else {
+            $snapshot = InsightSnapshot::create($attributes);
+        }
 
         return response()->json(['success' => true, 'id' => $snapshot->id]);
     }
 
     private function parseMoney(mixed $value): ?float
     {
-        if (!is_string($value) && !is_numeric($value)) {
+        if (! is_string($value) && ! is_numeric($value)) {
             if ($value !== null) {
                 Log::warning('insights ingest: unparseable money value', ['value' => $value]);
             }
@@ -123,7 +130,7 @@ class InsightsController extends Controller
 
     private function bidSummaryValue(mixed $summary, string $label): ?int
     {
-        if (!is_array($summary)) {
+        if (! is_array($summary)) {
             return null;
         }
         foreach ($summary as $item) {
@@ -137,7 +144,7 @@ class InsightsController extends Controller
 
     private function arrayOrNull(mixed $value): ?array
     {
-        if ($value !== null && !is_array($value)) {
+        if ($value !== null && ! is_array($value)) {
             Log::warning('insights ingest: expected array section', ['value' => $value]);
 
             return null;

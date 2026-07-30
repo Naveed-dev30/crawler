@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Bid;
 use App\Models\Filter;
 use App\Models\Proposal;
+use App\Services\ProposalQualifier;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,19 +26,18 @@ class OpenAIJob implements ShouldQueue
 
     public function handle(): void
     {
-        $bearer = 'Bearer ' . config('variables.openAIKey');
+        $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
-
 
         $filter = Filter::find(1);
 
-        if (!$filter->crawler_on) {
+        if (! $filter->crawler_on) {
             return;
         }
 
         $negative = trim((string) $filter->negative_prompt);
         if ($negative !== '') {
-            $verdict = app(\App\Services\ProposalQualifier::class)->qualify($negative, $this->proposal->description);
+            $verdict = app(ProposalQualifier::class)->qualify($negative, $this->proposal->description);
 
             $this->proposal->qualified = $verdict['qualified'];
             $this->proposal->qualify_reason = $verdict['reason'];
@@ -45,7 +45,7 @@ class OpenAIJob implements ShouldQueue
 
             $summaryPrompt = trim((string) ($filter->summary_prompt ?? ''));
             if ($summaryPrompt !== '' && $verdict['reason'] !== '') {
-                \App\Jobs\SummarizeReasonJob::dispatch($this->proposal);
+                SummarizeReasonJob::dispatch($this->proposal);
             }
 
             if (! $verdict['qualified']) {
@@ -64,7 +64,7 @@ class OpenAIJob implements ShouldQueue
                 ],
                 [
                     'role' => 'user',
-                    'content' => ' Description ' . $this->proposal->description,
+                    'content' => ' Description '.$this->proposal->description,
                 ],
             ],
         ];
@@ -75,7 +75,7 @@ class OpenAIJob implements ShouldQueue
 
         $coverLetter = $response['choices'][0]['message']['content'];
 
-        $bid = new Bid();
+        $bid = new Bid;
         $bid->proposal_id = $this->proposal->id;
         $bid->price = $this->proposal->max_budget * 0.9;
         $bid->cover_letter = $coverLetter;

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\BidInsight;
 use App\Models\BidInsightChange;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,7 +36,7 @@ class BidInsightModelTest extends TestCase
     public function test_project_id_unique(): void
     {
         BidInsight::create(['project_id' => 1, 'last_scraped_at' => now()]);
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         BidInsight::create(['project_id' => 1, 'last_scraped_at' => now()]);
     }
 
