@@ -349,6 +349,36 @@ class InsightsController extends Controller
         return null;
     }
 
+    public function profileViewsWeek(Request $request)
+    {
+        $raw = $request->query('date');
+        $date = null;
+        if (is_string($raw) && $raw !== '') {
+            try {
+                $date = Carbon::parse($raw)->toDateString();
+            } catch (\Throwable $e) {
+                $date = null;
+            }
+        }
+
+        $snap = null;
+        if ($date) {
+            $snap = InsightSnapshot::whereDate('scraped_at', '<=', $date)->orderByDesc('scraped_at')->first()
+                ?? InsightSnapshot::whereDate('scraped_at', '>=', $date)->orderBy('scraped_at')->first();
+        }
+        $snap = $snap ?? InsightSnapshot::orderByDesc('scraped_at')->first();
+
+        $pv = $snap?->profile_views_week ?? [];
+        $labels = $pv['labels'] ?? [];
+        $values = $pv['values'] ?? ($pv['datasets'][0]['data'] ?? []);
+
+        return response()->json([
+            'date' => $snap?->scraped_at?->format('Y-m-d'),
+            'labels' => array_values($labels),
+            'values' => array_values($values),
+        ]);
+    }
+
     private function range(Request $request): array
     {
         $parse = function ($value) {
