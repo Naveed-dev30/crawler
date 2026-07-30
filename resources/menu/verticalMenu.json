@@ -28,7 +28,7 @@
       "url": "/insights/bids",
       "name": "Bid Insights",
       "icon": "menu-icon tf-icons bx bx-target-lock",
-      "slug": "insights-bids"
+      "slug": "insights.bids"
     },
     {
       "url": "/chats",

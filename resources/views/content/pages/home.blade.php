@@ -535,6 +535,11 @@
             // Auto-refresh: skip while typing search or past page 1
             setInterval(() => { if (!searchFocused && currentPage === 1) loadData(); }, 15000);
 
+            // Pre-seed the search box from ?q= so deep-links (e.g. a project from
+            // Bid Insights) land pre-filtered to that project.
+            const urlQ = new URLSearchParams(window.location.search).get('q');
+            if (urlQ) { el('f-search').value = urlQ; }
+
             // Initial load
             loadData();
         })();
