@@ -27,6 +27,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * A mobile-app account — the only role the /v1/mobile API accepts.
+     */
+    public function mobile(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'mobile',
+        ]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

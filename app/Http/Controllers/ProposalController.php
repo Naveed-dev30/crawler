@@ -14,6 +14,7 @@ use App\Models\Proposal;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ProposalController extends Controller
 {

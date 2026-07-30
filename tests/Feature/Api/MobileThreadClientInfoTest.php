@@ -44,12 +44,15 @@ class MobileThreadClientInfoTest extends TestCase
         $this->assertSame('5.00', (string) $res->json('data.client.rating'));
     }
 
-    public function test_client_falls_back_to_static_when_no_insight(): void
+    public function test_client_is_null_when_there_is_no_insight(): void
     {
+        // This used to return a hardcoded client ("Sarah Mitchell", a
+        // pravatar.cc avatar, 4.8 rating, 27 reviews) with nothing marking it
+        // as a placeholder, so the app rendered fabricated data as real. The
+        // API now says it does not know, and the app shows an empty state.
         $thread = Thread::factory()->create(['assigned_user_id' => $this->me->id, 'project_id' => 999]);
         $res = $this->getJson("/api/v1/mobile/threads/{$thread->id}")->assertOk();
 
-        $res->assertJsonPath('data.client.name', 'Sarah Mitchell');
-        $this->assertNotNull($res->json('data.client.avatar'));
+        $this->assertNull($res->json('data.client'));
     }
 }

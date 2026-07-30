@@ -18,12 +18,25 @@ class MessageController extends Controller
     {
         $this->authorizeThread($request, $thread);
 
-        // Opening the conversation counts as reading it on Freelancer.
-        MarkThreadReadJob::dispatch($thread->id);
+        // Opening the conversation counts as reading it on Freelancer. Only on
+        // the first page: paging back through history fired this per page,
+        // hitting the Freelancer API and re-broadcasting each time.
+        if ($request->integer('page', 1) <= 1) {
+            MarkThreadReadJob::dispatch($thread->id);
+        }
 
+        // Newest first, so page 1 is the end of the conversation. Ordering
+        // ascending made page 1 the OLDEST 200 messages, which opened a long
+        // thread at the wrong end — and since the client never paged forward,
+        // its recent messages were unreachable entirely.
+        //
+        // The client reverses each page for display and prepends older pages.
+        // `id` breaks ties: imported messages can share a message_time, and an
+        // unstable sort would duplicate or drop rows across page boundaries.
         $messages = $thread->messages()
             ->with('attachments')
-            ->orderBy('message_time')
+            ->orderByDesc('message_time')
+            ->orderByDesc('id')
             ->paginate(200);
 
         return $this->okPaginated(

@@ -12,6 +12,7 @@ class MobileNotification extends Model
     protected $fillable = [
         'user_id',
         'thread_id',
+        'type',
         'title',
         'body',
         'read_at',
