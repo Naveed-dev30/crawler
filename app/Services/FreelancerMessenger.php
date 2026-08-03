@@ -156,6 +156,31 @@ class FreelancerMessenger
     }
 
     /**
+     * Tell the other members of a thread that we are typing.
+     *
+     * Ephemeral fire-and-forget: the signal has no persistence and no receipt,
+     * so a transient failure is logged and swallowed rather than surfaced.
+     */
+    public function sendTyping(int $flThreadId): bool
+    {
+        try {
+            $response = $this->client()->post($this->base()."/threads/{$flThreadId}/typing/");
+
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger sendTyping: HTTP '.$response->status());
+
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('FreelancerMessenger sendTyping exception: '.$e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
      * URL a received attachment can be fetched from.
      */
     public function attachmentUrl(int $flMessageId, string $filename): string
