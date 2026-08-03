@@ -278,20 +278,16 @@
                     No profiles synced yet. Click <strong>Sync now</strong> to pull them from Freelancer.
                 </div>
             @else
-                <div class="row g-3">
+                <div class="list-group list-group-flush">
                     @foreach ($profiles as $profile)
-                        <div class="col-sm-6 col-lg-4">
-                            <div class="d-flex align-items-center border rounded p-3 h-100">
-                                <div class="avatar avatar-sm me-3 flex-shrink-0">
-                                    <span class="avatar-initial rounded-circle bg-label-primary">
-                                        {{ strtoupper(mb_substr($profile->title ?: '?', 0, 1)) }}
-                                    </span>
-                                </div>
-                                <div class="overflow-hidden">
-                                    <div class="fw-semibold text-truncate">{{ $profile->title ?: 'Untitled' }}</div>
-                                    <small class="text-muted">#{{ $profile->id }}</small>
-                                </div>
+                        <div class="list-group-item d-flex align-items-center px-0 py-2">
+                            <div class="avatar avatar-sm me-3 flex-shrink-0">
+                                <span class="avatar-initial rounded-circle bg-label-primary">
+                                    {{ strtoupper(mb_substr($profile->title ?: '?', 0, 1)) }}
+                                </span>
                             </div>
+                            <div class="fw-semibold text-truncate me-auto">{{ $profile->title ?: 'Untitled' }}</div>
+                            <span class="badge bg-label-secondary rounded-pill flex-shrink-0">#{{ $profile->id }}</span>
                         </div>
                     @endforeach
                 </div>
