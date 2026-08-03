@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ThreadMessageResource;
 use App\Jobs\MarkThreadReadJob;
 use App\Models\Thread;
+use App\Services\FreelancerMessenger;
 use App\Services\SendThreadMessage;
 use Illuminate\Http\Request;
 
@@ -77,6 +78,20 @@ class MessageController extends Controller
             'Message sent successfully.',
             201
         );
+    }
+
+    /**
+     * Relay a typing signal to the client on Freelancer while the mobile user
+     * composes. Fire-and-forget: the response is always 200 so an outbound
+     * hiccup never interrupts the compose UX; failures are logged server-side.
+     */
+    public function typing(Request $request, Thread $thread, FreelancerMessenger $messenger)
+    {
+        $this->authorizeThread($request, $thread);
+
+        $messenger->sendTyping((int) $thread->freelancer_thread_id);
+
+        return $this->ok(null, 'Typing signal sent.');
     }
 
     private function authorizeThread(Request $request, Thread $thread): void
