@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BidInsight;
 use App\Models\BidInsightChange;
+use App\Models\Proposal;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -219,7 +220,22 @@ class BidInsightsController extends Controller
 
     public function page()
     {
-        $bids = BidInsight::orderByDesc('last_scraped_at')->paginate(20);
+        // storeClientInsight() writes a client-only bid_insights row for every
+        // crawled project — including ones later marked Not Qualified (no bid).
+        // Those show up here as rows with all-dash bid columns. Only surface a
+        // row when it carries real bid data, or its project has a qualified
+        // proposal. The row itself is kept (mobile chat may use the client info).
+        $bids = BidInsight::where(function ($q) {
+            $q->whereNotNull('bid_id')
+                ->orWhereNotNull('bid_amount')
+                ->orWhereNotNull('time_submitted')
+                ->orWhereNotNull('time_to_bid_seconds')
+                ->orWhereNotNull('bid_rank')
+                ->orWhereNotNull('winning_bid_amount')
+                ->orWhereIn('project_id', Proposal::where('qualified', true)->select('project_id'));
+        })
+            ->orderByDesc('last_scraped_at')
+            ->paginate(20);
 
         return view('content.pages.insights-bids', ['bids' => $bids]);
     }

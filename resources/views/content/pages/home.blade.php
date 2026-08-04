@@ -201,11 +201,12 @@
     </style>
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            @php $activeTab = $activeTab ?? 'completed'; @endphp
             <ul class="nav nav-tabs card-header-tabs" id="bids-tabs">
-                <li class="nav-item"><button class="nav-link active" data-tab="completed" type="button">Bids Placed</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="failed" type="button">Failed</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
-                <li class="nav-item"><button class="nav-link" data-tab="not-qualified" type="button">Not Qualified</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'completed' ? 'active' : '' }}" data-tab="completed" type="button">Bids Placed</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'failed' ? 'active' : '' }}" data-tab="failed" type="button">Failed</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'skill-not-matched' ? 'active' : '' }}" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'not-qualified' ? 'active' : '' }}" data-tab="not-qualified" type="button">Not Qualified</button></li>
             </ul>
             <span class="badge bg-label-primary d-inline-flex align-items-center text-nowrap d-none"
                   style="font-size: .8rem; padding: .45rem .75rem;" id="bids-last-updated-wrap">
@@ -281,7 +282,7 @@
     <script>
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            let currentTab = 'completed';
+            let currentTab = @json($activeTab ?? 'completed');
             let currentCheck = 'all';
             let currentInterest = 'all';
             let currentPage = 1;

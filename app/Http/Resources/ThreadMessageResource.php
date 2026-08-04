@@ -32,7 +32,13 @@ class ThreadMessageResource extends JsonResource
                 return $this->attachments->map(fn ($a) => [
                     'id' => $a->id,
                     'filename' => $a->filename,
-                    'url' => $a->url,
+                    // Authed (signed) links to our mirrored copy — openable in
+                    // the app without Freelancer's OAuth header. Null until the
+                    // mirror job finishes. `url` kept for backward-compat.
+                    'url' => $a->serve_url,
+                    'view_url' => $a->serve_url,
+                    'download_url' => $a->download_url,
+                    'is_ready' => $a->isStored(),
                     'mime_type' => $a->mime_type,
                     'size' => $a->size,
                 ]);

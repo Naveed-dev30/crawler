@@ -20,6 +20,7 @@ class Thread extends Model
         'blocked',
         'block_reason',
         'last_client_message_at',
+        'last_message_at',
         'last_escalated_at',
         'freelancer_time_updated',
     ];
@@ -27,6 +28,7 @@ class Thread extends Model
     protected $casts = [
         'blocked' => 'boolean',
         'last_client_message_at' => 'datetime',
+        'last_message_at' => 'datetime',
         'last_escalated_at' => 'datetime',
     ];
 

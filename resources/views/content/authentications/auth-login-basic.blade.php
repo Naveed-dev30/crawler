@@ -35,12 +35,12 @@ $customizerHidden = 'customizer-hide';
       <div class="card">
         <div class="card-body">
           <!-- Logo -->
-          <div class="app-brand justify-content-center">
-            <a href="{{url('/')}}" class="app-brand-link gap-2">
-              <span class="app-brand-logo demo">
-                @include('_partials.macros')
+          <div class="app-brand justify-content-center mb-3">
+            <a href="{{url('/')}}" class="app-brand-link flex-column gap-2 text-center">
+              <span class="app-brand-logo">
+                <img src="{{ asset('assets/branding/alladin-app-icon-192.png') }}" alt="{{ config('variables.templateName') }}" height="80" width="80" class="rounded" />
               </span>
-              <span class="app-brand-text demo h3 mb-0 fw-bold">{{config('variables.templateName')}}</span>
+              <span class="app-brand-text demo h2 mb-0 fw-bold">{{config('variables.templateName')}}</span>
             </a>
           </div>
           <!-- /Logo -->
