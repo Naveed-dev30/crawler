@@ -6,11 +6,7 @@
             <h3 class="fw-bold mb-0" data-metric-value="{{ $metric }}">{{ $value }}</h3>
         </div>
         <div class="insight-trend-filter"
-             data-metric="{{ $metric }}" data-type="{{ $chartType }}" data-reversed="{{ $reversed ? '1' : '0' }}">
-            <label class="form-label small text-muted mb-0">Since</label>
-            <input type="date" class="form-control form-control-sm trend-date" style="width:9.5rem"
-                   min="{{ $min }}" max="{{ $max }}">
-        </div>
+             data-metric="{{ $metric }}" data-type="{{ $chartType }}" data-reversed="{{ $reversed ? '1' : '0' }}"></div>
     </div>
     <div data-metric-chart="{{ $metric }}"></div>
 </div></div>

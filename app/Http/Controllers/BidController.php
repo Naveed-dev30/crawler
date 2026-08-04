@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreBidRequest;
 use App\Http\Requests\UpdateBidRequest;
 use App\Models\Bid;
+use App\Models\BidInsight;
 use App\Models\Proposal;
 use Carbon\Carbon;
 use DateTime;
@@ -18,9 +19,43 @@ class BidController extends Controller
      *
      * @return Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('content.pages.home');
+        // Deep-links from Bid Insights pass ?q=<project_id>. Land on the tab that
+        // actually contains that bid (it may be Failed / Skills Not Matched /
+        // Not Qualified), not the default Bids Placed tab.
+        $activeTab = $request->filled('q') ? $this->locateTab($request->query('q')) : 'completed';
+
+        return view('content.pages.home', ['activeTab' => $activeTab]);
+    }
+
+    /**
+     * Given a project_id (from a Bid Insights deep-link), work out which bids
+     * tab it lives in. Falls back to 'completed' when nothing matches.
+     */
+    private function locateTab(string $q): string
+    {
+        $bid = Bid::query()
+            ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
+            ->where('proposals.project_id', $q)
+            ->select('bids.bid_status', 'bids.error_message')
+            ->latest('bids.created_at')
+            ->first();
+
+        if ($bid) {
+            $status = strtolower((string) $bid->bid_status);
+            if (in_array($status, ['failed', 'expired'], true)) {
+                return str_contains(strtolower((string) $bid->error_message), 'skill')
+                    ? 'skill-not-matched'
+                    : 'failed';
+            }
+
+            return 'completed';
+        }
+
+        return Proposal::where('project_id', $q)->where('qualified', false)->exists()
+            ? 'not-qualified'
+            : 'completed';
     }
 
     private function filteredBidQuery(Request $request)
@@ -142,6 +177,12 @@ class BidController extends Controller
             ->paginate(100)
             ->withQueryString();
 
+        // Club the scraped Bid Insights (rank, winning bid, client, time-to-bid)
+        // into each row so this table carries that intel too.
+        $insights = BidInsight::whereIn('project_id', $bids->pluck('proposal.project_id')->filter()->all())
+            ->get()
+            ->keyBy('project_id');
+
         $rowsHtml = '';
         foreach ($bids as $bid) {
             $rowsHtml .= view('_partials.bid-row', [
@@ -150,6 +191,7 @@ class BidController extends Controller
                 'checkTab' => $checkTab,
                 'skillTab' => $isSkillTab,
                 'interestTab' => $interestTab,
+                'insight' => $insights[$bid->proposal->project_id] ?? null,
             ])->render();
         }
         if ($bids->isEmpty()) {
