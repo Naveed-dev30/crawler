@@ -132,13 +132,16 @@
                 </div>
                 <div style="white-space: pre-wrap;">{{ $message->message }}</div>
                 @foreach ($message->attachments as $attachment)
-                    <div class="mt-2">
-                        @if (\Illuminate\Support\Str::startsWith((string) $attachment->url, ['http://', 'https://']))
-                            <a href="{{ $attachment->url }}" target="_blank" rel="noopener noreferrer">
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        @if ($attachment->isStored())
+                            <a href="{{ $attachment->serve_url }}" target="_blank" rel="noopener noreferrer">
                                 <i class="bx bx-paperclip"></i> {{ $attachment->filename }}
                             </a>
+                            <a href="{{ $attachment->download_url }}" class="text-muted" title="Download">
+                                <i class="bx bx-download"></i>
+                            </a>
                         @else
-                            <span class="text-muted"><i class="bx bx-paperclip"></i> {{ $attachment->filename }}</span>
+                            <span class="text-muted"><i class="bx bx-paperclip"></i> {{ $attachment->filename }} <small>(fetching…)</small></span>
                         @endif
                     </div>
                 @endforeach

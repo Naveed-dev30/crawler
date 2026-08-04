@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
@@ -26,6 +27,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('login', function () {
     return view('content.authentications.auth-login-basic');
 })->name('login');
+
+// Serve mirrored chat attachments. No auth guard: reached via a temporary
+// signed URL (admin browser + mobile app both open the same link), so the
+// signature is the authorization.
+Route::get('attachments/{attachment}', [AttachmentController::class, 'show'])
+    ->name('attachments.show')
+    ->middleware('signed');
 
 Route::post('auth', function (Request $request) {
     // return $request;
