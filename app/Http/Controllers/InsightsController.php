@@ -58,6 +58,17 @@ class InsightsController extends Controller
             $prior = InsightSnapshot::whereDate('scraped_at', '<=', $target)
                 ->orderByDesc('scraped_at')
                 ->first();
+
+            // Fewer than 30 days of history means the 30-day lookback finds no
+            // snapshot, so every skill delta falls back to "even" (orange) even
+            // when the value clearly moved. Compare against the oldest snapshot
+            // we do have (still older than latest) so the indicators reflect the
+            // real trend over whatever history exists.
+            if (! $prior) {
+                $prior = InsightSnapshot::whereDate('scraped_at', '<', $latest->scraped_at->toDateString())
+                    ->orderBy('scraped_at')
+                    ->first();
+            }
         }
 
         $deltas = $this->buildDeltas($latest, $prior);
