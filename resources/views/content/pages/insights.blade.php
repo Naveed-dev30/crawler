@@ -48,14 +48,14 @@
         <form method="GET" action="{{ route('insights') }}" class="row g-2 align-items-end">
             <div class="col-auto">
                 <label class="form-label small mb-1">From</label>
-                <input type="date" name="from" class="form-control form-control-sm"
+                <input type="date" name="from" id="insightFrom" class="form-control form-control-sm"
                        value="{{ $from }}"
                        min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
                        max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-1">To</label>
-                <input type="date" name="to" class="form-control form-control-sm"
+                <input type="date" name="to" id="insightTo" class="form-control form-control-sm"
                        value="{{ $to }}"
                        min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
                        max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
@@ -493,10 +493,13 @@
             function loadTrend(box) {
                 const metric = box.getAttribute('data-metric');
                 const reversed = box.getAttribute('data-reversed') === '1';
-                const since = box.querySelector('.trend-date').value;
+                // Drive every trend chart from the single top FROM/TO filter.
+                const from = (document.getElementById('insightFrom')?.value) || '';
+                const to = (document.getElementById('insightTo')?.value) || '';
                 const wide = metric === 'earnings_total';
                 const params = new URLSearchParams({ metric: metric });
-                if (since) { params.set('from', since); }
+                if (from) { params.set('from', from); }
+                if (to) { params.set('to', to); }
 
                 fetch(metricRoute + '?' + params.toString(), { headers: { Accept: 'application/json' } })
                     .then(r => r.ok ? r.json() : null)
@@ -538,7 +541,6 @@
             }
 
             document.querySelectorAll('.insight-trend-filter').forEach(box => {
-                box.querySelector('.trend-date').addEventListener('change', () => loadTrend(box));
                 loadTrend(box);
             });
         })();
