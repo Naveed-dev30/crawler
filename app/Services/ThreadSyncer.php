@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\ThreadMessageCreated;
 use App\Jobs\AssignThreadJob;
+use App\Jobs\DownloadThreadAttachment;
 use App\Jobs\GenerateAiReplyJob;
 use App\Models\Proposal;
 use App\Models\Thread;
@@ -133,6 +134,7 @@ class ThreadSyncer
         }
 
         $lastClientMessageAt = $thread->last_client_message_at;
+        $lastMessageAt = $thread->last_message_at;
 
         // One lookup for the whole batch instead of a SELECT per message.
         $flMessageIds = array_values(array_filter(array_map(
@@ -158,6 +160,11 @@ class ThreadSyncer
             $isRead = array_key_exists('is_read', $flMessage) ? (bool) $flMessage['is_read'] : null;
             $isOurs = $fromUser === $ourFlUserId;
             $messageTime = Carbon::createFromTimestamp((int) ($flMessage['time_created'] ?? now()->timestamp));
+
+            // Newest activity in EITHER direction bubbles the thread up the list.
+            if (! $lastMessageAt || $messageTime->gt($lastMessageAt)) {
+                $lastMessageAt = $messageTime;
+            }
 
             $existing = $existingMessages->get($flMessageId);
             if ($existing) {
@@ -185,7 +192,7 @@ class ThreadSyncer
 
             foreach ($flMessage['attachments'] ?? [] as $flAttachment) {
                 $filename = $flAttachment['filename'] ?? 'attachment';
-                $stored->attachments()->create([
+                $attachment = $stored->attachments()->create([
                     'freelancer_attachment_id' => $flAttachment['id'] ?? null,
                     'filename' => $filename,
                     'url' => $flAttachment['url']
@@ -193,6 +200,10 @@ class ThreadSyncer
                     'mime_type' => $flAttachment['mime_type'] ?? null,
                     'size' => $flAttachment['size'] ?? null,
                 ]);
+
+                // Mirror the bytes onto our disk so browser/mobile can open it
+                // without Freelancer's OAuth header.
+                DownloadThreadAttachment::dispatch($attachment->id);
             }
 
             SafeBroadcast::event(new ThreadMessageCreated($stored));
@@ -215,6 +226,11 @@ class ThreadSyncer
 
         if ($lastClientMessageAt && ! $lastClientMessageAt->equalTo($thread->last_client_message_at ?? Carbon::createFromTimestamp(0))) {
             $thread->last_client_message_at = $lastClientMessageAt;
+            $dirty = true;
+        }
+
+        if ($lastMessageAt && ! $lastMessageAt->equalTo($thread->last_message_at ?? Carbon::createFromTimestamp(0))) {
+            $thread->last_message_at = $lastMessageAt;
             $dirty = true;
         }
 

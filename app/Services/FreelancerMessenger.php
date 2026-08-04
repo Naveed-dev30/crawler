@@ -187,4 +187,32 @@ class FreelancerMessenger
     {
         return $this->base()."/messages/{$flMessageId}/attachments/".rawurlencode($filename);
     }
+
+    /**
+     * Download an attachment's bytes using our OAuth header (the file lives
+     * behind Freelancer auth, so a browser/mobile can't fetch it directly).
+     *
+     * @return array{body: string, mime: ?string}|null null on failure
+     */
+    public function downloadAttachment(string $url): ?array
+    {
+        try {
+            $response = $this->client()->get($url);
+
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger attachment download: HTTP '.$response->status());
+
+                return null;
+            }
+
+            return [
+                'body' => $response->body(),
+                'mime' => $response->header('Content-Type') ?: null,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('FreelancerMessenger attachment download exception: '.$e->getMessage());
+
+            return null;
+        }
+    }
 }

@@ -30,8 +30,9 @@ class ChatController extends Controller
             })
             ->when(in_array($status, ['fresh', 'answered'], true), fn ($q) => $q->where('status', $status))
             ->when($status === 'blocked', fn ($q) => $q->where('blocked', true))
-            ->orderByRaw('last_client_message_at IS NULL')
-            ->orderByDesc('last_client_message_at')
+            // Newest activity in either direction (our replies included) floats
+            // the thread to the top; fall back to inbound, then creation time.
+            ->orderByRaw('COALESCE(last_message_at, last_client_message_at, created_at) DESC')
             ->paginate(20)
             ->withQueryString();
 
