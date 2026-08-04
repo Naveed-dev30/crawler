@@ -239,7 +239,7 @@
                                                     <small class="text-muted">{{ $d['number'] ?? '—' }}</small>
                                                 </span>
                                                 {{ $table['value']($row) }}
-                                                <button type="button" class="skill-graph-btn" data-section="{{ $table['section'] }}" data-label="{{ $lbl }}" title="Show history">
+                                                <button type="button" class="skill-graph-btn" data-section="{{ $table['section'] }}" data-section-title="{{ $table['title'] }}" data-label="{{ $lbl }}" title="Show history">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
                                                 </button>
                                             </td>
@@ -281,7 +281,7 @@
                                         @endif
                                         <small class="text-muted">{{ $d['number'] ?? '—' }}</small>
                                     </span>
-                                    <button type="button" class="skill-graph-btn" data-section="trending_skills" data-label="{{ $lbl }}" title="Show history">
+                                    <button type="button" class="skill-graph-btn" data-section="trending_skills" data-section-title="Trending Skills" data-label="{{ $lbl }}" title="Show history">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
                                     </button>
                                 </li>
@@ -414,7 +414,8 @@
                 btn.addEventListener('click', function () {
                     const section = btn.getAttribute('data-section');
                     const label = btn.getAttribute('data-label');
-                    document.querySelector('#skillGraphTitle').textContent = label + ' — history';
+                    const sectionTitle = btn.getAttribute('data-section-title') || 'History';
+                    document.querySelector('#skillGraphTitle').textContent = sectionTitle + ' — ' + label;
 
                     const params = new URLSearchParams({ section: section, label: label });
                     if (rangeFrom) { params.set('from', rangeFrom); }
@@ -462,7 +463,10 @@
                                 dataLabels: { enabled: false },
                                 series: [{ name: label, data: data.values.map(function (v) { return v === null ? null : Number(v); }) }],
                                 xaxis: { categories: data.labels },
-                                yaxis: { reversed: data.higherIsBetter === false },
+                                // Plot raw values with standard orientation (larger number higher).
+                                // For ranking, direction/quality is shown by the row trend indicator,
+                                // not by flipping the axis — a reversed axis reads as backwards here.
+                                yaxis: { reversed: false },
                             });
                             skillChart.render();
                         });
