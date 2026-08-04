@@ -12,10 +12,28 @@ class ChatController extends Controller
 {
     public function index(Request $request)
     {
+        return view('content.pages.chats', ['threads' => $this->threadsQuery($request)]);
+    }
+
+    /**
+     * Rows-only endpoint the Chats page polls so the list re-sorts live (newest
+     * activity floats up) without a full page refresh.
+     */
+    public function rows(Request $request)
+    {
+        $threads = $this->threadsQuery($request);
+
+        return response()->json([
+            'rowsHtml' => view('_partials.chat-rows', ['threads' => $threads])->render(),
+        ]);
+    }
+
+    private function threadsQuery(Request $request)
+    {
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status', '');
 
-        $threads = Thread::query()
+        return Thread::query()
             ->with(['assignedUser', 'proposal'])
             ->withCount([
                 'messages',
@@ -35,8 +53,6 @@ class ChatController extends Controller
             ->orderByRaw('COALESCE(last_message_at, last_client_message_at, created_at) DESC')
             ->paginate(20)
             ->withQueryString();
-
-        return view('content.pages.chats', ['threads' => $threads]);
     }
 
     public function detail(Thread $thread)

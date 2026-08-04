@@ -17,7 +17,11 @@ class ThreadMessageCreated implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('thread.'.$this->message->thread_id)];
+        $channels = [
+            new PrivateChannel('thread.'.$this->message->thread_id),
+            // Shared signal so the admin Chats list can re-sort live.
+            new PrivateChannel('threads'),
+        ];
 
         $assignedUserId = $this->message->thread?->assigned_user_id;
         if ($assignedUserId) {
