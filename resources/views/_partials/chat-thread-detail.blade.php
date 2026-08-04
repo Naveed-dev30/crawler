@@ -30,7 +30,7 @@
         </div>
     @endif
     <p class="text-dark small mb-3">
-        <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->format('M j, Y H:i') }}
+        <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->timezone('Asia/Karachi')->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)
             <span class="mx-1">·</span><i class="bx bx-message-dots me-1"></i>Last client message {{ $thread->last_client_message_at->diffForHumans() }}
         @endif
@@ -122,7 +122,7 @@
             <div class="rounded p-3 {{ $message->direction === 'sent' ? 'bg-label-primary' : 'bg-lighter' }}" style="max-width: 85%;">
                 <div class="small text-muted mb-1">
                     {{ $message->direction === 'sent' ? ($message->sent_by_ai ? 'AI Assistant' : ($message->sender?->name ?? 'Owner')) : 'Client' }}
-                    · {{ $message->message_time?->format('M j, H:i') }}
+                    · {{ $message->message_time?->timezone('Asia/Karachi')->format('M j, H:i') }}
                     @if ($message->sent_by_ai)
                         <span class="badge bg-label-info ms-1">AI</span>
                     @endif

@@ -72,6 +72,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
+        Route::get('/chats/rows', [\App\Http\Controllers\ChatController::class, 'rows'])->name('chats.rows');
         Route::get('/chats/{thread}/detail', [\App\Http\Controllers\ChatController::class, 'detail'])->name('chats.detail');
         Route::post('/chats/{thread}/assign', [\App\Http\Controllers\ChatController::class, 'assign'])->name('chats.assign');
         Route::post('/chats/{thread}/unblock', [\App\Http\Controllers\ChatController::class, 'unblock'])->name('chats.unblock');

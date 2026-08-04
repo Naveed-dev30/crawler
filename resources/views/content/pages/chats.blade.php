@@ -42,46 +42,12 @@
                     <th>Status</th>
                     <th>Messages</th>
                     <th>Escalations</th>
-                    <th>Last Client Message</th>
+                    <th>Last Message</th>
                     <th></th>
                 </tr>
                 </thead>
-                <tbody class="table-border-bottom-0">
-                @forelse ($threads as $thread)
-                    <tr>
-                        <td>
-                            <span class="fw-semibold">{{ $thread->project_id }}</span>
-                            @if ($thread->proposal?->title)
-                                <br><small class="text-muted">{{ \Illuminate\Support\Str::limit($thread->proposal->title, 45) }}</small>
-                            @endif
-                        </td>
-                        <td>
-                            @if ($thread->assignedUser)
-                                {{ $thread->assignedUser->name }}
-                            @else
-                                <span class="text-muted">Unassigned</span>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="badge {{ $thread->status === 'fresh' ? 'bg-label-warning' : 'bg-label-success' }}">{{ ucfirst($thread->status) }}</span>
-                            @if ($thread->blocked)
-                                <span class="badge bg-label-danger">Blocked</span>
-                            @endif
-                        </td>
-                        <td>{{ $thread->messages_count }}</td>
-                        <td>{{ $thread->escalations_count }}</td>
-                        <td>{{ $thread->last_client_message_at?->diffForHumans() ?? '—' }}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-label-primary js-chat-view" data-thread-id="{{ $thread->id }}">
-                                <i class="bx bx-show me-1"></i>View
-                            </button>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No chat threads yet</td>
-                    </tr>
-                @endforelse
+                <tbody class="table-border-bottom-0" id="chats-tbody">
+                @include('_partials.chat-rows', ['threads' => $threads])
                 </tbody>
             </table>
         </div>
@@ -192,13 +158,55 @@
                 if (liveChannelName) { pusher.unsubscribe(liveChannelName); liveChannelName = null; }
             });
 
-            document.querySelectorAll('.js-chat-view').forEach(btn => btn.addEventListener('click', async () => {
+            // Delegated so it keeps working after the live poll replaces the rows.
+            document.getElementById('chats-tbody').addEventListener('click', async (e) => {
+                const btn = e.target.closest('.js-chat-view');
+                if (!btn) return;
                 ocBody.innerHTML = '<p class="text-muted">Loading…</p>';
                 bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('chatOffcanvas')).show();
                 await loadDetail(btn.dataset.threadId);
                 ocBody.scrollTop = 0;
                 watchThread(btn.dataset.threadId);
-            }));
+            });
+
+            // Live thread sorting: re-fetch and re-render the table body on an
+            // interval so newest-activity threads float up without a page
+            // refresh. Skipped while searching, while the detail panel is open
+            // (avoids yanking the row you're viewing), or past page 1.
+            const tbody = document.getElementById('chats-tbody');
+            const onFirstPage = !new URLSearchParams(window.location.search).get('page');
+            const rowsUrl = () => {
+                const p = new URLSearchParams();
+                const s = document.getElementById('chats-search').value.trim();
+                if (s) p.set('search', s);
+                const st = document.querySelector('[name="status"]')?.value;
+                if (st) p.set('status', st);
+                return '{{ route('chats.rows') }}?' + p.toString();
+            };
+            let searchFocused = false;
+            document.getElementById('chats-search').addEventListener('focus', () => { searchFocused = true; });
+            document.getElementById('chats-search').addEventListener('blur', () => { searchFocused = false; });
+            async function refreshRows() {
+                if (!onFirstPage || searchFocused) return;
+                try {
+                    const res = await fetch(rowsUrl(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    tbody.innerHTML = data.rowsHtml;
+                } catch (e) { /* keep last render, retry next tick */ }
+            }
+            // Poll as a fallback; the websocket below is the fast path.
+            setInterval(refreshRows, 15000);
+
+            // Live re-sort over soketi: any new message on any thread pings the
+            // shared 'threads' channel. Debounced so a burst coalesces into one
+            // refresh.
+            let rowsDebounce = null;
+            const scheduleRefresh = () => {
+                clearTimeout(rowsDebounce);
+                rowsDebounce = setTimeout(refreshRows, 500);
+            };
+            pusher.subscribe('private-threads').bind('message.created', scheduleRefresh);
 
             // Manual assign: delegated — the control lives inside the fetched partial.
             ocBody.addEventListener('click', async (e) => {
