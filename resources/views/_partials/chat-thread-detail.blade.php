@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
         <div>
             <h5 class="mb-1">{{ $title }}</h5>
-            <div class="text-muted small">
+            <div class="text-dark small">
                 <i class="bx bx-briefcase-alt me-1"></i>Project {{ $thread->project_id }}
             </div>
         </div>
@@ -29,7 +29,7 @@
             </button>
         </div>
     @endif
-    <p class="text-muted small mb-3">
+    <p class="text-dark small mb-3">
         <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)
             <span class="mx-1">·</span><i class="bx bx-message-dots me-1"></i>Last client message {{ $thread->last_client_message_at->diffForHumans() }}
