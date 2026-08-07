@@ -339,7 +339,22 @@
                 return p;
             }
 
+            // Reflect the current tab + sub-tab in the URL so a refresh lands on
+            // the exact same view. Filters aren't persisted here (only ?q via the
+            // search box), just the tab state.
+            function syncUrl() {
+                const p = new URLSearchParams(window.location.search);
+                p.set('tab', currentTab);
+                p.delete('check'); p.delete('interest'); p.delete('failsub'); p.delete('nqcheck');
+                if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
+                if (currentTab === 'skill-not-matched' && currentInterest !== 'remaining') p.set('interest', currentInterest);
+                if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
+                if (currentTab === 'not-qualified' && currentNqCheck !== 'remaining') p.set('nqcheck', currentNqCheck);
+                history.replaceState(null, '', window.location.pathname + '?' + p.toString());
+            }
+
             async function loadData() {
+                syncUrl();
                 let data;
                 try {
                     const res = await fetch('/bids/data?' + buildParams().toString(), {
@@ -647,6 +662,30 @@
             // Bid Insights) land pre-filtered to that project.
             const urlQ = new URLSearchParams(window.location.search).get('q');
             if (urlQ) { el('f-search').value = urlQ; }
+
+            // Restore tab + sub-tab from the URL so a refresh keeps the exact view.
+            (function initFromUrl() {
+                const sp = new URLSearchParams(window.location.search);
+                const tab = sp.get('tab');
+                if (['completed', 'failed', 'skill-not-matched', 'not-qualified', 'out-of-bid'].includes(tab)) {
+                    currentTab = tab;
+                }
+                currentCheck = sp.get('check') || 'remaining';
+                currentInterest = sp.get('interest') || 'remaining';
+                currentFailSub = sp.get('failsub') || 'other';
+                currentNqCheck = sp.get('nqcheck') || 'remaining';
+
+                document.querySelectorAll('#bids-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.tab === currentTab));
+                document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.checkTab === currentCheck));
+                document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.interestTab === currentInterest));
+                document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.failTab === currentFailSub));
+                document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.nqTab === currentNqCheck));
+            })();
 
             // Initial load
             loadData();
