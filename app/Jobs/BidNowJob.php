@@ -62,6 +62,7 @@ class BidNowJob implements ShouldQueue
             // Check the response status
             if ($response->status() == 200) {
                 $this->bid->bid_status = 'completed';
+                $this->bid->posted_at ??= now(); // first successful post
             } else {
                 $body = json_decode($response->body());
                 $message = $body->message ?? '';
@@ -79,6 +80,7 @@ class BidNowJob implements ShouldQueue
                     if ($response->status() == 200) {
                         $this->bid->price = $min;
                         $this->bid->bid_status = 'completed';
+                        $this->bid->posted_at ??= now();
                     } else {
                         $retryBody = json_decode($response->body());
                         $this->bid->bid_status = 'Failed';
@@ -89,11 +91,14 @@ class BidNowJob implements ShouldQueue
                     $this->bid->error_message = $message;
                 }
             }
+            // Every attempt (success or fail) stamps the last action time.
+            $this->bid->last_action_at = now();
             $this->bid->save();
         } catch (\Exception $e) {
             // Handle any exceptions and mark the bid as failed
             $this->bid->bid_status = 'Failed';
             $this->bid->error_message = 'Something went wrong';
+            $this->bid->last_action_at = now();
             $this->bid->save();
         }
     }
