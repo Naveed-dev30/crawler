@@ -5,11 +5,11 @@ namespace App\Events;
 use App\Models\ThreadMessage;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ThreadMessageCreated implements ShouldBroadcast
+class ThreadMessageCreated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -17,7 +17,11 @@ class ThreadMessageCreated implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('thread.'.$this->message->thread_id)];
+        $channels = [
+            new PrivateChannel('thread.'.$this->message->thread_id),
+            // Shared signal so the admin Chats list can re-sort live.
+            new PrivateChannel('threads'),
+        ];
 
         $assignedUserId = $this->message->thread?->assigned_user_id;
         if ($assignedUserId) {

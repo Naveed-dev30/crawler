@@ -29,9 +29,7 @@ class ThreadResource extends JsonResource
                     'max_budget' => $this->proposal->max_budget,
                     'currency_symbol' => $this->proposal->currency_symbol,
                     'country' => $this->proposal->country,
-                    'skills' => ! empty($this->proposal->skills)
-                        ? $this->proposal->skills
-                        : self::staticSkills(),
+                    'skills' => $this->proposal->skills ?: [],
                     'bid' => $this->proposal->relationLoaded('bid') && $this->proposal->bid ? [
                         'id' => $this->proposal->bid->id,
                         'price' => $this->proposal->bid->price,
@@ -50,42 +48,7 @@ class ThreadResource extends JsonResource
                 'member_since' => $this->resource->client_insight->client_member_since?->toIso8601String(),
                 'verification' => $this->resource->client_insight->client_verification,
                 'engagement' => $this->resource->client_insight->client_engagement,
-            ] : self::staticClient($this->project_id),
-        ];
-    }
-
-    /**
-     * Static placeholder client shown while real client insights are unavailable.
-     */
-    private static function staticClient($seed): array
-    {
-        return [
-            'name' => 'Sarah Mitchell',
-            'avatar' => 'https://i.pravatar.cc/150?u=client'.$seed,
-            'country' => 'United States',
-            'country_flag' => 'https://flagcdn.com/w80/us.png',
-            'rating' => 4.8,
-            'reviews' => 27,
-            'member_since' => '2019-03-14T00:00:00+00:00',
-            'verification' => [
-                'email' => true,
-                'payment' => true,
-                'phone' => true,
-                'identity' => true,
-            ],
-            'engagement' => 'Frequently hires',
-        ];
-    }
-
-    /**
-     * Static placeholder skills shown while real proposal skills are unavailable.
-     */
-    private static function staticSkills(): array
-    {
-        return [
-            ['id' => 32, 'name' => 'Video Editing'],
-            ['id' => 30, 'name' => 'After Effects'],
-            ['id' => 45, 'name' => 'Adobe Premiere Pro'],
+            ] : null,
         ];
     }
 }

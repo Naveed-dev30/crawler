@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Events\ThreadReadStateChanged;
+use App\Support\SafeBroadcast;
 use App\Models\Thread;
 use App\Services\FreelancerMessenger;
 use Illuminate\Bus\Queueable;
@@ -34,7 +35,7 @@ class MarkThreadReadJob implements ShouldQueue
                 ->where(fn ($q) => $q->where('is_read', false)->orWhereNull('is_read'))
                 ->update(['is_read' => true]);
 
-            event(new ThreadReadStateChanged($thread->id));
+            SafeBroadcast::event(new ThreadReadStateChanged($thread->id));
         }
     }
 }

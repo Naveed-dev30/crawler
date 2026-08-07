@@ -18,7 +18,15 @@ class SyncThreads extends Command
             $started = microtime(true);
 
             // Lock guards against two sync containers racing a pass.
-            $lock = Cache::lock('threads:sync', 15);
+            //
+            // The TTL must outlive a worst-case pass, or the lock expires
+            // mid-flight and the next iteration starts a second one: both then
+            // reach ThreadMessage::create() for the same message, the unique
+            // index on freelancer_message_id rejects the loser, and the outer
+            // catch swallows it — killing the rest of that pass. A pass can
+            // legitimately run long, since the Freelancer client allows 60s per
+            // call and a thread can import 200 messages.
+            $lock = Cache::lock('threads:sync', 180);
             if ($lock->get()) {
                 try {
                     app(ThreadSyncer::class)->run();

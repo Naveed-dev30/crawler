@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\FilterController;
 use App\Http\Controllers\GamificationController;
@@ -27,6 +28,13 @@ Route::get('login', function () {
     return view('content.authentications.auth-login-basic');
 })->name('login');
 
+// Serve mirrored chat attachments. No auth guard: reached via a temporary
+// signed URL (admin browser + mobile app both open the same link), so the
+// signature is the authorization.
+Route::get('attachments/{attachment}', [AttachmentController::class, 'show'])
+    ->name('attachments.show')
+    ->middleware('signed');
+
 Route::post('auth', function (Request $request) {
     // return $request;
     if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
@@ -53,14 +61,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');
     Route::get('/stats/overview', [StatisticsController::class, 'overview'])->name('stats.overview');
+    Route::get('/stats/mobile-agents', [StatisticsController::class, 'mobileAgents'])->name('stats.mobile-agents');
+    Route::get('/stats/mobile-agents/{user}/activity', [StatisticsController::class, 'mobileAgentActivity'])->name('stats.mobile-agents.activity');
     // Settings area — admin only
     Route::middleware('admin')->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
         Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
+        Route::post('/profiles/sync', [FilterController::class, 'syncProfiles'])->name('profiles.sync');
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
+        Route::get('/chats/rows', [\App\Http\Controllers\ChatController::class, 'rows'])->name('chats.rows');
         Route::get('/chats/{thread}/detail', [\App\Http\Controllers\ChatController::class, 'detail'])->name('chats.detail');
         Route::post('/chats/{thread}/assign', [\App\Http\Controllers\ChatController::class, 'assign'])->name('chats.assign');
         Route::post('/chats/{thread}/unblock', [\App\Http\Controllers\ChatController::class, 'unblock'])->name('chats.unblock');
@@ -78,6 +90,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/review/load', [ReviewController::class, 'load'])->name('review.load');
     Route::get('/leaderboard', [GamificationController::class, 'index'])->name('leaderboard');
     Route::get('/insights', [\App\Http\Controllers\InsightsController::class, 'page'])->name('insights');
+    Route::get('/insights/skill-history', [\App\Http\Controllers\InsightsController::class, 'skillHistory'])->name('insights.skill-history');
+    Route::get('/insights/metric-history', [\App\Http\Controllers\InsightsController::class, 'metricHistory'])->name('insights.metric-history');
+    Route::get('/insights/profile-views-week', [\App\Http\Controllers\InsightsController::class, 'profileViewsWeek'])->name('insights.profile-views-week');
     Route::get('/insights/bids', [\App\Http\Controllers\BidInsightsController::class, 'page'])->name('insights.bids');
 });
 

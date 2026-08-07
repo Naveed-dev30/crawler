@@ -249,8 +249,12 @@
                             @endif
                         </td>
                         <td>
-                            @if ($user->fcm_token)
-                                <span class="badge bg-label-success">Registered</span>
+                            @if ($user->device_tokens_count)
+                                <span class="badge bg-label-success">
+                                    {{ $user->device_tokens_count > 1
+                                        ? $user->device_tokens_count . ' devices'
+                                        : 'Registered' }}
+                                </span>
                             @else
                                 <span class="badge bg-label-secondary">—</span>
                             @endif
@@ -261,7 +265,7 @@
                                     title="View user"
                                     data-name="{{ $user->name }}" data-email="{{ $user->email }}"
                                     data-role="{{ $user->role }}"
-                                    data-fcm="{{ $user->fcm_token ? '1' : '' }}"
+                                    data-fcm="{{ $user->device_tokens_count ? '1' : '' }}"
                                     data-created="{{ $user->created_at?->format('M j, Y') }}">
                                 <i class="bx bx-show"></i>
                             </button>

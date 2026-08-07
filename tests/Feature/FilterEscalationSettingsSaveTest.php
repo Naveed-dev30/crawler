@@ -38,8 +38,10 @@ class FilterEscalationSettingsSaveTest extends TestCase
         $this->assertSame(480, (int) $filter->fresh()->escalation_minutes);
     }
 
-    public function test_invalid_escalation_minutes_falls_back_to_30(): void
+    public function test_escalation_minutes_accepts_any_positive_value(): void
     {
+        // The fixed dropdown became a free numeric input, so large windows are
+        // legitimate. Only values below 1 fall back.
         $filter = Filter::factory()->create(['escalation_minutes' => 120]);
 
         $this->actingAs($this->admin())->post('/updateFilters', $this->basePayload($filter) + [

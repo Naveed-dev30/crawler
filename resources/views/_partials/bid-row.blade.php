@@ -62,6 +62,28 @@
     </td>
     <td>
         {{ \Illuminate\Support\Str::limit($bid->proposal->title, 30) }}
+        @php $insight = $insight ?? null; @endphp
+        @if ($insight)
+            <div class="d-flex flex-wrap gap-2 mt-1 small text-muted">
+                @if ($insight->bid_rank !== null)
+                    <span title="Our bid rank on the project"><i class="bx bx-medal me-1"></i>Rank #{{ $insight->bid_rank }}</span>
+                @endif
+                @if ($insight->winning_bid_sealed)
+                    <span title="Winning bid"><i class="bx bx-trophy me-1"></i>Sealed</span>
+                @elseif ($insight->winning_bid_amount !== null)
+                    <span title="Winning bid"><i class="bx bx-trophy me-1"></i>{{ number_format($insight->winning_bid_amount, 0) }}{{ $insight->bid_currency ? ' '.$insight->bid_currency : '$' }}</span>
+                @endif
+                @if ($insight->time_to_bid_seconds !== null)
+                    <span title="Time to bid"><i class="bx bx-time-five me-1"></i>{{ $insight->time_to_bid_seconds < 60 ? $insight->time_to_bid_seconds.'s' : intdiv($insight->time_to_bid_seconds, 60).'m' }}</span>
+                @endif
+                @if ($insight->client_rating !== null)
+                    <span title="Client rating"><i class="bx bxs-star me-1"></i>{{ number_format($insight->client_rating, 1) }}@if ($insight->client_reviews !== null) ({{ $insight->client_reviews }})@endif</span>
+                @endif
+                @if ($insight->client_country)
+                    <span title="Client country"><i class="bx bx-map me-1"></i>{{ $insight->client_country }}</span>
+                @endif
+            </div>
+        @endif
         @if ($skillTab && is_array($bid->proposal->skills) && count($bid->proposal->skills))
             <div class="d-flex flex-wrap gap-1 mt-2" style="max-width: 320px;">
                 @foreach ($bid->proposal->skills as $skill)

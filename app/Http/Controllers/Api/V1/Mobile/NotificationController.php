@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Mobile;
 
 use App\Http\Controllers\Api\V1\Mobile\Concerns\RespondsMobile;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MobileNotificationResource;
 use App\Models\MobileNotification;
 use Illuminate\Http\Request;
 
@@ -13,11 +14,24 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
-        $notifications = MobileNotification::where('user_id', $request->user()->id)
+        $userId = $request->user()->id;
+
+        $notifications = MobileNotification::where('user_id', $userId)
             ->orderByDesc('created_at')
             ->paginate(50);
 
-        return $this->okPaginated($notifications, $notifications->items(), 'Notifications fetched successfully.');
+        // The client counted unread over the loaded page only, so the tab and
+        // app-icon badges were wrong as soon as there were more than 50 alerts.
+        $unreadCount = MobileNotification::where('user_id', $userId)
+            ->whereNull('read_at')
+            ->count();
+
+        return $this->okPaginated(
+            $notifications,
+            MobileNotificationResource::collection($notifications->items()),
+            'Notifications fetched successfully.',
+            ['unread_count' => $unreadCount],
+        );
     }
 
     public function markRead(Request $request, MobileNotification $notification)

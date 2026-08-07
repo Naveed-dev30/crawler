@@ -27,35 +27,46 @@ class ThreadEscalator
     private function escalate(): void
     {
         $windowMinutes = (int) (Filter::find(1)?->escalation_minutes ?? 30);
+        $cutoff = now()->subMinutes($windowMinutes);
 
-        $threads = Thread::where('status', 'fresh')
+        $assigner = app(ThreadAssigner::class);
+
+        Thread::where('status', 'fresh')
             ->where('blocked', false)
             ->whereNotNull('assigned_user_id')
             ->whereNotNull('transition_id')
-            ->get();
+            ->with(['assignedUser', 'proposal'])
+            ->chunkById(200, function ($threads) use ($cutoff, $assigner) {
+                foreach ($threads as $thread) {
+                    // Waiting time counts from the newest of: last escalation, last
+                    // client message. created_at is only a fallback for threads that
+                    // somehow have neither.
+                    $reference = collect([
+                        $thread->last_escalated_at,
+                        $thread->last_client_message_at,
+                    ])->filter()->max() ?? $thread->created_at;
 
-        foreach ($threads as $thread) {
-            $reference = collect([
-                $thread->last_escalated_at,
-                $thread->last_client_message_at,
-            ])->filter()->max() ?? $thread->created_at;
+                    // Explicit comparison rather than diffInMinutes(), which is
+                    // ABSOLUTE in Carbon 2 — a future-dated client message
+                    // (Freelancer clock skew) read as long overdue and escalated
+                    // immediately.
+                    if (! $reference || Carbon::parse($reference)->gt($cutoff)) {
+                        continue;
+                    }
 
-            if (! $reference || Carbon::parse($reference)->diffInMinutes(now()) < $windowMinutes) {
-                continue;
-            }
+                    $next = TransitionUser::with('user')
+                        ->where('transition_id', $thread->transition_id)
+                        ->where('position', (int) $thread->transition_position + 1)
+                        ->first();
 
-            $next = TransitionUser::with('user')
-                ->where('transition_id', $thread->transition_id)
-                ->where('position', (int) $thread->transition_position + 1)
-                ->first();
+                    if (! $next || ! $next->user) {
+                        continue; // end of lane — stay put
+                    }
 
-            if (! $next || ! $next->user) {
-                continue; // end of lane — stay put
-            }
-
-            $current = $thread->assignedUser;
-            app(ThreadAssigner::class)->assign($thread, $next->user, ThreadAssigner::TYPE_ESCALATION, $current);
-            $thread->forceFill(['transition_position' => $next->position])->save();
-        }
+                    $current = $thread->assignedUser;
+                    $assigner->assign($thread, $next->user, ThreadAssigner::TYPE_ESCALATION, $current);
+                    $thread->forceFill(['transition_position' => $next->position])->save();
+                }
+            });
     }
 }

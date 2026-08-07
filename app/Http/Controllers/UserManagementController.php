@@ -15,6 +15,9 @@ class UserManagementController extends Controller
         $role = $request->query('role', '');
 
         $users = User::query()
+            // Drives the "Registered" push badge; replaces the old
+            // users.fcm_token column, which no longer holds device state.
+            ->withCount('deviceTokens')
             ->when($search !== '', function ($q) use ($search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")

@@ -33,3 +33,9 @@ Broadcast::channel('thread.{threadId}', function ($user, $threadId) {
         ->where('assigned_user_id', $user->id)
         ->exists();
 }, ['guards' => ['web', 'sanctum']]);
+
+// Shared signal for the admin Chats list: any new message pings this so the
+// list re-sorts live over websockets. Dashboard (web) users only.
+Broadcast::channel('threads', function ($user) {
+    return $user !== null;
+}, ['guards' => ['web']]);

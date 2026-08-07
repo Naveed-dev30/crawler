@@ -104,6 +104,11 @@ class FakeFreelancerMessenger extends FreelancerMessenger
         return true; // nothing to mark in the fake
     }
 
+    public function sendTyping(int $flThreadId): bool
+    {
+        return true; // ephemeral signal, nothing to fabricate
+    }
+
     public function sendMessage(int $flThreadId, ?string $text, array $attachments = []): ?array
     {
         $state = $this->loadState();

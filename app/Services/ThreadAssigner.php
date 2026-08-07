@@ -3,12 +3,10 @@
 namespace App\Services;
 
 use App\Events\ThreadAssigned;
-use App\Jobs\SendFcmPushJob;
 use App\Models\ActivityLog;
-use App\Models\MobileNotification;
 use App\Models\Thread;
 use App\Models\User;
-use Illuminate\Support\Str;
+use App\Support\SafeBroadcast;
 
 /**
  * Single write-path for every thread assignment (AI match, escalation,
@@ -23,20 +21,25 @@ class ThreadAssigner
 
     public const TYPE_MANUAL = 'manual_assign';
 
+    public function __construct(private MobileNotifier $notifier) {}
+
     public function assign(Thread $thread, User $to, string $type, ?User $from = null): void
     {
+        // Defense in depth: the controllers already guard this, but a no-op
+        // reassign must never page the same user about a thread they still own.
+        if ((int) $thread->assigned_user_id === (int) $to->id) {
+            return;
+        }
+
         $thread->assigned_user_id = $to->id;
         if ($type === self::TYPE_ESCALATION) {
             $thread->last_escalated_at = now();
         }
         $thread->save();
 
-        $title = $thread->proposal->title ?? "Project {$thread->project_id}";
-        $lastMessage = $thread->messages()
-            ->where('direction', 'received')
-            ->orderByDesc('message_time')
-            ->value('message');
-        $body = Str::limit((string) ($lastMessage ?: 'New thread assigned to you'), 180);
+        // The copy builder reads $thread->proposal; load it here so the two
+        // controller call-sites (which do not eager-load) don't lazy-load it.
+        $thread->loadMissing('proposal');
 
         if ($type !== self::TYPE_AI) {
             $verb = $type === self::TYPE_ESCALATION ? 'escalated' : 'assigned';
@@ -49,27 +52,20 @@ class ThreadAssigner
             ]);
         }
 
-        event(new ThreadAssigned($thread, $to, $type, $from));
+        SafeBroadcast::event(new ThreadAssigned($thread, $to, $type, $from));
 
-        $this->notify($to, $thread, $title, $body);
+        if ($type === self::TYPE_ESCALATION) {
+            $this->notifier->escalated($to, $thread, $from);
+        } else {
+            $this->notifier->assigned($to, $thread, $from);
+        }
 
         if ($from && $from->id !== $to->id && $type !== self::TYPE_AI) {
-            $fromTitle = $type === self::TYPE_ESCALATION
-                ? "Thread escalated away: {$title}"
-                : "Thread reassigned: {$title}";
-            $this->notify($from, $thread, $fromTitle, $body);
+            if ($type === self::TYPE_ESCALATION) {
+                $this->notifier->escalatedAway($from, $thread, $to);
+            } else {
+                $this->notifier->reassignedAway($from, $thread, $to);
+            }
         }
-    }
-
-    private function notify(User $user, Thread $thread, string $title, string $body): void
-    {
-        MobileNotification::create([
-            'user_id' => $user->id,
-            'thread_id' => $thread->id,
-            'title' => $title,
-            'body' => $body,
-        ]);
-
-        SendFcmPushJob::dispatch($user->id, $title, $body, ['thread_id' => $thread->id]);
     }
 }

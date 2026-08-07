@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Bid;
 use App\Models\Filter;
+use App\Models\FreelancerProfile;
 use App\Models\Proposal;
 use App\Services\ProposalQualifier;
 use Illuminate\Bus\Queueable;
@@ -36,20 +37,30 @@ class OpenAIJob implements ShouldQueue
         }
 
         $negative = trim((string) $filter->negative_prompt);
-        if ($negative !== '') {
-            $verdict = app(ProposalQualifier::class)->qualify($negative, $this->proposal->description);
+        $profiles = FreelancerProfile::all()
+            ->map(fn ($p) => ['id' => (int) $p->id, 'title' => (string) $p->title])
+            ->all();
 
-            $this->proposal->qualified = $verdict['qualified'];
-            $this->proposal->qualify_reason = $verdict['reason'];
-            $this->proposal->save();
+        $chosenProfileId = null;
 
-            $summaryPrompt = trim((string) ($filter->summary_prompt ?? ''));
-            if ($summaryPrompt !== '' && $verdict['reason'] !== '') {
-                SummarizeReasonJob::dispatch($this->proposal);
-            }
+        if ($negative !== '' || ! empty($profiles)) {
+            $verdict = app(ProposalQualifier::class)->qualify($negative, $profiles, $this->proposal->description);
+            $chosenProfileId = $verdict['profile_id'];
 
-            if (! $verdict['qualified']) {
-                return;
+            // Negative-prompt gating only applies when the operator set skip criteria.
+            if ($negative !== '') {
+                $this->proposal->qualified = $verdict['qualified'];
+                $this->proposal->qualify_reason = $verdict['reason'];
+                $this->proposal->save();
+
+                $summaryPrompt = trim((string) ($filter->summary_prompt ?? ''));
+                if ($summaryPrompt !== '' && $verdict['reason'] !== '') {
+                    SummarizeReasonJob::dispatch($this->proposal);
+                }
+
+                if (! $verdict['qualified']) {
+                    return;
+                }
             }
         }
 
@@ -77,6 +88,7 @@ class OpenAIJob implements ShouldQueue
 
         $bid = new Bid;
         $bid->proposal_id = $this->proposal->id;
+        $bid->profile_id = $chosenProfileId;
         $bid->price = $this->proposal->max_budget * 0.9;
         $bid->cover_letter = $coverLetter;
         $bid->save();
