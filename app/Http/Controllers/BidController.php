@@ -148,10 +148,10 @@ class BidController extends Controller
           : 'completed';
         $isCompleted = $tab === 'completed';
 
-        // Bids Placed sub-tabs: all / Correct / Incorrect review states
+        // Bids Placed sub-tabs: remaining (unmarked) / Correct / Incorrect
         $checkTab = in_array($request->query('check'), ['Correct', 'Incorrect'], true)
           ? $request->query('check')
-          : 'all';
+          : 'remaining';
 
         // Skills Not Matched sub-tabs: all / Interested / Not Interested
         $interestTab = in_array($request->query('interest'), ['Interested', 'Not Interested'], true)
@@ -161,7 +161,12 @@ class BidController extends Controller
 
         $bids = (clone $base)
             ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
-            ->when($isCompleted && $checkTab !== 'all', fn ($q) => $q->where('bids.check', $checkTab))
+            ->when($isCompleted && $checkTab === 'remaining', fn ($q) => $q->where(function ($sub) {
+                $sub->whereNull('bids.check')
+                    ->orWhere('bids.check', '')
+                    ->orWhere('bids.check', 'Unreviewed');
+            }))
+            ->when($isCompleted && in_array($checkTab, ['Correct', 'Incorrect'], true), fn ($q) => $q->where('bids.check', $checkTab))
             ->when($isSkillTab && $interestTab !== 'all', fn ($q) => $q->where('bids.interest', $interestTab))
             ->when($tab === 'skill-not-matched', fn ($q) => $q
                 ->whereIn('bids.bid_status', $failed)
