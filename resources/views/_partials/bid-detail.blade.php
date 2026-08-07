@@ -38,6 +38,16 @@
     @if (strtolower($bid->bid_status) === 'failed')
         <span class="fw-light text-danger">{{ $bid->error_message }}</span>
     @endif
+    <h6>Last Bid:
+        <span class="fw-light">
+            {{ $bid->posted_at ? $bid->posted_at->timezone('Asia/Karachi')->format('d-M, Y h:i a') : '—' }}
+        </span>
+    </h6>
+    <h6>Last Action:
+        <span class="fw-light">
+            {{ ($bid->last_action_at ?? $bid->updated_at)->timezone('Asia/Karachi')->format('d-M, Y h:i a') }}
+        </span>
+    </h6>
     <h6>Type: <span class="fw-light">{{ $bid->proposal->type }}</span></h6>
 
     <div class="divider divider-primary"><div class="divider-text">Title/Description</div></div>

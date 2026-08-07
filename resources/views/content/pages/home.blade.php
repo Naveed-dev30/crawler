@@ -240,7 +240,7 @@
         {{-- Skills Not Matched only: interest sub-tabs --}}
         <div class="px-3 py-2 border-bottom d-none" id="bids-interest-tabs">
             <ul class="nav nav-pills gap-1 mb-0">
-                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="remaining">Remaining</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Interested">Interested</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Not Interested">Not Interested</button></li>
             </ul>
@@ -314,7 +314,7 @@
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             let currentTab = @json($activeTab ?? 'completed');
             let currentCheck = 'remaining';
-            let currentInterest = 'all';
+            let currentInterest = 'remaining';
             let currentFailSub = 'other';
             let currentNqCheck = 'remaining';
             let currentPage = 1;
@@ -327,7 +327,7 @@
                 p.set('tab', currentTab);
                 p.set('page', currentPage);
                 if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
-                if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
+                if (currentTab === 'skill-not-matched' && currentInterest !== 'remaining') p.set('interest', currentInterest);
                 if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
                 if (currentTab === 'not-qualified' && currentNqCheck !== 'remaining') p.set('nqcheck', currentNqCheck);
                 const from = el('f-from').value; if (from) p.set('from', from);
@@ -417,13 +417,13 @@
                     currentTab = this.dataset.tab;
                     // Switching main tabs resets both sub-tab groups
                     currentCheck = 'remaining';
-                    currentInterest = 'all';
+                    currentInterest = 'remaining';
                     currentFailSub = 'other';
                     currentNqCheck = 'remaining';
                     document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.checkTab === 'remaining'));
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
-                        b.classList.toggle('active', b.dataset.interestTab === 'all'));
+                        b.classList.toggle('active', b.dataset.interestTab === 'remaining'));
                     document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.failTab === 'other'));
                     document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b =>
@@ -477,6 +477,7 @@
                 const btn = ev.target.closest('.bid-interest-btn');
                 if (!btn) return;
                 const interest = btn.dataset.interest;
+                const row = btn.closest('tr');
                 const res = await fetch('/updateBidInterest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -491,7 +492,13 @@
                     'Saved.',
                     interest === 'Interested' ? '#28c76f' : '#ff3e1d'
                 );
-                loadData();
+                // Marked row leaves the current Skills-Not-Matched sub-tab — glide out.
+                if (row && currentTab === 'skill-not-matched') {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 170);
+                } else {
+                    loadData();
+                }
             });
 
             // Delegated: Correct/Incorrect buttons on table rows

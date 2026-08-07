@@ -171,10 +171,10 @@ class BidController extends Controller
           ? $request->query('check')
           : 'remaining';
 
-        // Skills Not Matched sub-tabs: all / Interested / Not Interested
+        // Skills Not Matched sub-tabs: remaining (unmarked) / Interested / Not Interested
         $interestTab = in_array($request->query('interest'), ['Interested', 'Not Interested'], true)
           ? $request->query('interest')
-          : 'all';
+          : 'remaining';
         $isSkillTab = $tab === 'skill-not-matched';
 
         $bids = (clone $base)
@@ -185,7 +185,10 @@ class BidController extends Controller
                     ->orWhere('bids.check', 'Unreviewed');
             }))
             ->when($isCompleted && in_array($checkTab, ['Correct', 'Incorrect'], true), fn ($q) => $q->where('bids.check', $checkTab))
-            ->when($isSkillTab && $interestTab !== 'all', fn ($q) => $q->where('bids.interest', $interestTab))
+            ->when($isSkillTab && $interestTab === 'remaining', fn ($q) => $q->where(function ($sub) {
+                $sub->whereNull('bids.interest')->orWhere('bids.interest', '')->orWhere('bids.interest', 'Unreviewed');
+            }))
+            ->when($isSkillTab && in_array($interestTab, ['Interested', 'Not Interested'], true), fn ($q) => $q->where('bids.interest', $interestTab))
             ->when($tab === 'skill-not-matched', fn ($q) => $q
                 ->whereIn('bids.bid_status', $failed)
                 ->where('bids.error_message', 'like', '%skill%'))

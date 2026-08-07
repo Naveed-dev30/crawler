@@ -14,6 +14,8 @@ class Bid extends Model
     protected $casts = [
         'awarded' => 'boolean',
         'awarded_price' => 'float',
+        'posted_at' => 'datetime',
+        'last_action_at' => 'datetime',
     ];
 
     /**

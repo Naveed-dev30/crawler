@@ -133,10 +133,19 @@
         </td>
         <td>{{ $bid->awarded_price !== null ? $bid->awarded_price . '$' : '—' }}</td>
     @endif
-    <td>
-        <div class="col">
-            <div class="row">{{ $bid->created_at->copy()->timezone('Asia/Karachi')->format('h:i a') }}</div>
-            <div class="row text-light">{{ $bid->created_at->diffForHumans(null, true) }}</div>
+    <td class="text-nowrap small">
+        {{-- Last Bid only exists once a bid actually posts, so hide it on failure
+             tabs (never posted). Last Action is always shown. --}}
+        @if ($bid->posted_at)
+            <div>
+                <span class="text-muted">Last Bid:</span>
+                <span class="fw-semibold">{{ $bid->posted_at->timezone('Asia/Karachi')->format('M j, Y · h:i a') }}</span>
+            </div>
+        @endif
+        <div>
+            <span class="text-muted">Last Action:</span>
+            @php $lastAction = $bid->last_action_at ?? $bid->updated_at; @endphp
+            <span class="fw-semibold">{{ $lastAction->timezone('Asia/Karachi')->format('M j, Y · h:i a') }}</span>
         </div>
     </td>
     <td>
