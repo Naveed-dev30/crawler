@@ -21,10 +21,25 @@ const CAPTURE_WINDOW_MS = 25000  // how long to wait for the SPA's data XHR
 const POLL_INTERVAL_MS = 1500
 const SCRAPE_SETTLE_MS = 4000  // charts/tables render after load; give them a moment
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create(DAILY_ALARM, { periodInMinutes: DAILY_MINUTES, delayInMinutes: 1 })
-  chrome.alarms.create(HOURLY_ALARM, { periodInMinutes: HOURLY_MINUTES, delayInMinutes: 1 })
-})
+// Creating an alarm that already exists replaces it, restarting its period —
+// so an unguarded re-create on every browser start would fire the daily capture
+// (and its foreground tab) a minute after each restart. Only fill in what's
+// missing.
+async function ensureAlarms() {
+  const existing = new Set((await chrome.alarms.getAll()).map((a) => a.name))
+  if (!existing.has(DAILY_ALARM)) {
+    chrome.alarms.create(DAILY_ALARM, { periodInMinutes: DAILY_MINUTES, delayInMinutes: 1 })
+  }
+  if (!existing.has(HOURLY_ALARM)) {
+    chrome.alarms.create(HOURLY_ALARM, { periodInMinutes: HOURLY_MINUTES, delayInMinutes: 1 })
+  }
+}
+
+chrome.runtime.onInstalled.addListener(ensureAlarms)
+// Alarms survive a browser restart, but one that is somehow lost or cleared
+// otherwise never comes back — and a capture system that has silently stopped
+// scheduling itself looks identical to one with nothing to report.
+chrome.runtime.onStartup.addListener(ensureAlarms)
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === DAILY_ALARM) captureAll((c) => c.cadence !== 'hourly')
@@ -40,21 +55,29 @@ chrome.action.onClicked.addListener(() => captureAll())
 function waitForTabComplete(tabId, timeoutMs) {
   return new Promise((resolve) => {
     let timer
-    const cleanup = () => {
+    let settled = false
+    const finish = (value) => {
+      if (settled) return
+      settled = true
       chrome.tabs.onUpdated.removeListener(listener)
       clearTimeout(timer)
+      resolve(value)
     }
     const listener = (updatedTabId, info) => {
-      if (updatedTabId === tabId && info.status === 'complete') {
-        cleanup()
-        resolve({ timedOut: false })
-      }
+      if (updatedTabId === tabId && info.status === 'complete') finish({ timedOut: false })
     }
     chrome.tabs.onUpdated.addListener(listener)
-    timer = setTimeout(() => {
-      cleanup()
-      resolve({ timedOut: true })
-    }, timeoutMs)
+    timer = setTimeout(() => finish({ timedOut: true }), timeoutMs)
+
+    // The tab can reach 'complete' in the gap between chrome.tabs.create
+    // resolving and this listener attaching; that event is then gone for good,
+    // so the promise would settle only on the timeout and report a page that
+    // loaded fine as loadTimedOut. Re-read the current state to close the race.
+    // `pendingUrl` and an empty url both mean the navigation hasn't committed
+    // yet — a fresh tab can report 'complete' for its initial blank document.
+    chrome.tabs.get(tabId).then((tab) => {
+      if (tab && tab.status === 'complete' && tab.url && !tab.pendingUrl) finish({ timedOut: false })
+    }).catch(() => {})
   })
 }
 
@@ -75,16 +98,36 @@ async function registerInterceptor(source, matchPattern) {
   return id
 }
 
-async function readCaptured(tabId) {
+// chrome.scripting.executeScript resolves to an empty array when the target
+// frame is gone (closed tab, mid-navigation) and to a null `result` when the
+// injected function threw — destructuring either blindly turns a diagnosable
+// page-read failure into an opaque TypeError in the run report.
+async function executeInTab(options, what) {
+  const frames = await chrome.scripting.executeScript(options)
+  const result = frames && frames[0] ? frames[0].result : null
+  if (result == null) throw new Error(`${what}: the tab returned no result (frame gone, or the read threw)`)
+  return result
+}
+
+// Pulls only the entries the poller has not already seen. The whole array is
+// re-serialized across the world boundary on every read otherwise — up to 120
+// bodies of up to 2MB each (interceptor.js's caps), ~17 times across one
+// capture window, which is enough to make the polling itself the bottleneck.
+// Returns { total, entries } so the caller can still detect a shrink, or null
+// if the read failed — which must stay distinguishable from "nothing new".
+async function readCaptured(tabId, from) {
   try {
-    const [{ result }] = await chrome.scripting.executeScript({
+    return await executeInTab({
       target: { tabId },
       world: 'MAIN',
-      func: () => window.__flCapture || [],
-    })
-    return result || []
+      func: (start) => {
+        const all = window.__flCapture || []
+        return { total: all.length, entries: all.slice(start) }
+      },
+      args: [from],
+    }, 'capture read')
   } catch (e) {
-    return []
+    return null
   }
 }
 
@@ -103,25 +146,35 @@ async function openAndCapture(capture) {
     tab = await chrome.tabs.create({ url: capture.url, active: capture.activeTab === true })
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
 
-    const [{ result: pageInfo }] = await chrome.scripting.executeScript({
+    const pageInfo = await executeInTab({
       target: { tabId: tab.id },
       func: (limit) => ({ url: location.href, html: document.documentElement.outerHTML.slice(0, limit) }),
       args: [LOGIN_GUARD_HTML_LIMIT],
-    })
+    }, `${capture.source}: login check`)
     assertLoggedIn({ url: pageInfo.url, status: 200 }, pageInfo.html)
 
     // The SPA fires its data XHR shortly after load. Poll until a response
-    // matches, or the window closes — whichever first. readCaptured can
-    // transiently return `[]` (its own executeScript read failing while the
-    // tab is mid-navigation) — a shrinking read must never clobber a larger
-    // capture already seen, so only accept a fresh read that is at least as
-    // large as what's retained, and match against the retained value.
+    // matches, or the window closes — whichever first, accumulating only what
+    // each read adds. A read that fails transiently (its own executeScript
+    // losing the frame mid-navigation) is skipped, never treated as an empty
+    // page; a total smaller than what we have already pulled means the document
+    // was replaced and its interceptor started a fresh array, so keep the
+    // entries collected so far and start pulling the new document from zero.
     const deadline = Date.now() + CAPTURE_WINDOW_MS
-    let captured = []
+    const captured = []
+    let pulled = 0
     while (Date.now() < deadline) {
-      const fresh = await readCaptured(tab.id)
-      if (fresh.length >= captured.length) captured = fresh
-      if (matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {}).strategy) break
+      const read = await readCaptured(tab.id, pulled)
+      if (read) {
+        if (read.total < pulled) pulled = 0
+        else if (read.entries.length) {
+          captured.push(...read.entries)
+          pulled = read.total
+          // Only worth re-walking when something new arrived; this is purely an
+          // early exit, and runIntercept re-runs the match on the final set.
+          if (matchResponse(captured, capture.requiredKeys, capture.probeOptions ?? {}).strategy) break
+        }
+      }
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
     }
 
@@ -138,10 +191,33 @@ async function openAndCapture(capture) {
 // Truncated, safe-to-log preview of a captured body: top-level keys plus
 // roughly the first 500 characters of its JSON. Never the full payload —
 // these can be large, and this only needs to be enough to spot a shape bug.
+// Top-level arrays are cut to two entries BEFORE stringifying: a bids payload
+// holds thousands of records, and building a multi-MB string only to slice 500
+// characters off it is the last thing a failing run should spend memory on.
+// `arrayLengths` keeps the fact that they were long, which the shape alone
+// would otherwise lose.
 function previewBody(body) {
-  const json = JSON.stringify(body)
+  const shallow = {}
+  const arrayLengths = {}
+  for (const [key, value] of Object.entries(body ?? {})) {
+    if (Array.isArray(value)) {
+      arrayLengths[key] = value.length
+      shallow[key] = value.slice(0, 2)
+    } else {
+      shallow[key] = value
+    }
+  }
+
+  let json
+  try {
+    json = JSON.stringify(shallow)
+  } catch (e) {
+    json = '(unserializable)'
+  }
+
   return {
     keys: Object.keys(body ?? {}),
+    arrayLengths,
     json: json.length > 500 ? json.slice(0, 500) + '…' : json,
   }
 }
@@ -150,11 +226,11 @@ async function runOne(capture) {
   return capture.mode === 'scrape' ? runScrape(capture) : runIntercept(capture)
 }
 
-async function readPage(tabId) {
+async function readPage(tabId, what) {
   // MAIN world so the reader can reach page globals (window.Chart) for the
   // canvas charts; the DOM (innerText, attributes) is shared across worlds, so
   // the text and attribute reads work here too.
-  const [{ result }] = await chrome.scripting.executeScript({
+  return executeInTab({
     target: { tabId },
     world: 'MAIN',
     func: (limit) => {
@@ -266,8 +342,12 @@ async function readPage(tabId) {
               const name = (nameEl ? nameEl.textContent : row.textContent).replace(/\s+/g, ' ').trim()
               if (!name) return null
               // Scan the row minus the name cell, so the skill's own label (and
-              // any tooltip repeating it) cannot supply a direction token.
-              const scope = Array.from(row.querySelectorAll('*'))
+              // any tooltip repeating it) cannot supply a direction token. The
+              // row element itself leads the list: a modifier class on the row
+              // ('StatTypeList-row--up') is the likeliest place for the
+              // direction to live, and querySelectorAll('*') returns only
+              // descendants, so scanning children alone would always miss it.
+              const scope = [row, ...row.querySelectorAll('*')]
                 .filter((el) => !nameEl || (el !== nameEl && !nameEl.contains(el)))
               const direction = fromAttributes(scope) || fromColour(scope) || 'even'
               return { name, direction }
@@ -317,8 +397,7 @@ async function readPage(tabId) {
       }
     },
     args: [LOGIN_GUARD_HTML_LIMIT],
-  })
-  return result
+  }, what)
 }
 
 async function runScrape(capture) {
@@ -327,7 +406,6 @@ async function runScrape(capture) {
     const views = capture.views || null
     tab = await chrome.tabs.create({ url: views ? views[0].url : capture.url, active: capture.activeTab === true })
     const { timedOut: loadTimedOut } = await waitForTabComplete(tab.id, LOAD_TIMEOUT_MS)
-    const scrapedAt = new Date().toISOString()
 
     let body
     if (views) {
@@ -337,22 +415,27 @@ async function runScrape(capture) {
         // reload fires, so just change the hash and let it render.
         if (i > 0) await chrome.tabs.update(tab.id, { url: views[i].url })
         await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
-        const page = await readPage(tab.id)
+        const page = await readPage(tab.id, `${capture.source}: ${views[i].key}`)
         assertLoggedIn({ url: page.url, status: 200 }, page.html)
         collected[views[i].key] = views[i].scrape(page.text, page.dom)
       }
-      body = capture.combine(collected, scrapedAt)
+      // Stamped once the reads are done, so scraped_at describes the data
+      // rather than the moment the tab finished loading, ~8s earlier.
+      body = capture.combine(collected, new Date().toISOString())
     } else {
       // Charts/tables render after load; give them a moment.
       await new Promise((r) => setTimeout(r, SCRAPE_SETTLE_MS))
-      const page = await readPage(tab.id)
+      const page = await readPage(tab.id, capture.source)
       assertLoggedIn({ url: page.url, status: 200 }, page.html)
-      body = capture.scrape(page.text, scrapedAt)
+      body = capture.scrape(page.text, new Date().toISOString())
     }
 
     if (!body || body.__empty) {
       const error = new Error(`${capture.source}: nothing scraped from the page`)
-      error.fatal = true
+      // Deliberately not fatal: an empty scrape is most often a slow render or
+      // a route that had not painted yet within SCRAPE_SETTLE_MS — precisely
+      // what the backoff exists for. A genuine markup change still fails all
+      // three attempts and reports the same way, just later.
       error.diagnostics = { loadTimedOut }
       throw error
     }
@@ -382,7 +465,10 @@ async function runIntercept(capture) {
 
   if (!probe.strategy) {
     const error = new Error(`${capture.source}: no API response matched`)
-    error.fatal = true
+    // Deliberately not fatal: the usual cause is the data XHR landing after
+    // CAPTURE_WINDOW_MS on a slow connection, which the next attempt fixes. A
+    // real shape change fails all three attempts and reports the endpoint list
+    // from the last one — the same diagnosis, one backoff later.
     error.diagnostics = { ...probe.diagnostics, loadTimedOut }
     throw error
   }
@@ -408,14 +494,6 @@ async function runIntercept(capture) {
   }
 
   const warnings = capture.warnings ? capture.warnings(body) : []
-
-  // A bids capture that "succeeds" with zero records may be legitimate (no
-  // bids yet) or may mean the probe matched the wrong object — either way it
-  // must be visible, not silently indistinguishable from a real success.
-  if (capture.source === 'insights_bids' && Array.isArray(body.bids) && body.bids.length === 0) {
-    warnings.push('Captured zero bids — this may be legitimate, but verify the probe matched the right object.')
-  }
-
   const outcome = { strategy: probe.strategy, status: response.status, id: response.data?.id ?? null }
   if (loadTimedOut) outcome.loadTimedOut = true
   if (warnings.length) outcome.warnings = warnings
@@ -426,59 +504,90 @@ async function runIntercept(capture) {
 // mid-run, would otherwise race the `lastRun` write with whichever run
 // finishes last silently winning.
 let running = false
+// Triggers that arrived mid-run. Dropping them meant an hourly bid alarm
+// landing inside a long daily run vanished with no record, and a toolbar click
+// during a run did nothing at all — indistinguishable, from the outside, from
+// a broken extension. They are collected and run once the current run ends,
+// unioned so two triggers for the same capture still produce a single run.
+let queuedFilters = []
 
 async function captureAll(filter = () => true) {
-  if (running) return
+  if (running) {
+    queuedFilters.push(filter)
+    return
+  }
   running = true
 
   try {
-    const captures = CAPTURES.filter(filter)
-    await setBadge('...', '#666666')
-
-    // Merge into the previous run's results rather than overwrite: an hourly
-    // bid run must not erase the last daily gamification/insights results from
-    // the report the options page shows.
-    const prev = (await chrome.storage.local.get({ lastRun: null })).lastRun
-    const report = {
-      startedAt: new Date().toISOString(),
-      results: { ...(prev && prev.results ? prev.results : {}) },
-    }
-    const ranSources = []
-
-    for (const capture of captures) {
-      ranSources.push(capture.source)
+    let next = filter
+    while (next) {
       try {
-        const outcome = await withRetry(() => runOne(capture))
-        report.results[capture.source] = { ok: true, ...outcome }
+        await runCaptures(next)
       } catch (error) {
-        report.results[capture.source] = {
-          ok: false,
-          error: error.message,
-          kind: error instanceof LoggedOutError ? 'logged_out'
-            : error instanceof MissingConfigError ? 'not_configured'
-            : 'failed',
-          diagnostics: error.diagnostics ?? null,
-        }
-        console.error(`[capture] ${capture.source}`, error, error.diagnostics ?? '')
+        // Per-capture failures are already recorded inside runCaptures, so
+        // reaching here means the run scaffolding itself failed (storage, badge,
+        // notifications). Clear the in-progress badge and drain the queue anyway
+        // rather than leaving it stuck on '...' forever.
+        console.error('[capture] run failed', error)
+        await setBadge('!', '#CC0000').catch(() => {})
       }
+      const pending = queuedFilters
+      queuedFilters = []
+      next = pending.length ? (capture) => pending.some((f) => f(capture)) : null
     }
-
-    report.finishedAt = new Date().toISOString()
-    await chrome.storage.local.set({ lastRun: report })
-
-    // Badge and notification reflect only the captures that ran this cycle.
-    const thisRun = ranSources.map((s) => report.results[s])
-    const failed = thisRun.filter((r) => !r.ok)
-    const warned = thisRun.filter((r) => r.ok && r.warnings?.length)
-    await setBadge(failed.length ? String(failed.length) : 'ok', failed.length ? '#CC0000' : '#0A7F27')
-
-    const titleParts = [failed.length ? `${failed.length}/${ranSources.length} captures failed` : 'All captures posted']
-    if (warned.length) titleParts.push(`${warned.length} with warnings`)
-
-    notify(titleParts.join(', '), summarize(report, ranSources))
   } finally {
     running = false
   }
+}
+
+async function runCaptures(filter) {
+  const captures = CAPTURES.filter(filter)
+  await setBadge('...', '#666666')
+
+  // Merge into the previous run's results rather than overwrite: an hourly
+  // bid run must not erase the last daily gamification/insights results from
+  // the report the options page shows. Because carried-over entries sit next
+  // to this run's startedAt/finishedAt, each result carries its own `at` —
+  // without it a result from three days ago reads as part of this run.
+  const prev = (await chrome.storage.local.get({ lastRun: null })).lastRun
+  const report = {
+    startedAt: new Date().toISOString(),
+    results: { ...(prev && prev.results ? prev.results : {}) },
+  }
+  const ranSources = []
+
+  for (const capture of captures) {
+    ranSources.push(capture.source)
+    try {
+      const outcome = await withRetry(() => runOne(capture))
+      report.results[capture.source] = { ok: true, at: new Date().toISOString(), ...outcome }
+    } catch (error) {
+      report.results[capture.source] = {
+        ok: false,
+        at: new Date().toISOString(),
+        error: error.message,
+        kind: error instanceof LoggedOutError ? 'logged_out'
+          : error instanceof MissingConfigError ? 'not_configured'
+          : 'failed',
+        diagnostics: error.diagnostics ?? null,
+      }
+      console.error(`[capture] ${capture.source}`, error, error.diagnostics ?? '')
+    }
+  }
+
+  report.finishedAt = new Date().toISOString()
+  await chrome.storage.local.set({ lastRun: report })
+
+  // Badge and notification reflect only the captures that ran this cycle.
+  const thisRun = ranSources.map((s) => report.results[s])
+  const failed = thisRun.filter((r) => !r.ok)
+  const warned = thisRun.filter((r) => r.ok && r.warnings?.length)
+  await setBadge(failed.length ? String(failed.length) : 'ok', failed.length ? '#CC0000' : '#0A7F27')
+
+  const titleParts = [failed.length ? `${failed.length}/${ranSources.length} captures failed` : 'All captures posted']
+  if (warned.length) titleParts.push(`${warned.length} with warnings`)
+
+  notify(titleParts.join(', '), summarize(report, ranSources))
 }
 
 function summarize(report, sources) {

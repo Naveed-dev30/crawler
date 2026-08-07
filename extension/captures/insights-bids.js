@@ -26,4 +26,14 @@ export default {
       bids: key ? data[key] : [],
     }
   },
+
+  warnings(body) {
+    // A bids capture that "succeeds" with zero records may be legitimate (no
+    // bids yet) or may mean the probe matched the wrong object — either way it
+    // must be visible, not silently indistinguishable from a real success.
+    if (Array.isArray(body.bids) && body.bids.length === 0) {
+      return ['Captured zero bids — this may be legitimate, but verify the probe matched the right object.']
+    }
+    return []
+  },
 }

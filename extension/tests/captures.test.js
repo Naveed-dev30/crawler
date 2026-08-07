@@ -97,6 +97,21 @@ test('bids normalize finds the list under an alternate key', () => {
   assert.deepEqual(out.bids, [{ project_id: 2 }])
 })
 
+// A zero-bid success and a probe that matched the wrong object produce an
+// identical payload, so the run report is the only place the difference can
+// show up.
+test('bids warns when the captured list is empty', () => {
+  const w = insightsBids.warnings(insightsBids.normalize({ bids: [] }, AT))
+
+  assert.ok(w.some((m) => m.includes('zero bids')), 'must warn on an empty bid list')
+})
+
+test('bids does not warn when records were captured', () => {
+  const w = insightsBids.warnings(insightsBids.normalize({ bids: [{ project_id: 1 }] }, AT))
+
+  assert.deepEqual(w, [])
+})
+
 // The bids capture's requiredKeys ('bids', 'bidList', 'projects', 'items')
 // are generic enough that key-presence-only matching can hit an unrelated
 // global. This declares the opt-in that makes probe.js require an actual
