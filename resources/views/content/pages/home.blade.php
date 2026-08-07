@@ -176,6 +176,14 @@
             background-color: rgba(105, 108, 255, .05);
         }
 
+        /* Cute slide-out when a row is marked Correct/Incorrect and leaves the
+           Remaining view — glides right + fades, then row is removed. */
+        .bids-table tbody tr.bid-row-exit td {
+            transform: translateX(90px);
+            opacity: 0;
+            transition: transform .32s cubic-bezier(.4, 0, .2, 1), opacity .32s ease;
+        }
+
         .tooltip-light .tooltip-inner {
             background-color: #fff;
             color: #384551;
@@ -217,7 +225,7 @@
         {{-- Bids Placed only: review-state sub-tabs --}}
         <div class="px-3 py-2 border-bottom" id="bids-check-tabs">
             <ul class="nav nav-pills gap-1 mb-0">
-                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="remaining">Remaining</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Correct">Correct</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Incorrect">Incorrect</button></li>
             </ul>
@@ -283,7 +291,7 @@
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             let currentTab = @json($activeTab ?? 'completed');
-            let currentCheck = 'all';
+            let currentCheck = 'remaining';
             let currentInterest = 'all';
             let currentPage = 1;
             let searchFocused = false;
@@ -294,7 +302,7 @@
                 const p = new URLSearchParams();
                 p.set('tab', currentTab);
                 p.set('page', currentPage);
-                if (currentTab === 'completed' && currentCheck !== 'all') p.set('check', currentCheck);
+                if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
                 if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
@@ -380,10 +388,10 @@
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
                     // Switching main tabs resets both sub-tab groups
-                    currentCheck = 'all';
+                    currentCheck = 'remaining';
                     currentInterest = 'all';
                     document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
-                        b.classList.toggle('active', b.dataset.checkTab === 'all'));
+                        b.classList.toggle('active', b.dataset.checkTab === 'remaining'));
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.interestTab === 'all'));
                     reload();
@@ -437,6 +445,7 @@
                 const btn = ev.target.closest('.bid-check-btn');
                 if (!btn) return;
                 const check = btn.dataset.check;
+                const row = btn.closest('tr');
                 const res = await fetch('/updateBidCheck', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -459,7 +468,15 @@
                         el('bidOffcanvasContent').innerHTML = await detail.text();
                     }
                 }
-                loadData();
+                // In any Bids Placed sub-tab the marked row leaves the current view
+                // (Remaining/Correct/Incorrect) — glide it out to the right, then
+                // refresh once the animation finishes.
+                if (row && currentTab === 'completed') {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 340);
+                } else {
+                    loadData();
+                }
             });
 
             // Delegated: pagination links
