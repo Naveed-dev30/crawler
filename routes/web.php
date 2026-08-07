@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/proposals/{proposal}/nq-detail', [ProposalController::class, 'nqDetail'])->name('proposals.nq-detail');
     Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
+    Route::post('/updateProposalCheck', [ProposalController::class, 'updateCheck'])->name('updateProposalCheck');
     Route::post('/updateBidInterest', [BidController::class, 'updateBidInterest'])->name('updateBidInterest');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
     Route::get('/review', [ReviewController::class, 'index'])->name('review');

@@ -114,7 +114,18 @@ class BidController extends Controller
             ->pluck('c', 's');
 
         if ($request->query('tab') === 'not-qualified') {
+            // Review sub-tabs: remaining (unreviewed) / Correct / Incorrect
+            $nqCheck = in_array($request->query('nqcheck'), ['Correct', 'Incorrect'], true)
+              ? $request->query('nqcheck')
+              : 'remaining';
+
             $proposals = Proposal::notQualified()
+                ->when($nqCheck === 'remaining', fn ($q) => $q->where(function ($sub) {
+                    $sub->whereNull('qualify_check')
+                        ->orWhere('qualify_check', '')
+                        ->orWhere('qualify_check', 'Unreviewed');
+                }))
+                ->when(in_array($nqCheck, ['Correct', 'Incorrect'], true), fn ($q) => $q->where('qualify_check', $nqCheck))
                 ->when($request->filled('q'), function ($query) use ($request) {
                     $q = $request->query('q');
                     $query->where(function ($sub) use ($q) {
@@ -128,7 +139,7 @@ class BidController extends Controller
 
             $rowsHtml = '';
             foreach ($proposals as $proposal) {
-                $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal])->render();
+                $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal, 'checkTab' => $nqCheck])->render();
             }
             if ($proposals->isEmpty()) {
                 $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
