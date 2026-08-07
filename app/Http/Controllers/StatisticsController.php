@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Bid;
 use App\Models\Proposal;
+use App\Models\User;
+use App\Services\MobileAgentStats;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -376,5 +378,20 @@ class StatisticsController extends Controller
         return response()->json(
             $rows->map(fn ($r) => ['country' => $r->country, 'count' => (int) $r->count])->all()
         );
+    }
+
+    public function mobileAgents(Request $request, MobileAgentStats $stats)
+    {
+        [$from, $to] = $this->resolveRange($request);
+
+        return response()->json(['rows' => $stats->rows($from, $to)]);
+    }
+
+    public function mobileAgentActivity(Request $request, User $user, MobileAgentStats $stats)
+    {
+        abort_unless($user->role === 'mobile', 403);
+        [$from, $to] = $this->resolveRange($request);
+
+        return response()->json(['items' => $stats->activityFor($user, $from, $to)]);
     }
 }

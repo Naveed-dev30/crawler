@@ -65,6 +65,7 @@ Route::prefix('v1')->group(function () {
             Route::post('threads/{thread}/assign', [\App\Http\Controllers\Api\V1\Mobile\ThreadController::class, 'assign']);
             Route::get('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'index']);
             Route::post('threads/{thread}/messages', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'store']);
+            Route::post('threads/{thread}/typing', [\App\Http\Controllers\Api\V1\Mobile\MessageController::class, 'typing']);
             Route::get('logs', [\App\Http\Controllers\Api\V1\Mobile\LogController::class, 'index']);
             Route::get('notifications', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'index']);
             Route::post('notifications/{notification}/read', [\App\Http\Controllers\Api\V1\Mobile\NotificationController::class, 'markRead']);

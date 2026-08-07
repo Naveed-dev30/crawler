@@ -7,7 +7,34 @@
 @endsection
 
 @section('content')
-    <h4 class="page-title">Leaderboard</h4>
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
+        <div>
+            <h4 class="page-title mb-1">Leaderboard</h4>
+            @if ($refreshedAt)
+                <small class="text-muted">Refreshed: {{ $refreshedAt->format('Y-m-d H:i') }} · {{ $snapshotCount }} snapshots</small>
+            @endif
+        </div>
+        <form method="GET" action="{{ route('leaderboard') }}" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">From</label>
+                <input type="date" name="from" class="form-control form-control-sm"
+                       value="{{ $from }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">To</label>
+                <input type="date" name="to" class="form-control form-control-sm"
+                       value="{{ $to }}"
+                       min="{{ optional($dateBounds['min'])->format('Y-m-d') }}"
+                       max="{{ optional($dateBounds['max'])->format('Y-m-d') }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                <a href="{{ route('leaderboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
 
     @if (! $latest)
         <div class="card"><div class="card-body">
@@ -36,19 +63,11 @@
         </div>
 
         <div class="card mb-4"><div class="card-body">
-            <h5 class="mb-3">Top 5</h5>
-            <table class="table">
-                <thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead>
-                <tbody>
-                    @foreach ($latest->top5 ?? [] as $row)
-                        <tr class="{{ !empty($row['is_current_user']) ? 'table-primary fw-bold' : '' }}">
-                            <td>#{{ $row['rank'] }}</td>
-                            <td>{{ $row['public_name'] }}</td>
-                            <td>{{ isset($row['score']) ? number_format($row['score']) : '—' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Top 5 — Score by Day</h5>
+                <span class="text-muted small d-none d-sm-inline">{{ count($top5Dates) }} days</span>
+            </div>
+            <div id="chart-top5"></div>
         </div></div>
 
         <div class="row gy-4">
@@ -93,6 +112,36 @@
             // Rank: lower is better → reversed axis.
             render('chart-rank', 'Rank', history.map(h => h.rank), true, '#696cff');
             render('chart-score', 'Score', history.map(h => h.score), false, '#28c76f');
+
+            // Top 5 daily score — one coloured line per current top-5 player.
+            const top5Series = @json($top5Series);
+            const top5Dates = @json($top5Dates);
+            const top5El = document.querySelector('#chart-top5');
+            if (top5El && top5Series.length) {
+                new ApexCharts(top5El, {
+                    chart: { type: 'line', height: 360, toolbar: { show: false }, zoom: { enabled: false } },
+                    series: top5Series,
+                    colors: ['#696cff', '#28c76f', '#ff9f43', '#ea5455', '#00cfe8',
+                             '#9c6ade', '#f6416c', '#00b8d9', '#ffb400', '#5a8dee',
+                             '#16b1a3', '#e0729e'],
+                    stroke: { curve: 'smooth', width: 3 },
+                    markers: { size: 3, hover: { size: 5 } },
+                    dataLabels: { enabled: false },
+                    legend: { position: 'top', horizontalAlign: 'left', markers: { radius: 12 } },
+                    grid: { borderColor: '#eceef1', strokeDashArray: 4 },
+                    xaxis: {
+                        categories: top5Dates,
+                        tickAmount: Math.min(top5Dates.length, 8),
+                        tooltip: { enabled: false },
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: v => v == null ? '' : (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v),
+                        },
+                    },
+                    tooltip: { y: { formatter: v => v == null ? '—' : v.toLocaleString() } },
+                }).render();
+            }
         })();
     </script>
 @endsection

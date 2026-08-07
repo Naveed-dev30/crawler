@@ -14,12 +14,13 @@ class ThreadMessageResource extends JsonResource
             'direction' => $this->direction,
             'message' => $this->message,
             'sender_user_id' => $this->sender_user_id,
+            // Null for inbound messages: we do not know the client's name from
+            // the message feed, and inventing one made fabricated data
+            // indistinguishable from real data in the app.
             'sender_name' => $this->direction === 'sent'
                 ? ($this->sender?->name ?? 'Owner')
-                : ($this->sender_name ?? 'Sarah Mitchell'),
-            'sender_avatar' => $this->direction === 'sent'
-                ? 'https://i.pravatar.cc/150?u=owner'.($this->sender_user_id ?? 0)
-                : 'https://i.pravatar.cc/150?u=client'.$this->thread_id,
+                : $this->sender_name,
+            'sender_avatar' => null,
             'is_mine' => $this->direction === 'sent'
                 && $this->sender_user_id !== null
                 && (int) $this->sender_user_id === (int) $request->user()?->id,
@@ -31,7 +32,13 @@ class ThreadMessageResource extends JsonResource
                 return $this->attachments->map(fn ($a) => [
                     'id' => $a->id,
                     'filename' => $a->filename,
-                    'url' => $a->url,
+                    // Authed (signed) links to our mirrored copy — openable in
+                    // the app without Freelancer's OAuth header. Null until the
+                    // mirror job finishes. `url` kept for backward-compat.
+                    'url' => $a->serve_url,
+                    'view_url' => $a->serve_url,
+                    'download_url' => $a->download_url,
+                    'is_ready' => $a->isStored(),
                     'mime_type' => $a->mime_type,
                     'size' => $a->size,
                 ]);

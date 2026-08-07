@@ -1,7 +1,7 @@
 @extends('layouts.layoutMaster')
 
 
-@section('title', 'Filters')
+@section('title', 'Configurations')
 
 
 @section('vendor-style')
@@ -250,7 +250,10 @@
         </div>
     @endif
 
-    <h4 class="page-title">Filters</h4>
+    {{-- Sync form kept outside the main filter form to avoid invalid nested forms; button below references it via form="syncProfilesForm" --}}
+    <form id="syncProfilesForm" method="POST" action="{{ route('profiles.sync') }}" class="d-none">
+        @csrf
+    </form>
     <div class="row">
         <!-- FormValidation -->
         <div class="col-12">
@@ -415,6 +418,45 @@
                                     <span class="switch-toggle-slider"></span>
                                     <span class="switch-label">Min Fixed Cost</span>
                                 </label>
+                            </div>
+                        </div>
+
+                        <div class="card border mt-3">
+                            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0 me-2">Freelancer Profiles</h6>
+                                    <span class="badge bg-label-primary rounded-pill">{{ $profiles->count() }}</span>
+                                </div>
+                                <button type="submit" form="syncProfilesForm" class="btn btn-sm btn-primary">
+                                    <i class="bx bx-refresh me-1"></i>Sync now
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                @if ($profiles->isNotEmpty())
+                                    <small class="text-muted d-block mb-2">
+                                        <i class="bx bx-time-five me-1"></i>Last synced {{ $profiles->max('updated_at')?->format('Y-m-d H:i') }}
+                                    </small>
+                                @endif
+                                @if ($profiles->isEmpty())
+                                    <div class="text-center text-muted py-4">
+                                        <i class="bx bx-user-pin bx-lg mb-2 d-block"></i>
+                                        No profiles synced yet. Click <strong>Sync now</strong> to pull them from Freelancer.
+                                    </div>
+                                @else
+                                    <div class="list-group list-group-flush">
+                                        @foreach ($profiles as $profile)
+                                            <div class="list-group-item d-flex align-items-center px-0 py-2">
+                                                <div class="avatar avatar-sm me-3 flex-shrink-0">
+                                                    <span class="avatar-initial rounded-circle bg-label-primary">
+                                                        {{ strtoupper(mb_substr($profile->title ?: '?', 0, 1)) }}
+                                                    </span>
+                                                </div>
+                                                <div class="fw-semibold text-truncate me-auto">{{ $profile->title ?: 'Untitled' }}</div>
+                                                <span class="badge bg-label-secondary rounded-pill flex-shrink-0">#{{ $profile->id }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>

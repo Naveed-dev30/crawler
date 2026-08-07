@@ -7,9 +7,11 @@ use App\Http\Requests\UpdateFilterRequest;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Filter;
+use App\Models\FreelancerProfile;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Artisan;
 use Log;
 
 class FilterController extends Controller
@@ -30,7 +32,16 @@ class FilterController extends Controller
             'user_ids' => $t->users->pluck('user_id')->map(fn ($id) => (int) $id)->all(),
         ]);
 
-        return view('content.pages.filters', compact('filter', 'countries', 'currencies', 'mobileUsers', 'transitionsData'));
+        $profiles = FreelancerProfile::orderBy('title')->get();
+
+        return view('content.pages.filters', compact('filter', 'countries', 'currencies', 'mobileUsers', 'transitionsData', 'profiles'));
+    }
+
+    public function syncProfiles()
+    {
+        Artisan::call('profiles:sync');
+
+        return back()->with('status', 'Profiles synced.');
     }
 
     /**

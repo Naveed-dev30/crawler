@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
         <div>
             <h5 class="mb-1">{{ $title }}</h5>
-            <div class="text-muted small">
+            <div class="text-dark small">
                 <i class="bx bx-briefcase-alt me-1"></i>Project {{ $thread->project_id }}
             </div>
         </div>
@@ -29,8 +29,8 @@
             </button>
         </div>
     @endif
-    <p class="text-muted small mb-3">
-        <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->format('M j, Y H:i') }}
+    <p class="text-dark small mb-3">
+        <i class="bx bx-calendar me-1"></i>Created {{ $thread->created_at?->timezone('Asia/Karachi')->format('M j, Y H:i') }}
         @if ($thread->last_client_message_at)
             <span class="mx-1">·</span><i class="bx bx-message-dots me-1"></i>Last client message {{ $thread->last_client_message_at->diffForHumans() }}
         @endif
@@ -122,7 +122,7 @@
             <div class="rounded p-3 {{ $message->direction === 'sent' ? 'bg-label-primary' : 'bg-lighter' }}" style="max-width: 85%;">
                 <div class="small text-muted mb-1">
                     {{ $message->direction === 'sent' ? ($message->sent_by_ai ? 'AI Assistant' : ($message->sender?->name ?? 'Owner')) : 'Client' }}
-                    · {{ $message->message_time?->format('M j, H:i') }}
+                    · {{ $message->message_time?->timezone('Asia/Karachi')->format('M j, H:i') }}
                     @if ($message->sent_by_ai)
                         <span class="badge bg-label-info ms-1">AI</span>
                     @endif
@@ -132,13 +132,16 @@
                 </div>
                 <div style="white-space: pre-wrap;">{{ $message->message }}</div>
                 @foreach ($message->attachments as $attachment)
-                    <div class="mt-2">
-                        @if (\Illuminate\Support\Str::startsWith((string) $attachment->url, ['http://', 'https://']))
-                            <a href="{{ $attachment->url }}" target="_blank" rel="noopener noreferrer">
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        @if ($attachment->isStored())
+                            <a href="{{ $attachment->serve_url }}" target="_blank" rel="noopener noreferrer">
                                 <i class="bx bx-paperclip"></i> {{ $attachment->filename }}
                             </a>
+                            <a href="{{ $attachment->download_url }}" class="text-muted" title="Download">
+                                <i class="bx bx-download"></i>
+                            </a>
                         @else
-                            <span class="text-muted"><i class="bx bx-paperclip"></i> {{ $attachment->filename }}</span>
+                            <span class="text-muted"><i class="bx bx-paperclip"></i> {{ $attachment->filename }} <small>(fetching…)</small></span>
                         @endif
                     </div>
                 @endforeach
