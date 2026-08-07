@@ -39,6 +39,26 @@ class OpenAIJobGateTest extends TestCase
         Bus::assertDispatched(SummarizeReasonJob::class);
     }
 
+    public function test_ai_error_stores_static_reason_and_summary(): void
+    {
+        Bus::fake([SummarizeReasonJob::class]);
+        Filter::factory()->create(['id' => 1, 'crawler_on' => true, 'negative_prompt' => 'no crypto', 'summary_prompt' => 'Summarize.', 'prompt' => 'Write a cover letter.']);
+        $proposal = Proposal::factory()->create(['description' => 'A Laravel API', 'qualified' => null]);
+
+        // OpenAI is down: qualifier fails closed with error=true.
+        Http::fake(['https://api.openai.com/*' => Http::response('', 500)]);
+
+        (new OpenAIJob($proposal))->handle();
+
+        $fresh = $proposal->fresh();
+        $this->assertFalse($fresh->qualified);
+        $this->assertNotEmpty($fresh->qualify_reason);   // static text, not blank
+        $this->assertNotEmpty($fresh->qualify_summary);
+        $this->assertSame(0, Bid::where('proposal_id', $proposal->id)->count());
+        // No AI reason to summarize — don't waste a call.
+        Bus::assertNotDispatched(SummarizeReasonJob::class);
+    }
+
     public function test_gate_pass_flags_qualified_and_creates_bid(): void
     {
         Bus::fake([SummarizeReasonJob::class, FineTuneBidJob::class]);

@@ -17,13 +17,14 @@ return new class extends Migration
         });
 
         // Backfill from the actual message history; fall back to the inbound
-        // watermark, then thread creation time.
+        // watermark, then thread creation time. No table alias — SQLite (test
+        // DB) rejects `UPDATE threads t`; the correlated subquery works on both.
         DB::statement('
-            UPDATE threads t
+            UPDATE threads
             SET last_message_at = COALESCE(
-                (SELECT MAX(m.message_time) FROM thread_messages m WHERE m.thread_id = t.id),
-                t.last_client_message_at,
-                t.created_at
+                (SELECT MAX(m.message_time) FROM thread_messages m WHERE m.thread_id = threads.id),
+                last_client_message_at,
+                created_at
             )
         ');
     }
