@@ -63,9 +63,31 @@ class BidNowJob implements ShouldQueue
             if ($response->status() == 200) {
                 $this->bid->bid_status = 'completed';
             } else {
-                $this->bid->bid_status = 'Failed';
                 $body = json_decode($response->body());
-                $this->bid->error_message = $body->message;
+                $message = $body->message ?? '';
+
+                // Freelancer rejects bids below the project's minimum budget.
+                // When our quote is under the minimum, retry once at exactly the
+                // minimum instead of failing the bid.
+                $min = $this->bid->proposal->min_budget;
+                if ($min && $this->bid->price < $min) {
+                    $data['amount'] = $min;
+                    $response = Http::timeout(120)
+                        ->withHeaders($headers)
+                        ->post($url, $data);
+
+                    if ($response->status() == 200) {
+                        $this->bid->price = $min;
+                        $this->bid->bid_status = 'completed';
+                    } else {
+                        $retryBody = json_decode($response->body());
+                        $this->bid->bid_status = 'Failed';
+                        $this->bid->error_message = $retryBody->message ?? $message;
+                    }
+                } else {
+                    $this->bid->bid_status = 'Failed';
+                    $this->bid->error_message = $message;
+                }
             }
             $this->bid->save();
         } catch (\Exception $e) {
