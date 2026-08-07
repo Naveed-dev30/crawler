@@ -27,6 +27,13 @@ export default {
     const w = []
     if (!body.userStats) w.push('User Statistics tab produced no data.')
     if (!body.marketplaceStats) w.push('Marketplace Statistics tab produced no data.')
+    // Trend directions are read off the arrow icons, so a markup change breaks
+    // them silently: the payload still lists every skill, just all neutral. A
+    // whole widget with no movement at all is the signal that the read broke.
+    const trending = (body.marketplaceStats && body.marketplaceStats.trendingSkills) || []
+    if (trending.length && trending.every((s) => (s.direction ?? 'even') === 'even')) {
+      w.push('Trending skills captured with no up/down directions — the arrow markup may have changed.')
+    }
     return w
   },
 }

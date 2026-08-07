@@ -48,6 +48,28 @@ test('gamification and insights are scrape-mode captures delegating to lib/scrap
   assert.equal(typeof insights.combine, 'function')
 })
 
+// A broken arrow read is invisible in the payload — every skill is still there,
+// just all neutral — so the run report has to call it out.
+test('insights warns when no trending skill has a direction', () => {
+  const body = {
+    userStats: {},
+    marketplaceStats: { trendingSkills: [{ name: 'PHP', direction: 'even' }, { name: 'SEO' }] },
+  }
+  const w = insights.warnings(body)
+
+  assert.ok(w.some((m) => m.includes('Trending skills')), 'must warn when every direction is neutral')
+})
+
+test('insights does not warn when trending directions were read', () => {
+  const body = {
+    userStats: {},
+    marketplaceStats: { trendingSkills: [{ name: 'PHP', direction: 'even' }, { name: 'SEO', direction: 'up' }] },
+  }
+  const w = insights.warnings(body)
+
+  assert.ok(!w.some((m) => m.includes('Trending skills')))
+})
+
 test('bids stays on the interception path: path and requiredKeys still present', () => {
   assert.notEqual(insightsBids.mode, 'scrape')
   assert.equal(typeof insightsBids.path, 'string')
