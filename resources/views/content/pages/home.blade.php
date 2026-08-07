@@ -136,6 +136,12 @@
             border-bottom-color: #ffab00;
         }
 
+        #bids-tabs .nav-link[data-tab="out-of-bid"].active {
+            color: #ff9f43;
+            background-color: rgba(255, 159, 67, .12);
+            border-bottom-color: #ff9f43;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
@@ -215,6 +221,7 @@
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'failed' ? 'active' : '' }}" data-tab="failed" type="button">Failed</button></li>
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'skill-not-matched' ? 'active' : '' }}" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'not-qualified' ? 'active' : '' }}" data-tab="not-qualified" type="button">Not Qualified</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'out-of-bid' ? 'active' : '' }}" data-tab="out-of-bid" type="button">Out of Bid</button></li>
             </ul>
             <span class="badge bg-label-primary d-inline-flex align-items-center text-nowrap d-none"
                   style="font-size: .8rem; padding: .45rem .75rem;" id="bids-last-updated-wrap">
@@ -236,6 +243,13 @@
                 <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="all">All</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Interested">Interested</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Not Interested">Not Interested</button></li>
+            </ul>
+        </div>
+        {{-- Failed only: separate bid-limit failures from the rest --}}
+        <div class="px-3 py-2 border-bottom d-none" id="bids-fail-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-fail-tab="other">Other</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-fail-tab="out-of-bid">Out of Bid</button></li>
             </ul>
         </div>
         <div class="table-responsive">
@@ -293,6 +307,7 @@
             let currentTab = @json($activeTab ?? 'completed');
             let currentCheck = 'remaining';
             let currentInterest = 'all';
+            let currentFailSub = 'other';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -304,6 +319,7 @@
                 p.set('page', currentPage);
                 if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
                 if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
+                if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
                 const min = el('f-min').value; if (min) p.set('min', min);
@@ -336,6 +352,7 @@
                     th.classList.toggle('d-none', currentTab !== 'completed'));
                 el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
                 el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
+                el('bids-fail-tabs').classList.toggle('d-none', currentTab !== 'failed');
                 el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
                 el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
                 const nq = currentTab === 'not-qualified';
@@ -390,10 +407,13 @@
                     // Switching main tabs resets both sub-tab groups
                     currentCheck = 'remaining';
                     currentInterest = 'all';
+                    currentFailSub = 'other';
                     document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.checkTab === 'remaining'));
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.interestTab === 'all'));
+                    document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.failTab === 'other'));
                     reload();
                 });
             });
@@ -414,6 +434,16 @@
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentInterest = this.dataset.interestTab;
+                    reload();
+                });
+            });
+
+            // Failed sub-tabs (Other / Out of Bid)
+            document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFailSub = this.dataset.failTab;
                     reload();
                 });
             });
