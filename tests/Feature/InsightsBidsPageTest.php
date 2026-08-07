@@ -64,8 +64,10 @@ class InsightsBidsPageTest extends TestCase
 
     public function test_paginates_at_20(): void
     {
+        // Rows must carry real bid data to surface (empty client-only rows are
+        // filtered out), so give each a bid_rank.
         for ($i = 1; $i <= 25; $i++) {
-            BidInsight::create(['project_id' => $i, 'last_scraped_at' => now()]);
+            BidInsight::create(['project_id' => $i, 'bid_rank' => $i, 'last_scraped_at' => now()]);
         }
 
         $this->actingAs(User::factory()->create())->get('/insights/bids')

@@ -71,6 +71,13 @@ class ProposalQualifier
                     Log::warning('ProposalQualifier: unparseable reply (attempt '.$attempt.')');
                 } else {
                     Log::warning('ProposalQualifier: HTTP '.$response->status()." (attempt {$attempt})");
+                    // Rate limited / quota exhausted: trip the global gate so we
+                    // stop calling OpenAI until it recovers.
+                    if ($response->status() === 429) {
+                        app(AiGate::class)->markRateLimited();
+
+                        break; // no point retrying a rate limit
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::warning('ProposalQualifier: exception '.$e->getMessage()." (attempt {$attempt})");
