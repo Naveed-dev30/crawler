@@ -15,10 +15,11 @@ class ProposalQualifier
      * Decide whether to proceed with a bid for a proposal, given the operator's
      * negative prompt, and capture the model's reason. Also picks the best profile.
      *
-     * @return array{qualified: bool, reason: string, profile_id: int|null}
+     * @return array{qualified: bool, reason: string, profile_id: int|null, error: bool}
      *
      * Fail-closed: any API error, timeout, or unparseable reply after retries
-     * returns ['qualified' => false, 'reason' => '', 'profile_id' => null]. Never throws.
+     * returns qualified=false with error=true so the caller can distinguish a
+     * genuine disqualification from an evaluation that never happened. Never throws.
      */
     public function qualify(string $negativePrompt, array $profiles, string $description): array
     {
@@ -76,12 +77,12 @@ class ProposalQualifier
             }
         }
 
-        return ['qualified' => false, 'reason' => '', 'profile_id' => null];
+        return ['qualified' => false, 'reason' => '', 'profile_id' => null, 'error' => true];
     }
 
     /**
      * @param  array<int, int>  $profileIds  valid ids the model may choose from
-     * @return array{qualified: bool, reason: string, profile_id: int|null}|null
+     * @return array{qualified: bool, reason: string, profile_id: int|null, error: bool}|null
      */
     private function parse(?string $raw, array $profileIds = []): ?array
     {
@@ -109,6 +110,7 @@ class ProposalQualifier
             'qualified' => $data['qualified'],
             'reason' => is_string($data['reason'] ?? null) ? trim($data['reason']) : '',
             'profile_id' => $profileId,
+            'error' => false,
         ];
     }
 }
