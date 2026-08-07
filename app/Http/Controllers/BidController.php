@@ -45,9 +45,11 @@ class BidController extends Controller
         if ($bid) {
             $status = strtolower((string) $bid->bid_status);
             if (in_array($status, ['failed', 'expired'], true)) {
-                return str_contains(strtolower((string) $bid->error_message), 'skill')
-                    ? 'skill-not-matched'
-                    : 'failed';
+                if (str_contains(strtolower((string) $bid->error_message), 'skill')) {
+                    return 'skill-not-matched';
+                }
+
+                return Bid::messageIsOutOfBid($bid->error_message) ? 'out-of-bid' : 'failed';
             }
 
             return 'completed';
@@ -143,10 +145,15 @@ class BidController extends Controller
             ]);
         }
 
-        $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched'], true)
+        $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched', 'out-of-bid'], true)
           ? $request->query('tab')
           : 'completed';
         $isCompleted = $tab === 'completed';
+
+        // Failed sub-tabs: other (not bid-limit) / out-of-bid (bid limit reached)
+        $failSub = in_array($request->query('failsub'), ['other', 'out-of-bid'], true)
+          ? $request->query('failsub')
+          : 'other';
 
         // Bids Placed sub-tabs: remaining (unmarked) / Correct / Incorrect
         $checkTab = in_array($request->query('check'), ['Correct', 'Incorrect'], true)
@@ -176,7 +183,16 @@ class BidController extends Controller
                 ->where(function ($sub) {
                     $sub->where('bids.error_message', 'not like', '%skill%')
                         ->orWhereNull('bids.error_message');
-                }))
+                })
+                ->when($failSub === 'other', fn ($qq) => $qq->notOutOfBid())
+                ->when($failSub === 'out-of-bid', fn ($qq) => $qq->outOfBid()))
+            ->when($tab === 'out-of-bid', fn ($q) => $q
+                ->whereIn('bids.bid_status', $failed)
+                ->where(function ($sub) {
+                    $sub->where('bids.error_message', 'not like', '%skill%')
+                        ->orWhereNull('bids.error_message');
+                })
+                ->outOfBid())
             ->with('proposal')
             ->latest('bids.created_at')
             ->paginate(100)
