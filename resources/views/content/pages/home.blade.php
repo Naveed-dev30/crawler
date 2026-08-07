@@ -187,7 +187,7 @@
         .bids-table tbody tr.bid-row-exit td {
             transform: translateX(90px);
             opacity: 0;
-            transition: transform .32s cubic-bezier(.4, 0, .2, 1), opacity .32s ease;
+            transition: transform .16s cubic-bezier(.4, 0, .2, 1), opacity .16s ease;
         }
 
         .tooltip-light .tooltip-inner {
@@ -252,6 +252,14 @@
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-fail-tab="out-of-bid">Out of Bid</button></li>
             </ul>
         </div>
+        {{-- Not Qualified only: review the AI's skip decision --}}
+        <div class="px-3 py-2 border-bottom d-none" id="bids-nq-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-nq-tab="remaining">Remaining</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-nq-tab="Correct">Correct</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-nq-tab="Incorrect">Incorrect</button></li>
+            </ul>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle bids-table mb-0">
                 <thead>
@@ -308,6 +316,7 @@
             let currentCheck = 'remaining';
             let currentInterest = 'all';
             let currentFailSub = 'other';
+            let currentNqCheck = 'remaining';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -320,6 +329,7 @@
                 if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
                 if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
                 if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
+                if (currentTab === 'not-qualified' && currentNqCheck !== 'remaining') p.set('nqcheck', currentNqCheck);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
                 const min = el('f-min').value; if (min) p.set('min', min);
@@ -353,6 +363,7 @@
                 el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
                 el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
                 el('bids-fail-tabs').classList.toggle('d-none', currentTab !== 'failed');
+                el('bids-nq-tabs').classList.toggle('d-none', currentTab !== 'not-qualified');
                 el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
                 el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
                 const nq = currentTab === 'not-qualified';
@@ -408,12 +419,15 @@
                     currentCheck = 'remaining';
                     currentInterest = 'all';
                     currentFailSub = 'other';
+                    currentNqCheck = 'remaining';
                     document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.checkTab === 'remaining'));
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.interestTab === 'all'));
                     document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
                         b.classList.toggle('active', b.dataset.failTab === 'other'));
+                    document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.nqTab === 'remaining'));
                     reload();
                 });
             });
@@ -444,6 +458,16 @@
                     document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     currentFailSub = this.dataset.failTab;
+                    reload();
+                });
+            });
+
+            // Not Qualified review sub-tabs (Remaining / Correct / Incorrect)
+            document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentNqCheck = this.dataset.nqTab;
                     reload();
                 });
             });
@@ -503,7 +527,36 @@
                 // refresh once the animation finishes.
                 if (row && currentTab === 'completed') {
                     row.classList.add('bid-row-exit');
-                    setTimeout(loadData, 340);
+                    setTimeout(loadData, 170);
+                } else {
+                    loadData();
+                }
+            });
+
+            // Delegated: Correct/Incorrect on Not Qualified rows
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.nq-check-btn');
+                if (!btn) return;
+                const check = btn.dataset.check;
+                const row = btn.closest('tr');
+                const res = await fetch('/updateProposalCheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ proposal_id: btn.dataset.proposalId, check: check })
+                });
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
+                // Marked row leaves the current Not Qualified sub-tab — glide out.
+                if (row) {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 170);
                 } else {
                     loadData();
                 }
