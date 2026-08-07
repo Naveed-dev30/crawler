@@ -65,13 +65,13 @@ class BidsDataTest extends TestCase
 
         $user = User::factory()->create();
 
-        // All: every row, both buttons rendered
-        $all = $this->actingAs($user)->getJson('/bids/data?tab=completed')->assertOk()->json('rowsHtml');
-        $this->assertStringContainsString('111', $all);
-        $this->assertStringContainsString('222', $all);
-        $this->assertStringContainsString('333', $all);
-        $this->assertStringContainsString('data-check="Correct"', $all);
-        $this->assertStringContainsString('data-check="Incorrect"', $all);
+        // Remaining (default): only the unreviewed row; both buttons rendered
+        $remaining = $this->actingAs($user)->getJson('/bids/data?tab=completed')->assertOk()->json('rowsHtml');
+        $this->assertStringNotContainsString('111', $remaining);   // marked Correct — hidden
+        $this->assertStringNotContainsString('222', $remaining);   // marked Incorrect — hidden
+        $this->assertStringContainsString('333', $remaining);      // Unreviewed — shown
+        $this->assertStringContainsString('data-check="Correct"', $remaining);
+        $this->assertStringContainsString('data-check="Incorrect"', $remaining);
 
         // Correct: only the Correct row; only the Incorrect (shift) button
         $correct = $this->actingAs($user)->getJson('/bids/data?tab=completed&check=Correct')->assertOk()->json('rowsHtml');

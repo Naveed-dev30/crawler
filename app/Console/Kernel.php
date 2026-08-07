@@ -33,6 +33,13 @@ class Kernel extends ConsoleKernel
             ->daily()
             ->runInBackground()
             ->withoutOverlapping(30);
+
+        // When AI was auto-disabled by a rate limit, probe OpenAI and flip it
+        // back on once it answers. Manual disables are left untouched.
+        $schedule->command('ai:probe')
+            ->everyFiveMinutes()
+            ->runInBackground()
+            ->withoutOverlapping(5);
     }
 
     /**

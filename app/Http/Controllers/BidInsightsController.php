@@ -232,6 +232,7 @@ class BidInsightsController extends Controller
                 ->orWhereNotNull('time_to_bid_seconds')
                 ->orWhereNotNull('bid_rank')
                 ->orWhereNotNull('winning_bid_amount')
+                ->orWhere('winning_bid_sealed', true)
                 ->orWhereIn('project_id', Proposal::where('qualified', true)->select('project_id'));
         })
             ->orderByDesc('last_scraped_at')

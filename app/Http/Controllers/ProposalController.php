@@ -281,7 +281,11 @@ class ProposalController extends Controller
                         // this project. Creates the bid_insights row when absent.
                         $this->storeClientInsight($project, $users);
 
-                        OpenAIJob::dispatch($proposal);
+                        // Skip AI entirely while the gate is off (rate limit /
+                        // admin) — proposal is stored, just not qualified/bid.
+                        if (app(\App\Services\AiGate::class)->enabled()) {
+                            OpenAIJob::dispatch($proposal);
+                        }
                     } catch (\Throwable $e) {
                         \Log::warning('Skipping project '.($project['id'] ?? '?').': '.$e->getMessage());
 

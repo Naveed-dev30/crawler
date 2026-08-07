@@ -33,6 +33,12 @@ class OpenAIJob implements ShouldQueue
 
     public function handle(): void
     {
+        // AI gate is off (rate limit or admin): do nothing — no qualify, no bid.
+        // This is the "stop at first step" guard.
+        if (! app(\App\Services\AiGate::class)->enabled()) {
+            return;
+        }
+
         $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
@@ -100,6 +106,17 @@ class OpenAIJob implements ShouldQueue
         $response = Http::timeout(120)
             ->withHeaders(['Authorization' => $bearer])
             ->post($url, $data);
+
+        // Don't create a bid with an empty cover letter on failure. Trip the gate
+        // on a rate limit so the next proposals short-circuit above.
+        if (! $response->successful()) {
+            if ($response->status() === 429) {
+                app(\App\Services\AiGate::class)->markRateLimited();
+            }
+            \Log::warning('OpenAIJob: cover letter HTTP '.$response->status().' for proposal '.$this->proposal->id);
+
+            return;
+        }
 
         $coverLetter = $response['choices'][0]['message']['content'];
 
