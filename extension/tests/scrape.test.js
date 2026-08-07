@@ -164,6 +164,54 @@ test('marketplace: profile-view counts are null when the worker supplies no char
   assert.equal(out.profileViewCountPastYear, null)
 })
 
+test('marketplace: trending directions come from the worker DOM read, matched by name', () => {
+  // The up/down movement is an arrow icon, so it is absent from innerText. The
+  // worker reads it off the DOM and passes [{name, direction}] via dom.
+  const dom = {
+    trendingSkills: [
+      { name: 'Graphic Design', direction: 'up' },
+      { name: 'PHP', direction: 'down' },
+      { name: 'Photoshop', direction: 'even' },
+    ],
+  }
+  const out = scrapeMarketplace(read('marketplace-page.txt'), dom)
+  const by = (name) => out.trendingSkills.find((s) => s.name === name)
+
+  assert.equal(by('Graphic Design').direction, 'up')
+  assert.equal(by('PHP').direction, 'down')
+  assert.equal(by('Photoshop').direction, 'even')
+  // A name the DOM read did not cover stays neutral rather than inheriting a
+  // neighbour's arrow.
+  assert.equal(by('Website Design').direction, 'even')
+  // Names still come from the (bounded) page text, so the list is unchanged.
+  assert.equal(out.trendingSkills[0].name, 'Graphic Design')
+  assert.ok(out.trendingSkills.length >= 15)
+})
+
+test('marketplace: trending directions tolerate whitespace and case differences in DOM names', () => {
+  const dom = { trendingSkills: [{ name: '  graphic   design ', direction: 'up' }] }
+  const out = scrapeMarketplace(read('marketplace-page.txt'), dom)
+
+  assert.equal(out.trendingSkills[0].direction, 'up')
+})
+
+test('marketplace: trending skills default to even when the worker reads no directions', () => {
+  const out = scrapeMarketplace(read('marketplace-page.txt'))
+
+  assert.ok(out.trendingSkills.length >= 15)
+  assert.ok(out.trendingSkills.every((s) => s.direction === 'even'))
+})
+
+test('marketplace: the DOM read supplies the trending list when the text scrape cannot bound it', () => {
+  // 'Overall ranking' is present (so other sections parse) but the trending
+  // heading is absent from the text; the DOM rows are the only source left.
+  const text = ['Overall ranking', '25%', 'Bids per milestone', '18.50'].join('\n')
+  const dom = { trendingSkills: [{ name: 'PHP', direction: 'down' }] }
+  const out = scrapeMarketplace(text, dom)
+
+  assert.deepEqual(out.trendingSkills, [{ name: 'PHP', direction: 'down' }])
+})
+
 test('marketplace: trending skills does not swallow the footer if the end heading is missing', () => {
   // No 'Overall ranking' heading, so trending cannot be bounded. It must come
   // back empty rather than pulling nav/footer lines into trendingSkills.

@@ -181,6 +181,103 @@ async function readPage(tabId) {
         ratingPerSkill = []
       }
 
+      // "Trending skills" shows each skill's movement as an arrow icon, which
+      // contributes nothing to innerText — so the direction has to come from the
+      // markup. Two independent signals, tried in order:
+      //   1. direction words in the row's class/data/aria attributes
+      //   2. the arrow's rendered colour (Freelancer draws up green, down red)
+      // Neither hit means unknown, reported as 'even' — a neutral marker is
+      // correct-looking; a guessed arrow is wrong data.
+      let trendingSkills = []
+      try {
+        const UP = new Set(['up', 'upward', 'upwards', 'increase', 'increasing', 'increased', 'rise', 'rising', 'risen', 'positive', 'gain', 'growth', 'ascending', 'asc', 'success', 'green'])
+        const DOWN = new Set(['down', 'downward', 'downwards', 'decrease', 'decreasing', 'decreased', 'fall', 'falling', 'fallen', 'negative', 'loss', 'drop', 'dropping', 'descending', 'desc', 'danger', 'red'])
+        // Attributes that can name a direction. The row's visible text is
+        // deliberately excluded: a skill literally called "Growth Hacking" or
+        // "Upwork Migration" must not read as an up arrow.
+        const DIRECTION_ATTRS = ['class', 'name', 'title', 'alt', 'aria-label', 'href', 'xlink:href', 'd']
+        // Splits on separators AND camelCase, so 'TrendingRow-arrow--up',
+        // 'bx-trending-down' and 'arrowUp' all yield a bare 'up'/'down' token.
+        const tokens = (s) => String(s || '')
+          .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter(Boolean)
+
+        const fromAttributes = (elements) => {
+          let seen = null
+          for (const el of elements) {
+            for (const attr of Array.from(el.attributes || [])) {
+              const n = attr.name.toLowerCase()
+              // 'd' is the SVG path geometry — included only because icon sprites
+              // sometimes carry the direction in a path id, never as coordinates.
+              if (!DIRECTION_ATTRS.includes(n) && !n.startsWith('data-')) continue
+              for (const t of tokens(attr.value)) {
+                // 'down' wins on sight: a down arrow inside a widget whose own
+                // container is named "...trending-up-list" must read as down.
+                if (DOWN.has(t)) return 'down'
+                if (UP.has(t)) seen = 'up'
+              }
+            }
+          }
+          return seen
+        }
+
+        // Green-dominant → up, red-dominant → down. Margins are wide enough that
+        // the grey neutral marker (#a1acb8) and ordinary text colours stay
+        // unclassified.
+        const hue = (value) => {
+          const m = String(value || '').match(/rgba?\(([^)]+)\)/)
+          if (!m) return null
+          const p = m[1].split(',').map((x) => parseFloat(x))
+          if (p.length < 3 || p.some((x) => !isFinite(x))) return null
+          if (p.length > 3 && p[3] === 0) return null
+          const [r, g, b] = p
+          if (g > r + 30 && g > b + 10) return 'up'
+          if (r > g + 30 && r > b + 10) return 'down'
+          return null
+        }
+
+        const fromColour = (elements) => {
+          for (const el of elements) {
+            const cs = window.getComputedStyle(el)
+            if (!cs) continue
+            for (const prop of ['fill', 'color', 'borderBottomColor', 'borderTopColor', 'backgroundColor']) {
+              // An element's own text colour is only evidence if it renders no
+              // text — otherwise every row's label would classify itself.
+              if (prop === 'color' && el.textContent && el.textContent.trim()) continue
+              const d = hue(cs[prop])
+              if (d) return d
+            }
+          }
+          return null
+        }
+
+        const card = Array.from(document.querySelectorAll('.StatCard')).find((c) => {
+          const t = c.querySelector('.StatCard-header-title')
+          return t && t.textContent.trim().toLowerCase() === 'trending skills'
+        })
+        if (card) {
+          let rows = Array.from(card.querySelectorAll('.StatTypeList-row'))
+          if (!rows.length) rows = Array.from(card.querySelectorAll('li'))
+          trendingSkills = rows
+            .map((row) => {
+              const nameEl = row.querySelector('.StatTypeList-row-name')
+              const name = (nameEl ? nameEl.textContent : row.textContent).replace(/\s+/g, ' ').trim()
+              if (!name) return null
+              // Scan the row minus the name cell, so the skill's own label (and
+              // any tooltip repeating it) cannot supply a direction token.
+              const scope = Array.from(row.querySelectorAll('*'))
+                .filter((el) => !nameEl || (el !== nameEl && !nameEl.contains(el)))
+              const direction = fromAttributes(scope) || fromColour(scope) || 'even'
+              return { name, direction }
+            })
+            .filter(Boolean)
+        }
+      } catch (e) {
+        trendingSkills = []
+      }
+
       // Profile-view counts are Chart.js line charts on a <canvas>; their data
       // lives in the chart instance, not the DOM. Read it by canvas id, handling
       // both Chart.js v2 (Chart.instances) and v3+ (Chart.getChart). Returns
@@ -213,6 +310,7 @@ async function readPage(tabId) {
         html: document.documentElement.outerHTML.slice(0, limit),
         dom: {
           ratingPerSkill,
+          trendingSkills,
           profileViewCountPastWeek: chartData('profileViewCountPastWeek-chart'),
           profileViewCountPastYear: chartData('profileViewCountPastYear-chart'),
         },

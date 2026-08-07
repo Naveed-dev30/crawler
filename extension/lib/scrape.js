@@ -147,6 +147,14 @@ export function scrapeUserStats(text, dom) {
 const PCT = /^[+-]\d+%$/
 const RANK = /^Top \d+%$/
 
+// The dashboard renders three trend states; anything else the DOM read reports
+// is treated as unknown, which shows as the neutral 'even' marker rather than a
+// guessed arrow.
+const normalizeDirection = (d) => {
+  const v = String(d ?? '').trim().toLowerCase()
+  return v === 'up' || v === 'down' ? v : 'even'
+}
+
 export function scrapeMarketplace(text, dom) {
   const lines = String(text ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length)
   const idx = (label, from = 0) => lines.indexOf(label, from)
@@ -171,10 +179,24 @@ export function scrapeMarketplace(text, dom) {
     }
   }
 
-  // Trending skills: names only. These have no value pattern to anchor on and
-  // include all-caps names (PHP, HTML, SEO), so the only defense against pulling
-  // in the page footer is a hard boundary — require the end heading.
-  const trendingSkills = sliceBetween('Trending skills', 'Overall ranking', true).map((name) => ({ name }))
+  // Trending skills: names only in the text. These have no value pattern to
+  // anchor on and include all-caps names (PHP, HTML, SEO), so the only defense
+  // against pulling in the page footer is a hard boundary — require the end
+  // heading.
+  //
+  // Each row's up/down movement is drawn as an arrow icon, so it contributes
+  // nothing to innerText — the worker reads it off the DOM and passes
+  // [{name, direction}] via dom.trendingSkills. Names stay text-derived (that
+  // path is bounded and tested); the DOM read only supplies the direction,
+  // matched by name so a partial or reordered read can never shift arrows onto
+  // the wrong skills. A name the DOM read missed stays 'even'.
+  const domTrending = (dom && Array.isArray(dom.trendingSkills) ? dom.trendingSkills : [])
+    .filter((r) => r && typeof r.name === 'string' && r.name.trim())
+  const key = (name) => String(name).replace(/\s+/g, ' ').trim().toLowerCase()
+  const directionByName = new Map(domTrending.map((r) => [key(r.name), normalizeDirection(r.direction)]))
+  const trendingNames = sliceBetween('Trending skills', 'Overall ranking', true)
+  const trendingSkills = (trendingNames.length ? trendingNames : domTrending.map((r) => r.name.trim()))
+    .map((name) => ({ name, direction: directionByName.get(key(name)) ?? 'even' }))
 
   // Overall ranking: first "\d+%" after the heading.
   let overall = null
