@@ -143,6 +143,11 @@ class User extends Authenticatable
 
     public function aiActiveNow(Carbon $now): bool
     {
+        // Global kill switch wins over every per-user setting.
+        if (! config('variables.aiAutoReplyEnabled')) {
+            return false;
+        }
+
         if ($this->ai_manual_state !== null
             && ($this->ai_manual_until === null || $now->lt($this->ai_manual_until))) {
             return (bool) $this->ai_manual_state;

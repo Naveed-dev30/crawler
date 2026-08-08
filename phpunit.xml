@@ -27,6 +27,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="BROADCAST_DRIVER" value="log"/>
         <env name="FL_FAKE" value="false"/>
+        <env name="AI_AUTO_REPLY_ENABLED" value="true"/>
         <env name="INGEST_TOKEN" value=""/>
         <env name="GAMIFICATION_INGEST_TOKEN" value=""/>
         <env name="SESSION_DRIVER" value="array"/>
