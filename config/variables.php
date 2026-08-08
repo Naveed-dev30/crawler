@@ -32,6 +32,10 @@ return [
     // Dev-only: fabricate Freelancer chat data locally (no network in or out).
     "flFake" => env("FL_FAKE", false),
     "openAIKey" => env('OPENAI_API_KEY'),
+    // Global kill switch for AI auto-replies. Off by default: when false, no
+    // thread ever gets an automatic AI answer, whatever the per-user schedule
+    // or manual toggle says. Set AI_AUTO_REPLY_ENABLED=true to reactivate.
+    "aiAutoReplyEnabled" => env('AI_AUTO_REPLY_ENABLED', false),
     "gamificationIngestToken" => env('GAMIFICATION_INGEST_TOKEN'),
     "ingestToken" => env('INGEST_TOKEN', env('GAMIFICATION_INGEST_TOKEN')),
 ];

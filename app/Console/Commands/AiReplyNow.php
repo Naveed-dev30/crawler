@@ -60,6 +60,7 @@ class AiReplyNow extends Command
             ['client message', $client->id . ' — "' . str($client->message)->limit(50) . '"'],
             ['assigned user', $user?->id ?? '— none (will skip)'],
             ['blocked', $thread->blocked ? 'true (will skip)' : 'false'],
+            ['auto-reply enabled', config('variables.aiAutoReplyEnabled') ? 'true' : 'false (will skip — AI_AUTO_REPLY_ENABLED)'],
             ['aiActiveNow', $user ? ($user->aiActiveNow($now) ? 'true' : 'false (will skip)') : 'n/a'],
             ['already answered', $answered ? 'true (will skip)' : 'false'],
             ['openAIKey set', config('variables.openAIKey') ? 'yes' : 'no (generator returns null)'],

@@ -6,8 +6,10 @@ namespace Tests\Unit;
 
 use App\Models\User;
 use Illuminate\Support\Carbon;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
+// Boots the app (rather than a bare PHPUnit TestCase) because aiActiveNow()
+// consults the global config('variables.aiAutoReplyEnabled') kill switch.
 class UserAiStateTest extends TestCase
 {
     private function user(array $attrs): User
@@ -88,6 +90,17 @@ class UserAiStateTest extends TestCase
     {
         $u = $this->user(['ai_manual_state' => true, 'ai_manual_until' => null]);
         $this->assertTrue($u->aiActiveNow($this->at('2030-01-01 00:00:00')));
+    }
+
+    public function test_kill_switch_beats_schedule_and_override(): void
+    {
+        config(['variables.aiAutoReplyEnabled' => false]);
+
+        $scheduled = $this->user(['ai_schedule_enabled' => true, 'ai_window_start' => '09:00:00', 'ai_window_end' => '17:00:00']);
+        $this->assertFalse($scheduled->aiActiveNow($this->at('2026-07-27 10:00:00')));
+
+        $overridden = $this->user(['ai_manual_state' => true, 'ai_manual_until' => null]);
+        $this->assertFalse($overridden->aiActiveNow($this->at('2026-07-27 10:00:00')));
     }
 
     public function test_next_boundary_same_day(): void
