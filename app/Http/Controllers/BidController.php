@@ -45,9 +45,11 @@ class BidController extends Controller
         if ($bid) {
             $status = strtolower((string) $bid->bid_status);
             if (in_array($status, ['failed', 'expired'], true)) {
-                return str_contains(strtolower((string) $bid->error_message), 'skill')
-                    ? 'skill-not-matched'
-                    : 'failed';
+                if (str_contains(strtolower((string) $bid->error_message), 'skill')) {
+                    return 'skill-not-matched';
+                }
+
+                return Bid::messageIsOutOfBid($bid->error_message) ? 'out-of-bid' : 'failed';
             }
 
             return 'completed';
@@ -112,7 +114,18 @@ class BidController extends Controller
             ->pluck('c', 's');
 
         if ($request->query('tab') === 'not-qualified') {
+            // Review sub-tabs: remaining (unreviewed) / Correct / Incorrect
+            $nqCheck = in_array($request->query('nqcheck'), ['Correct', 'Incorrect'], true)
+              ? $request->query('nqcheck')
+              : 'remaining';
+
             $proposals = Proposal::notQualified()
+                ->when($nqCheck === 'remaining', fn ($q) => $q->where(function ($sub) {
+                    $sub->whereNull('qualify_check')
+                        ->orWhere('qualify_check', '')
+                        ->orWhere('qualify_check', 'Unreviewed');
+                }))
+                ->when(in_array($nqCheck, ['Correct', 'Incorrect'], true), fn ($q) => $q->where('qualify_check', $nqCheck))
                 ->when($request->filled('q'), function ($query) use ($request) {
                     $q = $request->query('q');
                     $query->where(function ($sub) use ($q) {
@@ -126,7 +139,7 @@ class BidController extends Controller
 
             $rowsHtml = '';
             foreach ($proposals as $proposal) {
-                $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal])->render();
+                $rowsHtml .= view('_partials.not-qualified-row', ['proposal' => $proposal, 'checkTab' => $nqCheck])->render();
             }
             if ($proposals->isEmpty()) {
                 $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No not-qualified proposals yet.</td></tr>';
@@ -143,26 +156,39 @@ class BidController extends Controller
             ]);
         }
 
-        $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched'], true)
+        $tab = in_array($request->query('tab'), ['failed', 'skill-not-matched', 'out-of-bid'], true)
           ? $request->query('tab')
           : 'completed';
         $isCompleted = $tab === 'completed';
 
-        // Bids Placed sub-tabs: all / Correct / Incorrect review states
+        // Failed sub-tabs: other (not bid-limit) / out-of-bid (bid limit reached)
+        $failSub = in_array($request->query('failsub'), ['other', 'out-of-bid'], true)
+          ? $request->query('failsub')
+          : 'other';
+
+        // Bids Placed sub-tabs: remaining (unmarked) / Correct / Incorrect
         $checkTab = in_array($request->query('check'), ['Correct', 'Incorrect'], true)
           ? $request->query('check')
-          : 'all';
+          : 'remaining';
 
-        // Skills Not Matched sub-tabs: all / Interested / Not Interested
+        // Skills Not Matched sub-tabs: remaining (unmarked) / Interested / Not Interested
         $interestTab = in_array($request->query('interest'), ['Interested', 'Not Interested'], true)
           ? $request->query('interest')
-          : 'all';
+          : 'remaining';
         $isSkillTab = $tab === 'skill-not-matched';
 
         $bids = (clone $base)
             ->when($tab === 'completed', fn ($q) => $q->whereIn('bids.bid_status', $placed))
-            ->when($isCompleted && $checkTab !== 'all', fn ($q) => $q->where('bids.check', $checkTab))
-            ->when($isSkillTab && $interestTab !== 'all', fn ($q) => $q->where('bids.interest', $interestTab))
+            ->when($isCompleted && $checkTab === 'remaining', fn ($q) => $q->where(function ($sub) {
+                $sub->whereNull('bids.check')
+                    ->orWhere('bids.check', '')
+                    ->orWhere('bids.check', 'Unreviewed');
+            }))
+            ->when($isCompleted && in_array($checkTab, ['Correct', 'Incorrect'], true), fn ($q) => $q->where('bids.check', $checkTab))
+            ->when($isSkillTab && $interestTab === 'remaining', fn ($q) => $q->where(function ($sub) {
+                $sub->whereNull('bids.interest')->orWhere('bids.interest', '')->orWhere('bids.interest', 'Unreviewed');
+            }))
+            ->when($isSkillTab && in_array($interestTab, ['Interested', 'Not Interested'], true), fn ($q) => $q->where('bids.interest', $interestTab))
             ->when($tab === 'skill-not-matched', fn ($q) => $q
                 ->whereIn('bids.bid_status', $failed)
                 ->where('bids.error_message', 'like', '%skill%'))
@@ -171,7 +197,16 @@ class BidController extends Controller
                 ->where(function ($sub) {
                     $sub->where('bids.error_message', 'not like', '%skill%')
                         ->orWhereNull('bids.error_message');
-                }))
+                })
+                ->when($failSub === 'other', fn ($qq) => $qq->notOutOfBid())
+                ->when($failSub === 'out-of-bid', fn ($qq) => $qq->outOfBid()))
+            ->when($tab === 'out-of-bid', fn ($q) => $q
+                ->whereIn('bids.bid_status', $failed)
+                ->where(function ($sub) {
+                    $sub->where('bids.error_message', 'not like', '%skill%')
+                        ->orWhereNull('bids.error_message');
+                })
+                ->outOfBid())
             ->with('proposal')
             ->latest('bids.created_at')
             ->paginate(100)

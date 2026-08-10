@@ -18,6 +18,12 @@ class OpenAIJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    // Shown when the AI could not evaluate the project (service error / limit
+    // reached) — so the row explains itself instead of appearing blank.
+    private const AI_ERROR_REASON = 'Evaluation unavailable';
+
+    private const AI_ERROR_SUMMARY = 'The AI filter could not evaluate this project (service error or usage limit reached), so it was skipped as a precaution instead of bidding without a check.';
+
     protected $proposal;
 
     public function __construct(Proposal $proposal)
@@ -27,6 +33,12 @@ class OpenAIJob implements ShouldQueue
 
     public function handle(): void
     {
+        // AI gate is off (rate limit or admin): do nothing — no qualify, no bid.
+        // This is the "stop at first step" guard.
+        if (! app(\App\Services\AiGate::class)->enabled()) {
+            return;
+        }
+
         $bearer = 'Bearer '.config('variables.openAIKey');
         $url = 'https://api.openai.com/v1/chat/completions';
 
@@ -49,6 +61,17 @@ class OpenAIJob implements ShouldQueue
 
             // Negative-prompt gating only applies when the operator set skip criteria.
             if ($negative !== '') {
+                // AI never actually evaluated (error/limit): mark not-qualified but
+                // with static explanatory text so the row isn't blank.
+                if ($verdict['error']) {
+                    $this->proposal->qualified = false;
+                    $this->proposal->qualify_reason = self::AI_ERROR_REASON;
+                    $this->proposal->qualify_summary = self::AI_ERROR_SUMMARY;
+                    $this->proposal->save();
+
+                    return;
+                }
+
                 $this->proposal->qualified = $verdict['qualified'];
                 $this->proposal->qualify_reason = $verdict['reason'];
                 $this->proposal->save();
@@ -83,6 +106,17 @@ class OpenAIJob implements ShouldQueue
         $response = Http::timeout(120)
             ->withHeaders(['Authorization' => $bearer])
             ->post($url, $data);
+
+        // Don't create a bid with an empty cover letter on failure. Trip the gate
+        // on a rate limit so the next proposals short-circuit above.
+        if (! $response->successful()) {
+            if ($response->status() === 429) {
+                app(\App\Services\AiGate::class)->markRateLimited();
+            }
+            \Log::warning('OpenAIJob: cover letter HTTP '.$response->status().' for proposal '.$this->proposal->id);
+
+            return;
+        }
 
         $coverLetter = $response['choices'][0]['message']['content'];
 

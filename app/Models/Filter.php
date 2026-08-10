@@ -16,6 +16,11 @@ class Filter extends Model
         'id',
     ];
 
+    protected $casts = [
+        'ai_enabled' => 'boolean',
+        'ai_disabled_at' => 'datetime',
+    ];
+
     /**
      * The countries that belong to the Filter
      *

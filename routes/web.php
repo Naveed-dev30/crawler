@@ -68,6 +68,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/filters', [FilterController::class, 'index'])->name('filters');
         Route::post('/updateFilters', [FilterController::class, 'update'])->name('updateFilters');
         Route::post('/profiles/sync', [FilterController::class, 'syncProfiles'])->name('profiles.sync');
+        Route::post('/ai/toggle', [FilterController::class, 'toggleAi'])->name('ai.toggle');
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
@@ -83,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/proposals/{proposal}/nq-detail', [ProposalController::class, 'nqDetail'])->name('proposals.nq-detail');
     Route::resource('bids', BidController::class)->except(['index']);
     Route::post('/updateBidCheck', [BidController::class, 'updateBidCheck'])->name('updateBidCheck');
+    Route::post('/updateProposalCheck', [ProposalController::class, 'updateCheck'])->name('updateProposalCheck');
     Route::post('/updateBidInterest', [BidController::class, 'updateBidInterest'])->name('updateBidInterest');
     Route::Post('/expire_bids', [BidController::class, 'expireBids'])->name('expire_bids');
     Route::get('/review', [ReviewController::class, 'index'])->name('review');

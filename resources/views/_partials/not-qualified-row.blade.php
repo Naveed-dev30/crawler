@@ -1,5 +1,29 @@
+@php
+    $checkTab = $checkTab ?? 'remaining';
+    $idColor = $checkTab === 'Correct' ? 'text-success' : ($checkTab === 'Incorrect' ? 'text-danger' : '');
+@endphp
 <tr>
-    <td>{{ $proposal->project_id }}</td>
+    <td>
+        <span class="fw-semibold {{ $idColor }}">{{ $proposal->project_id }}</span>
+        <div class="d-flex gap-1 mt-2">
+            @if ($checkTab !== 'Correct')
+                <button type="button"
+                        class="btn rounded-pill d-inline-flex align-items-center nq-check-btn {{ $proposal->qualify_check === 'Correct' ? 'btn-success' : 'btn-outline-success' }}"
+                        style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                        data-proposal-id="{{ $proposal->id }}" data-check="Correct">
+                    <i class="bx bx-check me-1"></i>Correct
+                </button>
+            @endif
+            @if ($checkTab !== 'Incorrect')
+                <button type="button"
+                        class="btn rounded-pill d-inline-flex align-items-center nq-check-btn {{ $proposal->qualify_check === 'Incorrect' ? 'btn-danger' : 'btn-outline-danger' }}"
+                        style="--bs-btn-padding-y: .1rem; --bs-btn-padding-x: .6rem; --bs-btn-font-size: .75rem;"
+                        data-proposal-id="{{ $proposal->id }}" data-check="Incorrect">
+                    <i class="bx bx-x me-1"></i>Incorrect
+                </button>
+            @endif
+        </div>
+    </td>
     <td>{{ \Illuminate\Support\Str::limit($proposal->title, 40) }}</td>
     <td class="nq-wrap">
         <span class="fw-bold nq-clamp">{{ $proposal->qualify_reason }}</span>

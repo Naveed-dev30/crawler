@@ -12,6 +12,7 @@ use App\Models\Currency;
 use App\Models\Filter;
 use App\Models\Proposal;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,28 @@ class ProposalController extends Controller
     public function nqDetail(Proposal $proposal)
     {
         return view('_partials.not-qualified-detail', ['proposal' => $proposal])->render();
+    }
+
+    /**
+     * Operator review of a not-qualified proposal: was the AI's decision to
+     * skip it Correct or Incorrect? Mirrors BidController::updateBidCheck.
+     */
+    public function updateCheck(Request $request)
+    {
+        $proposal = Proposal::find($request->proposal_id);
+
+        if (! $proposal) {
+            return response()->json(['success' => false, 'message' => 'Proposal not found.'], 404);
+        }
+
+        if (! in_array($request->check, ['Correct', 'Incorrect'], true)) {
+            return response()->json(['success' => false, 'message' => 'Invalid check value.'], 422);
+        }
+
+        $proposal->qualify_check = $request->check;
+        $proposal->save();
+
+        return response()->json(['success' => true, 'check' => $proposal->qualify_check]);
     }
 
     /**
@@ -258,7 +281,11 @@ class ProposalController extends Controller
                         // this project. Creates the bid_insights row when absent.
                         $this->storeClientInsight($project, $users);
 
-                        OpenAIJob::dispatch($proposal);
+                        // Skip AI entirely while the gate is off (rate limit /
+                        // admin) — proposal is stored, just not qualified/bid.
+                        if (app(\App\Services\AiGate::class)->enabled()) {
+                            OpenAIJob::dispatch($proposal);
+                        }
                     } catch (\Throwable $e) {
                         \Log::warning('Skipping project '.($project['id'] ?? '?').': '.$e->getMessage());
 

@@ -96,10 +96,13 @@
     @php
         $isFailure = in_array(strtolower($bid->bid_status), ['failed', 'expired'], true);
         $skillFail = $isFailure && str_contains(strtolower((string) $bid->error_message), 'skill');
+        $outOfBid = $isFailure && ! $skillFail && $bid->is_out_of_bid;
     @endphp
     <td>
         @if ($skillFail)
             <span class="badge bg-label-warning me-1"><i class="fa fa-wrench me-1"></i>Skills Not Matched</span>
+        @elseif ($outOfBid)
+            <span class="badge me-1" style="color:#ff9f43;background-color:rgba(255,159,67,.12)"><i class="bx bx-block me-1"></i>Out of Bid</span>
         @elseif ($isFailure)
             <span class="badge bg-label-danger me-1">failed</span>
         @else
@@ -130,10 +133,19 @@
         </td>
         <td>{{ $bid->awarded_price !== null ? $bid->awarded_price . '$' : '—' }}</td>
     @endif
-    <td>
-        <div class="col">
-            <div class="row">{{ $bid->created_at->copy()->timezone('Asia/Karachi')->format('h:i a') }}</div>
-            <div class="row text-light">{{ $bid->created_at->diffForHumans(null, true) }}</div>
+    <td class="text-nowrap small">
+        {{-- Last Bid only exists once a bid actually posts, so hide it on failure
+             tabs (never posted). Last Action is always shown. --}}
+        @if ($bid->posted_at)
+            <div>
+                <span class="text-muted">Last Bid:</span>
+                <span class="fw-semibold">{{ $bid->posted_at->timezone('Asia/Karachi')->format('M j, Y · h:i a') }}</span>
+            </div>
+        @endif
+        <div>
+            <span class="text-muted">Last Action:</span>
+            @php $lastAction = $bid->last_action_at ?? $bid->updated_at; @endphp
+            <span class="fw-semibold">{{ $lastAction->timezone('Asia/Karachi')->format('M j, Y · h:i a') }}</span>
         </div>
     </td>
     <td>
