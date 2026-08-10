@@ -62,16 +62,43 @@ class BidNowJob implements ShouldQueue
             // Check the response status
             if ($response->status() == 200) {
                 $this->bid->bid_status = 'completed';
+                $this->bid->posted_at ??= now(); // first successful post
             } else {
-                $this->bid->bid_status = 'Failed';
                 $body = json_decode($response->body());
-                $this->bid->error_message = $body->message;
+                $message = $body->message ?? '';
+
+                // Freelancer rejects bids below the project's minimum budget.
+                // When our quote is under the minimum, retry once at exactly the
+                // minimum instead of failing the bid.
+                $min = $this->bid->proposal->min_budget;
+                if ($min && $this->bid->price < $min) {
+                    $data['amount'] = $min;
+                    $response = Http::timeout(120)
+                        ->withHeaders($headers)
+                        ->post($url, $data);
+
+                    if ($response->status() == 200) {
+                        $this->bid->price = $min;
+                        $this->bid->bid_status = 'completed';
+                        $this->bid->posted_at ??= now();
+                    } else {
+                        $retryBody = json_decode($response->body());
+                        $this->bid->bid_status = 'Failed';
+                        $this->bid->error_message = $retryBody->message ?? $message;
+                    }
+                } else {
+                    $this->bid->bid_status = 'Failed';
+                    $this->bid->error_message = $message;
+                }
             }
+            // Every attempt (success or fail) stamps the last action time.
+            $this->bid->last_action_at = now();
             $this->bid->save();
         } catch (\Exception $e) {
             // Handle any exceptions and mark the bid as failed
             $this->bid->bid_status = 'Failed';
             $this->bid->error_message = 'Something went wrong';
+            $this->bid->last_action_at = now();
             $this->bid->save();
         }
     }

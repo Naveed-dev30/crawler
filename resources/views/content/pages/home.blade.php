@@ -136,6 +136,12 @@
             border-bottom-color: #ffab00;
         }
 
+        #bids-tabs .nav-link[data-tab="out-of-bid"].active {
+            color: #ff9f43;
+            background-color: rgba(255, 159, 67, .12);
+            border-bottom-color: #ff9f43;
+        }
+
         .bids-table thead th {
             text-transform: uppercase;
             font-size: .72rem;
@@ -176,6 +182,14 @@
             background-color: rgba(105, 108, 255, .05);
         }
 
+        /* Cute slide-out when a row is marked Correct/Incorrect and leaves the
+           Remaining view — glides right + fades, then row is removed. */
+        .bids-table tbody tr.bid-row-exit td {
+            transform: translateX(90px);
+            opacity: 0;
+            transition: transform .16s cubic-bezier(.4, 0, .2, 1), opacity .16s ease;
+        }
+
         .tooltip-light .tooltip-inner {
             background-color: #fff;
             color: #384551;
@@ -207,6 +221,7 @@
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'failed' ? 'active' : '' }}" data-tab="failed" type="button">Failed</button></li>
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'skill-not-matched' ? 'active' : '' }}" data-tab="skill-not-matched" type="button">Skills Not Matched</button></li>
                 <li class="nav-item"><button class="nav-link {{ $activeTab === 'not-qualified' ? 'active' : '' }}" data-tab="not-qualified" type="button">Not Qualified</button></li>
+                <li class="nav-item"><button class="nav-link {{ $activeTab === 'out-of-bid' ? 'active' : '' }}" data-tab="out-of-bid" type="button">Out of Bid</button></li>
             </ul>
             <span class="badge bg-label-primary d-inline-flex align-items-center text-nowrap d-none"
                   style="font-size: .8rem; padding: .45rem .75rem;" id="bids-last-updated-wrap">
@@ -217,7 +232,7 @@
         {{-- Bids Placed only: review-state sub-tabs --}}
         <div class="px-3 py-2 border-bottom" id="bids-check-tabs">
             <ul class="nav nav-pills gap-1 mb-0">
-                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-check-tab="remaining">Remaining</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Correct">Correct</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-check-tab="Incorrect">Incorrect</button></li>
             </ul>
@@ -225,9 +240,24 @@
         {{-- Skills Not Matched only: interest sub-tabs --}}
         <div class="px-3 py-2 border-bottom d-none" id="bids-interest-tabs">
             <ul class="nav nav-pills gap-1 mb-0">
-                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="all">All</button></li>
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-interest-tab="remaining">Remaining</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Interested">Interested</button></li>
                 <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-interest-tab="Not Interested">Not Interested</button></li>
+            </ul>
+        </div>
+        {{-- Failed only: separate bid-limit failures from the rest --}}
+        <div class="px-3 py-2 border-bottom d-none" id="bids-fail-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-fail-tab="other">Other</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-fail-tab="out-of-bid">Out of Bid</button></li>
+            </ul>
+        </div>
+        {{-- Not Qualified only: review the AI's skip decision --}}
+        <div class="px-3 py-2 border-bottom d-none" id="bids-nq-tabs">
+            <ul class="nav nav-pills gap-1 mb-0">
+                <li class="nav-item"><button type="button" class="nav-link active py-1 px-3" data-nq-tab="remaining">Remaining</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-nq-tab="Correct">Correct</button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-3" data-nq-tab="Incorrect">Incorrect</button></li>
             </ul>
         </div>
         <div class="table-responsive">
@@ -283,8 +313,10 @@
         (function () {
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             let currentTab = @json($activeTab ?? 'completed');
-            let currentCheck = 'all';
-            let currentInterest = 'all';
+            let currentCheck = 'remaining';
+            let currentInterest = 'remaining';
+            let currentFailSub = 'other';
+            let currentNqCheck = 'remaining';
             let currentPage = 1;
             let searchFocused = false;
 
@@ -294,8 +326,10 @@
                 const p = new URLSearchParams();
                 p.set('tab', currentTab);
                 p.set('page', currentPage);
-                if (currentTab === 'completed' && currentCheck !== 'all') p.set('check', currentCheck);
-                if (currentTab === 'skill-not-matched' && currentInterest !== 'all') p.set('interest', currentInterest);
+                if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
+                if (currentTab === 'skill-not-matched' && currentInterest !== 'remaining') p.set('interest', currentInterest);
+                if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
+                if (currentTab === 'not-qualified' && currentNqCheck !== 'remaining') p.set('nqcheck', currentNqCheck);
                 const from = el('f-from').value; if (from) p.set('from', from);
                 const to = el('f-to').value; if (to) p.set('to', to);
                 const min = el('f-min').value; if (min) p.set('min', min);
@@ -305,7 +339,22 @@
                 return p;
             }
 
+            // Reflect the current tab + sub-tab in the URL so a refresh lands on
+            // the exact same view. Filters aren't persisted here (only ?q via the
+            // search box), just the tab state.
+            function syncUrl() {
+                const p = new URLSearchParams(window.location.search);
+                p.set('tab', currentTab);
+                p.delete('check'); p.delete('interest'); p.delete('failsub'); p.delete('nqcheck');
+                if (currentTab === 'completed' && currentCheck !== 'remaining') p.set('check', currentCheck);
+                if (currentTab === 'skill-not-matched' && currentInterest !== 'remaining') p.set('interest', currentInterest);
+                if (currentTab === 'failed' && currentFailSub !== 'other') p.set('failsub', currentFailSub);
+                if (currentTab === 'not-qualified' && currentNqCheck !== 'remaining') p.set('nqcheck', currentNqCheck);
+                history.replaceState(null, '', window.location.pathname + '?' + p.toString());
+            }
+
             async function loadData() {
+                syncUrl();
                 let data;
                 try {
                     const res = await fetch('/bids/data?' + buildParams().toString(), {
@@ -328,6 +377,8 @@
                     th.classList.toggle('d-none', currentTab !== 'completed'));
                 el('bids-check-tabs').classList.toggle('d-none', currentTab !== 'completed');
                 el('bids-interest-tabs').classList.toggle('d-none', currentTab !== 'skill-not-matched');
+                el('bids-fail-tabs').classList.toggle('d-none', currentTab !== 'failed');
+                el('bids-nq-tabs').classList.toggle('d-none', currentTab !== 'not-qualified');
                 el('bids-last-updated').textContent = data.lastUpdated ? 'Last updated: ' + data.lastUpdated : '';
                 el('bids-last-updated-wrap').classList.toggle('d-none', !data.lastUpdated);
                 const nq = currentTab === 'not-qualified';
@@ -380,12 +431,18 @@
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
                     // Switching main tabs resets both sub-tab groups
-                    currentCheck = 'all';
-                    currentInterest = 'all';
+                    currentCheck = 'remaining';
+                    currentInterest = 'remaining';
+                    currentFailSub = 'other';
+                    currentNqCheck = 'remaining';
                     document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
-                        b.classList.toggle('active', b.dataset.checkTab === 'all'));
+                        b.classList.toggle('active', b.dataset.checkTab === 'remaining'));
                     document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
-                        b.classList.toggle('active', b.dataset.interestTab === 'all'));
+                        b.classList.toggle('active', b.dataset.interestTab === 'remaining'));
+                    document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.failTab === 'other'));
+                    document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b =>
+                        b.classList.toggle('active', b.dataset.nqTab === 'remaining'));
                     reload();
                 });
             });
@@ -410,11 +467,32 @@
                 });
             });
 
+            // Failed sub-tabs (Other / Out of Bid)
+            document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFailSub = this.dataset.failTab;
+                    reload();
+                });
+            });
+
+            // Not Qualified review sub-tabs (Remaining / Correct / Incorrect)
+            document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentNqCheck = this.dataset.nqTab;
+                    reload();
+                });
+            });
+
             // Delegated: Interested/Not Interested buttons on table rows
             el('bids-tbody').addEventListener('click', async function (ev) {
                 const btn = ev.target.closest('.bid-interest-btn');
                 if (!btn) return;
                 const interest = btn.dataset.interest;
+                const row = btn.closest('tr');
                 const res = await fetch('/updateBidInterest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -429,7 +507,13 @@
                     'Saved.',
                     interest === 'Interested' ? '#28c76f' : '#ff3e1d'
                 );
-                loadData();
+                // Marked row leaves the current Skills-Not-Matched sub-tab — glide out.
+                if (row && currentTab === 'skill-not-matched') {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 170);
+                } else {
+                    loadData();
+                }
             });
 
             // Delegated: Correct/Incorrect buttons on table rows
@@ -437,6 +521,7 @@
                 const btn = ev.target.closest('.bid-check-btn');
                 if (!btn) return;
                 const check = btn.dataset.check;
+                const row = btn.closest('tr');
                 const res = await fetch('/updateBidCheck', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -459,7 +544,44 @@
                         el('bidOffcanvasContent').innerHTML = await detail.text();
                     }
                 }
-                loadData();
+                // In any Bids Placed sub-tab the marked row leaves the current view
+                // (Remaining/Correct/Incorrect) — glide it out to the right, then
+                // refresh once the animation finishes.
+                if (row && currentTab === 'completed') {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 170);
+                } else {
+                    loadData();
+                }
+            });
+
+            // Delegated: Correct/Incorrect on Not Qualified rows
+            el('bids-tbody').addEventListener('click', async function (ev) {
+                const btn = ev.target.closest('.nq-check-btn');
+                if (!btn) return;
+                const check = btn.dataset.check;
+                const row = btn.closest('tr');
+                const res = await fetch('/updateProposalCheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ proposal_id: btn.dataset.proposalId, check: check })
+                });
+                if (!res.ok) {
+                    window.showAppToast('Failed', 'Could not save review — try again.', '#ff3e1d');
+                    return;
+                }
+                window.showAppToast(
+                    check === 'Correct' ? 'Marked Correct' : 'Marked Incorrect',
+                    'Review saved.',
+                    check === 'Correct' ? '#28c76f' : '#ff3e1d'
+                );
+                // Marked row leaves the current Not Qualified sub-tab — glide out.
+                if (row) {
+                    row.classList.add('bid-row-exit');
+                    setTimeout(loadData, 170);
+                } else {
+                    loadData();
+                }
             });
 
             // Delegated: pagination links
@@ -540,6 +662,30 @@
             // Bid Insights) land pre-filtered to that project.
             const urlQ = new URLSearchParams(window.location.search).get('q');
             if (urlQ) { el('f-search').value = urlQ; }
+
+            // Restore tab + sub-tab from the URL so a refresh keeps the exact view.
+            (function initFromUrl() {
+                const sp = new URLSearchParams(window.location.search);
+                const tab = sp.get('tab');
+                if (['completed', 'failed', 'skill-not-matched', 'not-qualified', 'out-of-bid'].includes(tab)) {
+                    currentTab = tab;
+                }
+                currentCheck = sp.get('check') || 'remaining';
+                currentInterest = sp.get('interest') || 'remaining';
+                currentFailSub = sp.get('failsub') || 'other';
+                currentNqCheck = sp.get('nqcheck') || 'remaining';
+
+                document.querySelectorAll('#bids-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.tab === currentTab));
+                document.querySelectorAll('#bids-check-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.checkTab === currentCheck));
+                document.querySelectorAll('#bids-interest-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.interestTab === currentInterest));
+                document.querySelectorAll('#bids-fail-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.failTab === currentFailSub));
+                document.querySelectorAll('#bids-nq-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.nqTab === currentNqCheck));
+            })();
 
             // Initial load
             loadData();

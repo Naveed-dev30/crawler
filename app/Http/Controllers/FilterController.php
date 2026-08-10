@@ -45,6 +45,29 @@ class FilterController extends Controller
     }
 
     /**
+     * Dynamic AI on/off switch for admins. Enabling live-probes OpenAI and only
+     * turns AI on if it actually responds; disabling is immediate (manual).
+     */
+    public function toggleAi(Request $request, \App\Services\AiGate $gate)
+    {
+        if ($request->boolean('enable')) {
+            if (! $gate->tryEnable()) {
+                return response()->json([
+                    'success' => false,
+                    'enabled' => false,
+                    'message' => 'OpenAI did not respond (still rate-limited or key/quota issue). AI stays off.',
+                ], 422);
+            }
+
+            return response()->json(['success' => true, 'enabled' => true]);
+        }
+
+        $gate->disable(\App\Services\AiGate::REASON_MANUAL);
+
+        return response()->json(['success' => true, 'enabled' => false]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      *
      * @return Response

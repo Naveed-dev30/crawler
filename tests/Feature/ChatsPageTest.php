@@ -191,8 +191,12 @@ class ChatsPageTest extends TestCase
         ]);
 
         $res = $this->actingAs($this->admin())->get("/chats/{$thread->id}/detail")->assertOk();
+        // Attachments now render by filename and link only via a signed serve URL
+        // once mirrored locally; the raw remote url is never emitted, so an unsafe
+        // scheme can never become an href.
         $res->assertSee('evil.txt');
+        $res->assertSee('safe.pdf');
         $res->assertDontSee('javascript:alert(1)', false);
-        $res->assertSee('https://example.com/safe.pdf', false);
+        $res->assertDontSee('https://example.com/safe.pdf', false);
     }
 }

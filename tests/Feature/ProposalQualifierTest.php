@@ -67,6 +67,7 @@ class ProposalQualifierTest extends TestCase
 
         $this->assertFalse($result['qualified']);
         $this->assertSame('', $result['reason']);
+        $this->assertTrue($result['error']); // AI never evaluated
         Http::assertSentCount(2); // initial + 1 retry
     }
 
@@ -77,6 +78,7 @@ class ProposalQualifierTest extends TestCase
 
         $this->assertFalse($result['qualified']);
         $this->assertSame('', $result['reason']);
+        $this->assertTrue($result['error']); // AI never evaluated
     }
 
     public function test_system_message_contains_negative_prompt_and_json_instruction(): void

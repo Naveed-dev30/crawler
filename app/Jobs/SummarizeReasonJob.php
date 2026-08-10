@@ -63,6 +63,9 @@ class SummarizeReasonJob implements ShouldQueue
                 }
             } else {
                 Log::warning('SummarizeReasonJob: HTTP '.$response->status());
+                if ($response->status() === 429) {
+                    app(\App\Services\AiGate::class)->markRateLimited();
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('SummarizeReasonJob: '.$e->getMessage());
