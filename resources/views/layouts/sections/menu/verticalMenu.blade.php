@@ -2,6 +2,20 @@
 $configData = Helper::appClasses();
 @endphp
 
+<style>
+  /* Freelancer brand glyph — Boxicons has no freelancer icon, so mask the
+     brand SVG and tint it with the menu's currentColor like sibling icons. */
+  .menu-icon-freelancer {
+    width: 1.375rem;
+    height: 1.375rem;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: currentColor;
+    -webkit-mask: url('{{ asset('assets/img/icons/brands/freelancer.svg') }}') no-repeat center / contain;
+    mask: url('{{ asset('assets/img/icons/brands/freelancer.svg') }}') no-repeat center / contain;
+  }
+</style>
+
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
 
   <!-- ! Hide app brand if navbar-full -->

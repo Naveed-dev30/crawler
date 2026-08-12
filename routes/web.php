@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');
+    Route::get('/bids/upwork', [\App\Http\Controllers\UpworkController::class, 'index'])->name('upwork');
     Route::get('/bids/upwork/data', [\App\Http\Controllers\UpworkController::class, 'data'])->name('bids.upwork.data');
     Route::get('/bids/{bid}/detail', [BidController::class, 'detail'])->name('bids.detail');
     Route::get('/proposals/{proposal}/nq-detail', [ProposalController::class, 'nqDetail'])->name('proposals.nq-detail');

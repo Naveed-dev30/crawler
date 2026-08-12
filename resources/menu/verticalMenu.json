@@ -8,9 +8,15 @@
     },
     {
       "url": "/bids",
-      "name": "Opportunities",
-      "icon": "menu-icon tf-icons bx bx-briefcase",
+      "name": "Freelancer",
+      "icon": "menu-icon tf-icons menu-icon-freelancer",
       "slug": "bids"
+    },
+    {
+      "url": "/bids/upwork",
+      "name": "Upwork",
+      "icon": "menu-icon tf-icons bx bxl-upwork",
+      "slug": "upwork"
     },
     {
       "url": "/leaderboard",

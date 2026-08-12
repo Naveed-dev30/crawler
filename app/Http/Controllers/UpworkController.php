@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 
 class UpworkController extends Controller
 {
+    public function index()
+    {
+        return view('content.pages.upwork');
+    }
+
     public function data(Request $request)
     {
         $jobs = UpworkJob::orderByDesc('posted_at')->orderByDesc('id')->paginate(50);
