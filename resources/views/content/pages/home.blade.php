@@ -1,10 +1,13 @@
 @extends('layouts.layoutMaster')
 
-@section('title', 'Opportunities')
+@section('title', 'Freelancer Opportunities')
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h4 class="page-title mb-0">Opportunities</h4>
+        <h4 class="page-title mb-0 d-flex align-items-center gap-2">
+            <img src="{{ asset('assets/img/icons/brands/freelancer.svg') }}" alt="Freelancer" height="22" width="22">
+            Freelancer Opportunities
+        </h4>
     </div>
 
     {{-- Filter bar (sticky on scroll) --}}
