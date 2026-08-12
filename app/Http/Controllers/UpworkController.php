@@ -22,12 +22,17 @@ class UpworkController extends Controller
         }
 
         if ($rowsHtml === '') {
-            $rowsHtml = '<tr><td colspan="5" class="text-center text-muted py-4">No Upwork jobs yet.</td></tr>';
+            $rowsHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No Upwork jobs yet.</td></tr>';
         }
 
         return response()->json([
             'rowsHtml' => $rowsHtml,
             'paginationHtml' => $jobs->links('vendor.pagination.bootstrap-5')->render(),
         ]);
+    }
+
+    public function detail(UpworkJob $upworkJob)
+    {
+        return view('_partials.upwork-detail', ['job' => $upworkJob])->render();
     }
 }

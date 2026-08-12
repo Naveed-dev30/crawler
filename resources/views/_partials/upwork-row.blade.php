@@ -3,7 +3,7 @@
         ? trim(($job->hourly_min ? '$'.rtrim(rtrim(number_format($job->hourly_min, 2), '0'), '.') : '') .
                ($job->hourly_max ? ' – $'.rtrim(rtrim(number_format($job->hourly_max, 2), '0'), '.') : '') . '/hr')
         : ($job->budget_amount ? ($job->currency ? $job->currency.' ' : '$').number_format($job->budget_amount, 0) : '—');
-    $budget = $budget !== '' ? $budget : '—';
+    $budget = ($budget === '' || trim($budget) === '/hr') ? '—' : $budget;
 @endphp
 <tr>
     <td>
@@ -26,5 +26,10 @@
         @if ($job->client_total_spent)
             <div class="text-muted small">${{ number_format($job->client_total_spent, 0) }} spent</div>
         @endif
+    </td>
+    <td class="text-nowrap text-end">
+        <button type="button" class="btn btn-sm btn-outline-primary upwork-view-btn" data-upwork-id="{{ $job->id }}">
+            <i class="bx bx-show me-1"></i>View
+        </button>
     </td>
 </tr>
