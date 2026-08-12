@@ -8,13 +8,13 @@
     },
     {
       "url": "/bids",
-      "name": "Freelancer",
+      "name": "Opportunities",
       "icon": "menu-icon tf-icons menu-icon-freelancer",
       "slug": "bids"
     },
     {
       "url": "/bids/upwork",
-      "name": "Upwork",
+      "name": "Opportunities",
       "icon": "menu-icon tf-icons bx bxl-upwork",
       "slug": "upwork"
     },
