@@ -30,9 +30,8 @@ class UpworkPageTest extends TestCase
     {
         $res = $this->actingAs(User::factory()->create())->get('/bids')->assertOk();
 
-        // Two marketplace menu entries
-        $res->assertSee('>Freelancer<', false);
-        $res->assertSee('>Upwork<', false);
+        // Two "Opportunities" menu entries, distinguished only by brand icon
+        $this->assertSame(2, substr_count($res->getContent(), '>Opportunities</div>'));
         // Freelancer brand glyph (CSS-masked SVG) + Upwork boxicons brand glyph
         $res->assertSee('menu-icon-freelancer', false);
         $res->assertSee('bxl-upwork', false);
