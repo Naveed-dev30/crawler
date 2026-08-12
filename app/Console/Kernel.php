@@ -34,6 +34,11 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->withoutOverlapping(30);
 
+        $schedule->command('upwork:fetch')
+            ->everyThirtyMinutes()
+            ->runInBackground()
+            ->withoutOverlapping(25);
+
         // When AI was auto-disabled by a rate limit, probe OpenAI and flip it
         // back on once it answers. Manual disables are left untouched.
         $schedule->command('ai:probe')
