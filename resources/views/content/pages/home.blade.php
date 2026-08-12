@@ -7,6 +7,29 @@
         <h4 class="page-title mb-0">Opportunities</h4>
     </div>
 
+    <style>
+        #market-tabs .nav-link { color:#6c757d; font-weight:600; border:0; border-bottom:3px solid transparent; border-radius:0; padding:.5rem 1.25rem; display:flex; align-items:center; gap:.5rem; }
+        #market-tabs .nav-link.active { color:#696cff; background-color:rgba(105,108,255,.12); border-bottom-color:#696cff; border-radius:.375rem .375rem 0 0; }
+        #market-tabs .nav-link svg { width:18px; height:18px; }
+    </style>
+
+    <ul class="nav nav-tabs mb-3" id="market-tabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-market="freelancer" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h20l-2.4 6H8.8l.6 2H18l-1.2 4H8l-1-4L4.5 3H2z"/></svg>
+                Freelancer
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-market="upwork" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.6 6.3c-2 0-3.6 1.3-4.3 3.4-1-1.5-1.7-3.3-2.1-4.9H8.9v6c0 1.2-1 2.2-2.2 2.2s-2.2-1-2.2-2.2v-6H1.8v6c0 2.7 2.2 4.9 4.9 4.9 2.7 0 4.9-2.2 4.9-4.9v-1c.4.8.9 1.6 1.4 2.4l-1.6 7.6h2.7l1.1-5.4c.9.6 2 .9 3.4.9 2.8 0 5-2.3 5-5.2s-2.2-5.2-5-5.2zm0 7.7c-1 0-2-.4-2.8-1.1l.3-1.1v-.1c.2-1.2.9-2.7 2.5-2.7 1.3 0 2.3 1.1 2.3 2.5s-1 2.6-2.3 2.6z"/></svg>
+                Upwork
+            </button>
+        </li>
+    </ul>
+
+    <div id="market-pane-freelancer">
+
     {{-- Filter bar (sticky on scroll) --}}
     <div class="card mb-3" style="position: sticky; top: 0.75rem; z-index: 1020;">
         <div class="card-body">
@@ -297,6 +320,30 @@
     <div class="offcanvas offcanvas-start" tabindex="-1" id="bidOffcanvas" data-bs-backdrop="false" data-bs-scroll="true"
         style="width: 52rem; max-width: 95vw;">
         <div id="bidOffcanvasContent" class="h-100 d-flex flex-column"></div>
+    </div>
+
+    </div>{{-- /#market-pane-freelancer --}}
+
+    <div id="market-pane-upwork" class="d-none">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle bids-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Budget / Rate</th>
+                            <th>Posted</th>
+                            <th>Skills</th>
+                            <th>Client</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upwork-tbody">
+                        <tr><td colspan="5" class="text-center text-muted py-4">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mt-4 card px-4 pt-3" id="upwork-pagination"></div>
     </div>
 @endsection
 
@@ -655,8 +702,59 @@
                 loadData();
             });
 
-            // Auto-refresh: skip while typing search or past page 1
-            setInterval(() => { if (!searchFocused && currentPage === 1) loadData(); }, 15000);
+            // ---- Marketplace switcher (Freelancer | Upwork) ----
+            let currentMarket = 'freelancer';
+            let upworkLoaded = false;
+            let upworkPage = 1;
+
+            function applyMarketToUrl() {
+                const p = new URLSearchParams(window.location.search);
+                if (currentMarket === 'upwork') p.set('market', 'upwork'); else p.delete('market');
+                history.replaceState(null, '', window.location.pathname + (p.toString() ? '?' + p.toString() : ''));
+            }
+
+            async function loadUpwork() {
+                try {
+                    const res = await fetch('/bids/upwork/data?page=' + upworkPage, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    el('upwork-tbody').innerHTML = data.rowsHtml;
+                    el('upwork-pagination').innerHTML = data.paginationHtml;
+                    el('upwork-pagination').style.display = data.paginationHtml.trim() ? '' : 'none';
+                    upworkLoaded = true;
+                } catch (e) { /* keep last render */ }
+            }
+
+            function switchMarket(market) {
+                currentMarket = market;
+                document.querySelectorAll('#market-tabs .nav-link').forEach(b =>
+                    b.classList.toggle('active', b.dataset.market === market));
+                el('market-pane-freelancer').classList.toggle('d-none', market !== 'freelancer');
+                el('market-pane-upwork').classList.toggle('d-none', market !== 'upwork');
+                applyMarketToUrl();
+                if (market === 'upwork' && !upworkLoaded) loadUpwork();
+            }
+
+            document.querySelectorAll('#market-tabs .nav-link').forEach(btn =>
+                btn.addEventListener('click', () => switchMarket(btn.dataset.market)));
+
+            el('upwork-pagination').addEventListener('click', function (ev) {
+                const a = ev.target.closest('a');
+                if (!a) return;
+                ev.preventDefault();
+                const page = new URL(a.href, window.location.origin).searchParams.get('page');
+                if (page) { upworkPage = parseInt(page, 10); loadUpwork(); }
+            });
+
+            // Restore market from URL on load
+            if (new URLSearchParams(window.location.search).get('market') === 'upwork') {
+                switchMarket('upwork');
+            }
+
+            // Auto-refresh: skip while typing search or past page 1, or on Upwork pane
+            setInterval(() => { if (currentMarket === 'freelancer' && !searchFocused && currentPage === 1) loadData(); }, 15000);
 
             // Pre-seed the search box from ?q= so deep-links (e.g. a project from
             // Bid Insights) land pre-filtered to that project.
