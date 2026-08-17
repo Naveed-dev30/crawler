@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Bid;
 use App\Models\BidInsight;
 use App\Models\Proposal;
 use App\Services\BidInsightEnricher;
@@ -25,6 +26,141 @@ class BidInsightEnricherTest extends TestCase
         Http::fake([
             '*bids*' => Http::response(['status' => 'success', 'result' => ['bids' => $bids]], 200),
         ]);
+    }
+
+    /** A qualified proposal with a placed bid, the shape every blank row has. */
+    private function placedBid(int $projectId, array $proposal = [], array $bid = []): Proposal
+    {
+        $p = Proposal::factory()->create(array_merge([
+            'project_id' => $projectId,
+            'qualified' => true,
+            'seo_url' => 'php/Some-Project',
+            'currency_name' => 'USD',
+        ], $proposal));
+
+        Bid::factory()->create(array_merge([
+            'proposal_id' => $p->id,
+            'bid_status' => 'completed',
+            'price' => 250,
+        ], $bid));
+
+        return $p;
+    }
+
+    public function test_own_bid_is_read_back_for_a_row_the_capture_never_covered(): void
+    {
+        $posted = Carbon::parse('2026-08-13 21:21:42');
+        $this->placedBid(555, ['project_added_time' => $posted->getTimestamp()]);
+        // Blank row — ThreadSyncer created it from the client's identity alone.
+        $insight = BidInsight::create(['project_id' => 555, 'client_name' => 'Ada', 'last_scraped_at' => now()]);
+
+        Http::fake(['*bids*' => Http::response(['result' => ['bids' => [[
+            'id' => 492337425,
+            'project_id' => 555,
+            'amount' => 675,
+            'time_submitted' => $posted->copy()->addSeconds(72)->getTimestamp(),
+            'description' => 'With my experience...',
+        ]]]], 200)]);
+
+        $result = (new BidInsightEnricher)->run();
+
+        $insight->refresh();
+        $this->assertSame(1, $result['own_bid']);
+        $this->assertSame(492337425, $insight->bid_id);
+        $this->assertEquals(675, $insight->bid_amount);
+        $this->assertSame('2026-08-13 21:22:54', $insight->time_submitted->format('Y-m-d H:i:s'));
+        $this->assertSame('With my experience...', $insight->description);
+        // And the submit time it just recovered feeds time to bid in the same run.
+        $this->assertSame(72, $insight->time_to_bid_seconds);
+    }
+
+    public function test_a_project_freelancer_no_longer_serves_still_shows_what_we_bid(): void
+    {
+        $this->placedBid(555, [], ['price' => 320]);
+        $insight = BidInsight::create(['project_id' => 555, 'last_scraped_at' => now()]);
+
+        Http::fake(['*bids*' => Http::response(['result' => ['bids' => []]], 200)]);
+
+        $this->assertSame(1, (new BidInsightEnricher)->backfillOwnBids());
+
+        $insight->refresh();
+        $this->assertEquals(320, $insight->bid_amount);
+        // posted_at only approximates the real submit time, so it is not used —
+        // an invented time to bid would be worse than none.
+        $this->assertNull($insight->time_submitted);
+        $this->assertNull($insight->time_to_bid_seconds);
+    }
+
+    public function test_projects_we_never_placed_a_bid_on_are_not_polled(): void
+    {
+        Http::fake(['*bids*' => Http::response(['result' => ['bids' => []]], 200)]);
+        Proposal::factory()->create(['project_id' => 555, 'qualified' => true]);
+        Bid::factory()->create([
+            'proposal_id' => Proposal::where('project_id', 555)->value('id'),
+            'bid_status' => 'Failed',
+        ]);
+        BidInsight::create(['project_id' => 555, 'last_scraped_at' => now()]);
+
+        $this->assertSame(0, (new BidInsightEnricher)->backfillOwnBids());
+        Http::assertNothingSent();
+    }
+
+    public function test_own_bid_backfill_leaves_captured_values_alone(): void
+    {
+        $this->placedBid(555);
+        $insight = BidInsight::create([
+            'project_id' => 555,
+            'bid_amount' => 250,
+            'description' => 'From the capture',
+            'last_scraped_at' => now(),
+        ]);
+
+        Http::fake(['*bids*' => Http::response(['result' => ['bids' => [[
+            'id' => 42, 'project_id' => 555, 'amount' => 999, 'description' => 'From the API',
+        ]]]], 200)]);
+
+        $this->assertSame(1, (new BidInsightEnricher)->backfillOwnBids());
+
+        $insight->refresh();
+        $this->assertEquals(250, $insight->bid_amount);
+        $this->assertSame('From the capture', $insight->description);
+        $this->assertSame(42, $insight->bid_id);
+    }
+
+    public function test_currency_and_project_link_come_off_the_proposal(): void
+    {
+        Proposal::factory()->create([
+            'project_id' => 555,
+            'currency_name' => 'GBP',
+            'seo_url' => 'research/Sourcer-for-Listing-Agent-Hiring',
+        ]);
+        $insight = BidInsight::create(['project_id' => 555, 'bid_amount' => 250, 'last_scraped_at' => now()]);
+
+        $this->assertSame(1, (new BidInsightEnricher)->backfillProjectFacts());
+
+        $insight->refresh();
+        $this->assertSame('GBP', $insight->bid_currency);
+        $this->assertSame(
+            'https://www.freelancer.com/projects/research/Sourcer-for-Listing-Agent-Hiring',
+            $insight->project_url
+        );
+    }
+
+    public function test_project_facts_do_not_overwrite_what_the_crawler_sent(): void
+    {
+        Proposal::factory()->create(['project_id' => 555, 'currency_name' => 'GBP', 'seo_url' => 'php/x']);
+        $insight = BidInsight::create([
+            'project_id' => 555,
+            'bid_currency' => 'USD',
+            'project_url' => 'https://www.freelancer.com/projects/php/from-the-capture',
+            'last_scraped_at' => now(),
+        ]);
+
+        $this->assertSame(0, (new BidInsightEnricher)->backfillProjectFacts());
+
+        $insight->refresh();
+        $this->assertSame('USD', $insight->bid_currency);
+        $this->assertSame('https://www.freelancer.com/projects/php/from-the-capture', $insight->project_url);
     }
 
     public function test_time_to_bid_is_derived_from_the_projects_posted_time(): void
@@ -180,6 +316,7 @@ class BidInsightEnricherTest extends TestCase
         ]);
 
         $this->artisan('insights:enrich-bids')
+            ->expectsOutputToContain('Own bid filled: 0')
             ->expectsOutputToContain('Time to bid filled: 1')
             ->expectsOutputToContain('Winning bid filled: 1')
             ->assertExitCode(0);
