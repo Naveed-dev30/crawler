@@ -94,7 +94,10 @@
                                     @endphp
                                     <div class="d-flex gap-2 fs-5">
                                         @foreach ($actions as $action)
+                                            {{-- data-bs-toggle is what main.js scans for to build the styled
+                                                 tooltip; a bare title only gets the native browser one. --}}
                                             <i class="bx {{ $action['taken'] ? $action['on'] . ' text-success' : $action['off'] . ' text-muted' }}"
+                                               data-bs-toggle="tooltip" data-bs-placement="top"
                                                title="Client has {{ $action['taken'] ? '' : 'not ' }}{{ $action['label'] }}@if ($action['taken'] && $bid->bid_rating && $loop->last) ({{ number_format($bid->bid_rating, 1) }})@endif"></i>
                                         @endforeach
                                     </div>
