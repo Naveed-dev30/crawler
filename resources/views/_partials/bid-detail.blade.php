@@ -68,6 +68,19 @@
         @endif
     @endif
 
+    <div class="divider divider-primary"><div class="divider-text">Client</div></div>
+    @include('_partials.client-profile', [
+        'insight' => $insight ?? null,
+        'ownerId' => $bid->proposal->project_owner,
+        'fallbackCountry' => $bid->proposal->country,
+    ])
+    @if (! ($insight ?? null) && ! $bid->proposal->project_owner)
+        <span class="fw-light text-muted">
+            We never captured who posted this project — Freelancer stops
+            returning the owner once a project closes.
+        </span>
+    @endif
+
     <div class="divider divider-primary"><div class="divider-text">Bid</div></div>
     <h6>Coverletter</h6>
     <span class="fw-light">{{ $bid->cover_letter }}</span>

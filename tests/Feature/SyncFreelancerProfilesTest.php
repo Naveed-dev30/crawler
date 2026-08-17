@@ -43,6 +43,23 @@ class SyncFreelancerProfilesTest extends TestCase
         $this->assertSame('New Title', FreelancerProfile::find(11)->title);
     }
 
+    public function test_unchanged_profile_still_advances_the_last_synced_stamp(): void
+    {
+        $stale = FreelancerProfile::create(['id' => 11, 'title' => 'Web']);
+        $stale->forceFill(['updated_at' => now()->subWeek()])->save();
+
+        // Same title as what the API returns: updateOrCreate writes nothing, so
+        // the settings page's "Last synced" (max updated_at) must still move.
+        $this->fakeProfiles([['id' => 11, 'title' => 'Web']]);
+
+        $this->artisan('profiles:sync')->assertExitCode(0);
+
+        $this->assertTrue(
+            FreelancerProfile::find(11)->updated_at->gt(now()->subMinute()),
+            'updated_at should be refreshed even when the title did not change',
+        );
+    }
+
     public function test_never_deletes_missing_profiles(): void
     {
         FreelancerProfile::create(['id' => 99, 'title' => 'Keep me']);

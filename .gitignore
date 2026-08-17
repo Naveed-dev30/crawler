@@ -33,3 +33,8 @@ storage/app/firebase/service-account.json
 
 /database/seeders/InsightHistorySeeder.php
 /database/seeders/GamificationHistorySeeder.php
+
+# Secrets — never commit
+.env.bak*
+.env.*.bak
+*service-account.json

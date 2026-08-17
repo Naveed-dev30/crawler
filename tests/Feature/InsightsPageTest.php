@@ -106,7 +106,7 @@ class InsightsPageTest extends TestCase
         $res->assertSee('trend-down', false);
         $res->assertSee('trend-arrow', false);
         $res->assertSee('Profile Views — week of', false);
-        $res->assertSee('id="pv-week-date"', false);
+        $res->assertDontSee('id="pv-week-date"', false);
     }
 
     public function test_partial_snapshot_does_not_error(): void
@@ -122,7 +122,7 @@ class InsightsPageTest extends TestCase
             ->assertSee('210');
     }
 
-    public function test_profile_views_week_picker_and_no_past_year(): void
+    public function test_profile_views_week_follows_main_filter_and_no_past_year(): void
     {
         \App\Models\InsightSnapshot::create([
             'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 1,
@@ -132,9 +132,34 @@ class InsightsPageTest extends TestCase
 
         $res = $this->actingAs(\App\Models\User::factory()->create())->get('/insights')->assertOk();
         $res->assertSee('Profile Views — week of', false);
-        $res->assertSee('id="pv-week-date"', false);
+        // The card has no picker of its own; it follows the page From/To filter.
+        $res->assertDontSee('id="pv-week-date"', false);
+        $res->assertSee('chart-views-week', false);
         $res->assertDontSee('Profile Views (Past Year)');
         $res->assertDontSee('chart-views-year', false);
+    }
+
+    public function test_profile_views_week_uses_snapshot_from_main_date_filter(): void
+    {
+        \App\Models\InsightSnapshot::create([
+            'scraped_at' => '2026-07-10 10:00:00', 'earnings_total' => 1,
+            'profile_views_week' => ['labels' => ['6/7'], 'values' => [11]], 'raw' => '{}',
+        ]);
+        \App\Models\InsightSnapshot::create([
+            'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 2,
+            'profile_views_week' => ['labels' => ['16/7'], 'values' => [39]], 'raw' => '{}',
+        ]);
+
+        $user = \App\Models\User::factory()->create();
+
+        $res = $this->actingAs($user)->get('/insights')->assertOk();
+        $res->assertSee('week of <span id="pv-week-label">2026-07-20', false);
+        $res->assertSee('"values":[39]', false);
+
+        $res = $this->actingAs($user)->get('/insights?to=2026-07-15')->assertOk();
+        $res->assertSee('week of <span id="pv-week-label">2026-07-10', false);
+        $res->assertSee('"values":[11]', false);
+        $res->assertDontSee('"values":[39]', false);
     }
 
     public function test_total_earnings_is_full_width_trend_box(): void

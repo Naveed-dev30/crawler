@@ -6,7 +6,9 @@ use App\Jobs\BidNowJob;
 use App\Services\AiReplyGenerator;
 use App\Services\Fake\FakeAiReplyGenerator;
 use App\Services\Fake\FakeFreelancerMessenger;
+use App\Services\Fake\FakeFreelancerUserClient;
 use App\Services\FreelancerMessenger;
+use App\Services\FreelancerUserClient;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
             $this->app->bind(
                 FreelancerMessenger::class,
                 FakeFreelancerMessenger::class
+            );
+
+            // Client identity lookups go over the same offline switch, or a
+            // sync pass would still reach the users endpoint.
+            $this->app->bind(
+                FreelancerUserClient::class,
+                FakeFreelancerUserClient::class
             );
 
             // Same offline switch: fabricate AI replies without an OpenAI key

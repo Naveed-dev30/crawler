@@ -39,6 +39,8 @@
         @endif
     </p>
 
+    @include('_partials.chat-project-details', ['thread' => $thread, 'insight' => $insight ?? null])
+
     {{-- Assignee card --}}
     @php
         $assigneeName = $thread->assignedUser->name ?? null;
@@ -116,12 +118,26 @@
     </ul>
 
     {{-- Conversation --}}
-    <h6 class="mb-2">Conversation</h6>
+    @php
+        // Name the person on the other end rather than a generic "Client", and
+        // show their avatar, so a long thread reads like a conversation with
+        // someone. Falls back when the project owner was never scraped.
+        $clientLabel = $insight?->client_name ?: 'Client';
+        $clientPic = trim((string) ($insight?->client_avatar ?? ''));
+        $clientPic = str_starts_with($clientPic, '//') ? 'https:'.$clientPic : $clientPic;
+        $clientPic = (str_starts_with($clientPic, 'https://') || str_starts_with($clientPic, 'http://'))
+            ? $clientPic
+            : null;
+    @endphp
+    <h6 class="mb-2">Conversation with {{ $clientLabel }}</h6>
     @forelse ($thread->messages as $message)
         <div class="d-flex mb-3 {{ $message->direction === 'sent' ? 'justify-content-end' : '' }}">
             <div class="rounded p-3 {{ $message->direction === 'sent' ? 'bg-label-primary' : 'bg-lighter' }}" style="max-width: 85%;">
                 <div class="small text-muted mb-1">
-                    {{ $message->direction === 'sent' ? ($message->sent_by_ai ? 'AI Assistant' : ($message->sender?->name ?? 'Owner')) : 'Client' }}
+                    @if ($message->direction === 'received' && $clientPic)
+                        <img src="{{ $clientPic }}" alt="" width="16" height="16" class="rounded-circle me-1">
+                    @endif
+                    {{ $message->direction === 'sent' ? ($message->sent_by_ai ? 'AI Assistant' : ($message->sender?->name ?? 'Owner')) : $clientLabel }}
                     · {{ $message->message_time?->timezone('Asia/Karachi')->format('M j, H:i') }}
                     @if ($message->sent_by_ai)
                         <span class="badge bg-label-info ms-1">AI</span>
@@ -150,4 +166,27 @@
     @empty
         <p class="text-muted">No messages yet</p>
     @endforelse
+
+    {{-- Reply from the dashboard instead of the app. Goes out over the same
+         SendThreadMessage path the mobile client uses, so the reply appears in
+         both places and Freelancer sees one conversation. --}}
+    @if ($thread->blocked)
+        <p class="text-muted small mb-0">
+            <i class="bx bx-block me-1"></i>Unblock this thread to reply.
+        </p>
+    @else
+        <form id="chat-reply-form" class="mt-3" data-thread-id="{{ $thread->id }}">
+            <label class="form-label small text-muted mb-1" for="chat-reply-text">Reply as {{ auth()->user()->name }}</label>
+            <textarea class="form-control mb-2" id="chat-reply-text" name="message" rows="3"
+                      placeholder="Write a reply to the client…"></textarea>
+            <div class="d-flex align-items-center gap-2">
+                <input type="file" class="form-control form-control-sm" id="chat-reply-files"
+                       name="attachments[]" multiple style="max-width: 20rem;">
+                <button type="submit" class="btn btn-primary text-nowrap ms-auto" id="chat-reply-btn">
+                    <i class="bx bx-send me-1"></i>Send
+                </button>
+            </div>
+            <div class="form-text">Up to 5 attachments, 20 MB each.</div>
+        </form>
+    @endif
 </div>

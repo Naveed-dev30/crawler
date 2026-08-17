@@ -229,51 +229,6 @@
         }
     })();
     </script>
-    <script>
-    // Dynamic AI on/off. Enabling probes OpenAI server-side; if it doesn't answer
-    // the switch reverts and we tell the admin why.
-    (function () {
-        const toggle = document.getElementById('aiEnabledToggle');
-        const note = document.getElementById('aiEnabledNote');
-        if (!toggle) return;
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-        function notify(title, msg, color) {
-            if (window.showAppToast) { window.showAppToast(title, msg, color); }
-            else { alert(title + (msg ? ': ' + msg : '')); }
-        }
-
-        toggle.addEventListener('change', async function () {
-            const enable = this.checked;
-            toggle.disabled = true;
-            try {
-                const res = await fetch('{{ route('ai.toggle') }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body: JSON.stringify({ enable: enable })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || !data.success) {
-                    toggle.checked = !enable; // revert
-                    if (note) note.innerHTML = '<span class="text-danger">' + (data.message || 'Could not change AI state.') + '</span>';
-                    notify('AI not enabled', data.message || 'OpenAI unreachable.', '#ff3e1d');
-                    return;
-                }
-                if (note) {
-                    note.innerHTML = enable
-                        ? 'Turning off stops all AI (qualifying &amp; bidding). Turning on tests OpenAI first.'
-                        : '<span class="text-danger">Off (manual). Enabling tests OpenAI first.</span>';
-                }
-                notify(enable ? 'AI enabled' : 'AI disabled', enable ? 'OpenAI responded.' : 'AI is now off.', enable ? '#28c76f' : '#ff3e1d');
-            } catch (e) {
-                toggle.checked = !enable;
-                notify('Error', 'Try again.', '#ff3e1d');
-            } finally {
-                toggle.disabled = false;
-            }
-        });
-    })();
-    </script>
 @endsection
 
 @section('content')
@@ -455,30 +410,6 @@
                                     <span class="switch-label fw-semibold">Enable Crawler</span>
                                 </label>
                             </div>
-                            {{-- AI kill-switch. NOT part of the bulk save (no name attr):
-                                 toggled live via AJAX so enabling can probe OpenAI first. --}}
-                            <div class="mb-3">
-                                <label class="switch switch-primary mb-0">
-                                    <input type="checkbox" class="switch-input" id="aiEnabledToggle"
-                                           @if ($filter->ai_enabled ?? true) checked @endif />
-                                    <span class="switch-toggle-slider"></span>
-                                    <span class="switch-label fw-semibold">AI Enabled</span>
-                                </label>
-                                @php
-                                    $aiOn = $filter->ai_enabled ?? true;
-                                    $aiReasonText = $filter->ai_disabled_reason === 'rate_limit' ? 'rate limit' : 'manual';
-                                    $aiWhen = $filter->ai_disabled_at ? $filter->ai_disabled_at->timezone('Asia/Karachi')->format('M j, H:i') : null;
-                                @endphp
-                                <div class="small text-muted mt-1" id="aiEnabledNote">
-                                    @if (! $aiOn)
-                                        <span class="text-danger">
-                                            Off ({{ $aiReasonText }}){{ $aiWhen ? ' · '.$aiWhen : '' }}. Enabling tests OpenAI first.
-                                        </span>
-                                    @else
-                                        Turning off stops all AI (qualifying &amp; bidding). Turning on tests OpenAI first.
-                                    @endif
-                                </div>
-                            </div>
                             <div class="d-flex flex-wrap align-items-center gap-4">
                                 <label class="switch switch-success mb-0">
                                     <input type="checkbox" class="switch-input" name="useCountries"
@@ -507,7 +438,15 @@
                                     <h6 class="mb-0 me-2">Freelancer Profiles</h6>
                                     <span class="badge bg-label-primary rounded-pill">{{ $profiles->count() }}</span>
                                 </div>
-                                <button type="submit" form="syncProfilesForm" class="btn btn-sm btn-primary">
+                                {{-- formnovalidate is load-bearing, not cosmetic: FormValidation's
+                                     SubmitButton plugin claims every
+                                     `[type="submit"]:not([formnovalidate])` it finds *inside* the
+                                     filter form's DOM and preventDefault()s the click, ignoring this
+                                     button's form="" association. Without it, clicking Sync silently
+                                     submits the filter form and never reaches /profiles/sync. The
+                                     sync form has no fields, so skipping validation costs nothing. --}}
+                                <button type="submit" form="syncProfilesForm" formnovalidate
+                                        class="btn btn-sm btn-primary">
                                     <i class="bx bx-refresh me-1"></i>Sync now
                                 </button>
                             </div>

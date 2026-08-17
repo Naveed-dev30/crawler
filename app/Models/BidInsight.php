@@ -43,6 +43,7 @@ class BidInsight extends Model
         'client_country',
         'client_country_flag',
         'client_name',
+        'client_username',
         'client_avatar',
         'client_member_since',
         'client_verification',

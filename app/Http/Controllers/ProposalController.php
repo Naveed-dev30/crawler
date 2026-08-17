@@ -257,7 +257,13 @@ class ProposalController extends Controller
                         // / [Max Cost]
                         $proposal->max_budget = $project['budget']['maximum'] ?? $project['budget']['minimum'];
                         // / [Project Owner] (absent from compact API responses; column is nullable and unused downstream)
-                        $proposal->project_owner = $project['owner_id'] ?? null;
+                        // projects/active omits owner_id (see the params block
+                        // above) and only ever attaches the owner as owner_info,
+                        // so reading owner_id alone left this null on every row
+                        // since Jan 2024 — and with it, no way to look the client
+                        // up later.
+                        $proposal->project_owner = $project['owner_id']
+                            ?? ($project['owner_info']['id'] ?? null);
                         // / [Language]
                         $proposal->language = $project['language'];
                         // /[Currency Symbol]

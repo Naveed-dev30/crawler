@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\ProposalController;
 use App\Models\BidInsight;
 use App\Models\Filter;
+use App\Models\Proposal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -49,6 +50,30 @@ class CrawlerCapturesClientInfoTest extends TestCase
             'upgrades' => ['NDA' => false, 'sealed' => false],
             'jobs' => [['id' => 1, 'name' => 'PHP']],
         ];
+    }
+
+    /**
+     * projects/active does not return owner_id — only owner_info. Reading
+     * owner_id alone left proposals.project_owner null on every row since
+     * Jan 2024, which is what made client lookups impossible after the fact.
+     */
+    public function test_project_owner_is_taken_from_owner_info_when_owner_id_is_absent(): void
+    {
+        Queue::fake();
+        $this->filter();
+
+        $project = $this->baseProject();
+        unset($project['owner_id']);
+        $project['owner_info'] = ['id' => 94080053, 'reputation' => ['entire_history' => ['overall' => 4.8]]];
+
+        $this->fakeProjects($project, []);
+
+        (new ProposalController)->getProposals();
+
+        $this->assertSame(
+            94080053,
+            (int) Proposal::where('project_id', 555)->value('project_owner'),
+        );
     }
 
     public function test_request_carries_client_detail_flags(): void

@@ -6,11 +6,14 @@ use App\Events\ThreadMessageCreated;
 use App\Jobs\AssignThreadJob;
 use App\Jobs\DownloadThreadAttachment;
 use App\Jobs\GenerateAiReplyJob;
+use App\Models\BidInsight;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Support\SafeBroadcast;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,9 +24,17 @@ use Illuminate\Support\Facades\Log;
  */
 class ThreadSyncer
 {
+    /**
+     * How long to wait before retrying a client id the users endpoint would not
+     * resolve (deleted accounts return nothing). Without this, a pass every ten
+     * seconds would re-ask for the same unresolvable id forever.
+     */
+    private const UNRESOLVED_TTL = 21600; // 6 hours
+
     public function __construct(
         private FreelancerMessenger $messenger,
         private MobileNotifier $notifier,
+        private FreelancerUserClient $users,
     ) {}
 
     public function run(): void
@@ -67,6 +78,14 @@ class ThreadSyncer
             $flThreadId = (int) ($flThread['id'] ?? 0);
             $timeUpdated = (int) ($flThread['time_updated'] ?? 0);
 
+            // Whoever is in the thread that is not us is the client. Captured
+            // here because it is the only durable source: the projects API stops
+            // returning owner details once a project closes.
+            $members = $flThread['thread']['members'] ?? $flThread['members'] ?? [];
+            $clientFlUserId = collect($members)
+                ->map(fn ($id) => (int) $id)
+                ->first(fn ($id) => $id !== $ourFlUserId && $id > 0);
+
             if (! $projectId || ! $flThreadId) {
                 continue;
             }
@@ -83,6 +102,7 @@ class ThreadSyncer
                     'freelancer_thread_id' => $flThreadId,
                     'project_id' => $projectId,
                     'proposal_id' => $proposalId,
+                    'client_user_id' => $clientFlUserId,
                     'status' => 'fresh',
                     'freelancer_time_updated' => $timeUpdated,
                 ]);
@@ -96,6 +116,12 @@ class ThreadSyncer
                 continue;
             }
 
+            // Backfills existing threads on their next sync, at no extra cost.
+            if ($clientFlUserId && (int) $thread->client_user_id !== $clientFlUserId) {
+                $thread->client_user_id = $clientFlUserId;
+                $thread->save();
+            }
+
             if ($timeUpdated > (int) $thread->freelancer_time_updated) {
                 // Only advance the watermark when the fetch actually succeeded;
                 // otherwise a transient Freelancer failure would skip this
@@ -105,6 +131,66 @@ class ThreadSyncer
                     $thread->save();
                 }
             }
+        }
+
+        $this->resolveClientIdentities();
+    }
+
+    /**
+     * Put a name to the clients we are talking to.
+     *
+     * projects/active returns the owner's reputation and country but never
+     * their name or avatar — those are only on the users endpoint — so this is
+     * the step that makes a chat show a person rather than a project id.
+     *
+     * Only looks up clients we do not already have a name for, so once a
+     * conversation is resolved it costs nothing on subsequent passes. Failures
+     * are swallowed: a users-endpoint hiccup must never stop messages syncing.
+     */
+    private function resolveClientIdentities(): void
+    {
+        try {
+            $pending = Thread::query()
+                ->whereNotNull('client_user_id')
+                ->whereNotExists(function ($q) {
+                    $q->select(DB::raw(1))
+                        ->from('bid_insights')
+                        ->whereColumn('bid_insights.project_id', 'threads.project_id')
+                        ->whereNotNull('bid_insights.client_name');
+                })
+                ->pluck('client_user_id', 'project_id')
+                ->reject(fn ($clientId) => Cache::has('fl-user-unresolved:'.$clientId));
+
+            if ($pending->isEmpty()) {
+                return;
+            }
+
+            $identities = $this->users->fetch($pending->values()->all());
+
+            foreach ($pending as $projectId => $clientId) {
+                $identity = $identities[(int) $clientId] ?? null;
+
+                if (! $identity || ! $identity['name']) {
+                    // Deleted or hidden account — stop asking for a while.
+                    Cache::put('fl-user-unresolved:'.$clientId, true, self::UNRESOLVED_TTL);
+
+                    continue;
+                }
+
+                // Identity fields only: the crawler owns reputation/country and
+                // must not be blanked by this write.
+                BidInsight::updateOrCreate(
+                    ['project_id' => $projectId],
+                    array_filter([
+                        'client_name' => $identity['name'],
+                        'client_username' => $identity['username'],
+                        'client_avatar' => $identity['avatar'],
+                        'last_scraped_at' => now(),
+                    ], fn ($v) => $v !== null),
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ThreadSyncer client identities: '.$e->getMessage());
         }
     }
 

@@ -46,8 +46,14 @@ $configData = Helper::appClasses();
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
 
-    {{-- hide admin-only (settings) items from non-admin users --}}
-    @continue(isset($menu->access) && $menu->access === 'admin' && ! optional(auth()->user())->isAdmin())
+    @php
+        $viewer = auth()->user();
+        // `access` lists the roles an entry is for; absent means "the general
+        // dashboard", which is everyone except chat-only mobile agents.
+        $access = isset($menu->access) ? (array) $menu->access : null;
+    @endphp
+    @continue($access !== null && ! in_array(optional($viewer)->role, $access, true))
+    @continue($access === null && optional($viewer)->isMobile())
 
     {{-- adding active and open class if child is active --}}
 

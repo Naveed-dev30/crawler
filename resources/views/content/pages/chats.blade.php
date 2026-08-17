@@ -111,8 +111,21 @@
             bottomBtn.addEventListener('click', () => ocBody.scrollTo({ top: ocBody.scrollHeight, behavior: 'smooth' }));
 
             const loadDetail = async (threadId) => {
+                // A live refresh can land while the admin is mid-reply; carry the
+                // draft across the re-render so an incoming client message never
+                // eats what was being typed.
+                const draft = document.getElementById('chat-reply-text')?.value ?? '';
+                // Same reasoning for the expanded project text: a refresh must not
+                // snap it shut while it is being read.
+                const projectOpen = document.getElementById('chat-project-more')?.classList.contains('show');
                 const res = await fetch('/chats/' + threadId + '/detail', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 ocBody.innerHTML = res.ok ? await res.text() : '<p class="text-danger">Failed to load thread</p>';
+                const replyBox = document.getElementById('chat-reply-text');
+                if (replyBox && draft) replyBox.value = draft;
+                if (projectOpen) {
+                    document.getElementById('chat-project-more')?.classList.add('show');
+                    document.getElementById('chat-project-more-btn')?.setAttribute('aria-expanded', 'true');
+                }
                 // The assign select arrives with the partial — init bootstrap-select for the white menu.
                 if (window.jQuery && jQuery.fn.selectpicker) jQuery('#chat-assign-user').selectpicker();
                 syncAssignButton();
@@ -147,6 +160,10 @@
                 liveChannelName = 'private-thread.' + threadId;
                 const channel = pusher.subscribe(liveChannelName);
                 const refresh = async () => {
+                    // Staged files cannot survive a re-render — a file input's
+                    // value is not settable by script. Skip; the send handler
+                    // reloads the panel once the reply goes out.
+                    if (document.getElementById('chat-reply-files')?.files.length) return;
                     const nearBottom = ocBody.scrollHeight - ocBody.clientHeight - ocBody.scrollTop < 80;
                     await loadDetail(threadId);
                     if (nearBottom) ocBody.scrollTop = ocBody.scrollHeight;
@@ -235,6 +252,47 @@
                 } catch {
                     btn.disabled = false;
                     showAppToast('Assignment failed', 'Could not assign the thread. Try again.', '#ea5455');
+                }
+            });
+
+            // Reply from the dashboard: delegated — the form arrives with the
+            // partial. submit bubbles, so one listener covers every reload.
+            ocBody.addEventListener('submit', async (e) => {
+                const form = e.target.closest('#chat-reply-form');
+                if (!form) return;
+                e.preventDefault();
+
+                const text = document.getElementById('chat-reply-text');
+                const files = document.getElementById('chat-reply-files');
+                const btn = document.getElementById('chat-reply-btn');
+                if (!text.value.trim() && !files.files.length) return; // nothing to send
+
+                const body = new FormData();
+                body.append('message', text.value);
+                for (const file of files.files) body.append('attachments[]', file);
+
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/chats/' + form.dataset.threadId + '/message', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        body: body,
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) throw new Error(data.message || '');
+                    // Cleared before the reload so loadDetail's draft-restore
+                    // does not put the sent text straight back in the box.
+                    text.value = '';
+                    await loadDetail(form.dataset.threadId);
+                    ocBody.scrollTop = ocBody.scrollHeight;
+                    showAppToast('Reply sent', 'Your message was delivered to the client.', '#28c76f');
+                } catch (err) {
+                    btn.disabled = false;
+                    showAppToast('Send failed', err.message || 'Could not send the message. Try again.', '#ea5455');
                 }
             });
 

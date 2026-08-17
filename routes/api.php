@@ -54,7 +54,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('mobile')->group(function () {
         Route::post('login', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'login']);
 
-        Route::middleware(['auth:sanctum', 'mobile'])->group(function () {
+        Route::middleware(['auth:sanctum', 'mobile', 'mobile.activity'])->group(function () {
             Route::get('user', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'me']);
             Route::post('logout', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'logout']);
             Route::post('fcm-token', [\App\Http\Controllers\Api\V1\Mobile\AuthController::class, 'updateFcmToken']);

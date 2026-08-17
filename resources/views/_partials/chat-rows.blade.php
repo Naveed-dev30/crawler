@@ -2,6 +2,16 @@
     <tr>
         <td>
             <span class="fw-semibold">{{ $thread->project_id }}</span>
+            {{-- Jump to the project's own detail panel on Opportunities. Hidden
+                 from mobile agents, who are chat-only and would just be bounced
+                 back here. --}}
+            @if (! auth()->user()->isMobile())
+                <a href="{{ route('bids', ['q' => $thread->project_id, 'open' => 1]) }}"
+                   target="_blank" rel="noopener"
+                   class="ms-1 text-muted js-project-link" title="Open project details">
+                    <i class="bx bx-link-external"></i>
+                </a>
+            @endif
             @if ($thread->proposal?->title)
                 <br><small class="text-muted">{{ \Illuminate\Support\Str::limit($thread->proposal->title, 45) }}</small>
             @endif

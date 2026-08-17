@@ -97,10 +97,31 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_api_activity_at' => 'datetime',
         'ai_schedule_enabled' => 'boolean',
         'ai_manual_state' => 'boolean',
         'ai_manual_until' => 'datetime',
     ];
+
+    /**
+     * Stamp the most recent mobile-API call, which is what the users page
+     * shows as "Last Login".
+     *
+     * Throttled to one write a minute so a chatty client does not add an UPDATE
+     * to every request, and saved quietly so activity never bumps updated_at.
+     * Login passes $force so the timestamp is exact for the event users
+     * actually look for.
+     */
+    public function touchApiActivity(bool $force = false): void
+    {
+        $now = now();
+
+        if (! $force && $this->last_api_activity_at?->gt($now->copy()->subMinute())) {
+            return;
+        }
+
+        $this->forceFill(['last_api_activity_at' => $now])->saveQuietly();
+    }
 
     private function timezone(): string
     {

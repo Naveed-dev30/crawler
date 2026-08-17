@@ -49,6 +49,32 @@ class FreelancerMessenger
     }
 
     /**
+     * Fetch a single thread envelope, including its `members` list — the only
+     * durable record of which Freelancer user we are talking to, since the
+     * projects API stops returning owner details once a project closes.
+     *
+     * @return array|null the thread payload, or null on any failure
+     */
+    public function fetchThread(int $flThreadId): ?array
+    {
+        try {
+            $response = $this->client()->get($this->base()."/threads/?threads[]={$flThreadId}");
+
+            if (! $response->successful()) {
+                Log::warning('FreelancerMessenger thread: HTTP '.$response->status());
+
+                return null;
+            }
+
+            return $response->json('result.threads.0');
+        } catch (\Throwable $e) {
+            Log::warning('FreelancerMessenger thread exception: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
      * Fetch a thread's messages.
      *
      * Returns NULL on failure — deliberately distinct from an empty array,

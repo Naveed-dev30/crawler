@@ -12,6 +12,7 @@ class Thread extends Model
     protected $fillable = [
         'freelancer_thread_id',
         'project_id',
+        'client_user_id',
         'proposal_id',
         'assigned_user_id',
         'transition_id',

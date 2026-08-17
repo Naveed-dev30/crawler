@@ -44,6 +44,38 @@ class BidInsightsIngestTest extends TestCase
         ], $overrides);
     }
 
+    public function test_derives_time_to_bid_from_the_projects_posted_time(): void
+    {
+        // The live crawler payload carries the bid's submit time but never a
+        // time-to-bid, so ingest works it out against our own proposal.
+        $posted = \Illuminate\Support\Carbon::parse('2026-08-13 21:21:42');
+        \App\Models\Proposal::factory()->create([
+            'project_id' => 39812345,
+            'project_added_time' => $posted->getTimestamp(),
+        ]);
+
+        $this->postWithToken(['bids' => [[
+            'project_id' => 39812345,
+            'time_submitted' => $posted->copy()->addSeconds(72)->getTimestamp(),
+        ]]])->assertOk();
+
+        $this->assertSame(72, BidInsight::first()->time_to_bid_seconds);
+    }
+
+    public function test_a_payloads_own_time_to_bid_wins_over_the_derived_one(): void
+    {
+        \App\Models\Proposal::factory()->create([
+            'project_id' => 39812345,
+            'project_added_time' => now()->subHour()->getTimestamp(),
+        ]);
+
+        $this->postWithToken(['bids' => [$this->bidItem([
+            'time_submitted' => now()->getTimestamp(),
+        ])]])->assertOk();
+
+        $this->assertSame(94, BidInsight::first()->time_to_bid_seconds);
+    }
+
     public function test_rejects_missing_token(): void
     {
         $this->postJson('/api/insights/bids/ingest', ['bids' => [$this->bidItem()]])

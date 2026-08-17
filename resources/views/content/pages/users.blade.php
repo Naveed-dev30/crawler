@@ -228,8 +228,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Role</th>
-                    <th>FCM</th>
+                    <th>Last Login</th>
                     <th>Created</th>
                     <th>Actions</th>
                 </tr>
@@ -237,9 +236,10 @@
                 <tbody class="table-border-bottom-0">
                 @forelse ($users as $user)
                     <tr>
-                        <td class="fw-semibold">{{ $user->name }}</td>
-                        <td>{{ $user->email }}</td>
                         <td>
+                            {{-- Role sits under the name instead of owning a
+                                 column of its own, which frees table width. --}}
+                            <div class="fw-semibold">{{ $user->name }}</div>
                             @if ($user->role === 'admin')
                                 <span class="badge bg-label-primary">Admin</span>
                             @elseif ($user->role === 'mobile')
@@ -248,15 +248,15 @@
                                 <span class="badge bg-label-secondary">{{ ucfirst($user->role) }}</span>
                             @endif
                         </td>
+                        <td>{{ $user->email }}</td>
                         <td>
-                            @if ($user->device_tokens_count)
-                                <span class="badge bg-label-success">
-                                    {{ $user->device_tokens_count > 1
-                                        ? $user->device_tokens_count . ' devices'
-                                        : 'Registered' }}
+                            @if ($user->last_api_activity_at)
+                                {{-- Last call the mobile app made; full timestamp on hover. --}}
+                                <span title="{{ $user->last_api_activity_at->format('M j, Y g:i A') }}">
+                                    {{ $user->last_api_activity_at->format('M j, Y') }}
                                 </span>
                             @else
-                                <span class="badge bg-label-secondary">—</span>
+                                <span class="text-muted">—</span>
                             @endif
                         </td>
                         <td>{{ $user->created_at?->format('M j, Y') }}</td>
@@ -279,7 +279,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No users yet.</td>
+                        <td colspan="5" class="text-center text-muted py-4">No users yet.</td>
                     </tr>
                 @endforelse
                 </tbody>

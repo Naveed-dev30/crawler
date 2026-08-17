@@ -17,10 +17,16 @@ class SyncFreelancerProfiles extends Command
         $profiles = $client->fetch();
 
         foreach ($profiles as $profile) {
-            FreelancerProfile::updateOrCreate(
+            $row = FreelancerProfile::updateOrCreate(
                 ['id' => $profile['id']],
                 ['title' => $profile['title']],
             );
+
+            // updateOrCreate leaves updated_at alone when the title is
+            // unchanged, so the settings page's "Last synced" stamp — which
+            // reads max(updated_at) — would sit frozen at the first sync and
+            // make a working sync look broken. Touch every row we saw.
+            $row->touch();
         }
 
         $this->info('Synced '.count($profiles).' freelancer profiles.');

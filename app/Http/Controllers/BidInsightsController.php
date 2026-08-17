@@ -33,7 +33,17 @@ class BidInsightsController extends Controller
         $changes = 0;
         $skipped = 0;
 
-        DB::transaction(function () use ($bids, $scrapedAt, &$created, &$updated, &$changes, &$skipped) {
+        // Time to bid is measured against the project's posted time, which the
+        // crawler payload never carries — look it up from our own proposals.
+        $postedAt = [];
+        foreach (Proposal::whereIn('project_id', array_filter(array_map(
+            fn ($item) => is_array($item) ? ($item['project_id'] ?? null) : null,
+            $bids
+        )))->pluck('project_added_time', 'project_id') as $projectId => $addedAt) {
+            $postedAt[(int) $projectId] = $addedAt;
+        }
+
+        DB::transaction(function () use ($bids, $scrapedAt, $postedAt, &$created, &$updated, &$changes, &$skipped) {
             foreach ($bids as $item) {
                 if (! is_array($item)) {
                     $skipped++;
@@ -47,7 +57,7 @@ class BidInsightsController extends Controller
                     continue;
                 }
 
-                $mapped = $this->mapBid($item);
+                $mapped = $this->mapBid($item, $postedAt);
 
                 $existing = BidInsight::where('project_id', (int) $item['project_id'])->first();
 
@@ -85,7 +95,7 @@ class BidInsightsController extends Controller
      * Keys already using DB column names pass through untouched, so both
      * the live payload shape and the original contract are accepted.
      */
-    private function mapBid(array $item): array
+    private function mapBid(array $item, array $postedAt = []): array
     {
         $mapped = [];
 
@@ -117,7 +127,39 @@ class BidInsightsController extends Controller
             }
         }
 
+        $derived = $this->deriveTimeToBid($mapped, $postedAt[(int) ($item['project_id'] ?? 0)] ?? null);
+        if ($derived !== null) {
+            $mapped['time_to_bid_seconds'] = $derived;
+        }
+
         return $mapped;
+    }
+
+    /**
+     * Seconds between the project going live and our bid landing. Only used
+     * when the payload didn't state it; BidInsightEnricher applies the same
+     * rule to rows that were ingested before their proposal was known.
+     */
+    private function deriveTimeToBid(array $mapped, mixed $addedAt): ?int
+    {
+        if (array_key_exists('time_to_bid_seconds', $mapped) || ! $addedAt) {
+            return null;
+        }
+
+        $submitted = $mapped['time_submitted'] ?? null;
+
+        if ($submitted === null) {
+            return null;
+        }
+
+        try {
+            $seconds = ($submitted instanceof Carbon ? $submitted : Carbon::parse($submitted))
+                ->getTimestamp() - (int) $addedAt;
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $seconds >= 0 ? $seconds : null;
     }
 
     private function applyUpdate(BidInsight $existing, array $mapped, array $item, Carbon $scrapedAt): int

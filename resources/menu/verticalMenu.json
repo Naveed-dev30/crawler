@@ -41,7 +41,7 @@
       "name": "Chats",
       "icon": "menu-icon tf-icons bx bx-chat",
       "slug": "chats",
-      "access": "admin"
+      "access": ["admin", "mobile"]
     },
     {
       "url": "/filters",

@@ -5,11 +5,14 @@ namespace App\Http;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureChatAccess;
 use App\Http\Middleware\EnsureIngestToken;
 use App\Http\Middleware\EnsureMobile;
 use App\Http\Middleware\LocaleMiddleware;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
+use App\Http\Middleware\RecordMobileApiActivity;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\RestrictMobileToChats;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\ValidateSignature;
@@ -83,6 +86,9 @@ class Kernel extends HttpKernel
         'auth' => Authenticate::class,
         'admin' => EnsureAdmin::class,
         'mobile' => EnsureMobile::class,
+        'chats.access' => EnsureChatAccess::class,
+        'mobile.chats-only' => RestrictMobileToChats::class,
+        'mobile.activity' => RecordMobileApiActivity::class,
         'gamification.token' => EnsureIngestToken::class,
         'ingest.token' => EnsureIngestToken::class,
         'auth.basic' => AuthenticateWithBasicAuth::class,

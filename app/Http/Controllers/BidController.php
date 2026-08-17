@@ -26,7 +26,44 @@ class BidController extends Controller
         // Not Qualified), not the default Bids Placed tab.
         $activeTab = $request->filled('q') ? $this->locateTab($request->query('q')) : 'completed';
 
-        return view('content.pages.home', ['activeTab' => $activeTab]);
+        // ?open=1 additionally pops the project's detail panel on arrival — the
+        // Chats page links here that way. Gated behind the flag so existing
+        // ?q= deep-links (Bid Insights) keep filtering without opening anything.
+        $autoOpenUrl = $request->boolean('open') && $request->filled('q')
+            ? $this->detailUrlForProject($request->query('q'))
+            : null;
+
+        return view('content.pages.home', [
+            'activeTab' => $activeTab,
+            'autoOpenUrl' => $autoOpenUrl,
+        ]);
+    }
+
+    /**
+     * The slide-over a project should open into: its bid's panel, or the
+     * not-qualified proposal panel when we never bid. Null when the project is
+     * unknown here, which leaves the page filtered but with nothing popped —
+     * better than opening an empty panel.
+     *
+     * Resolved server-side so the deep-link does not depend on the row being
+     * present in whichever tab and page the table happens to render.
+     */
+    private function detailUrlForProject(string $projectId): ?string
+    {
+        $bid = Bid::query()
+            ->join('proposals', 'bids.proposal_id', '=', 'proposals.id')
+            ->where('proposals.project_id', $projectId)
+            ->select('bids.id')
+            ->latest('bids.created_at')
+            ->first();
+
+        if ($bid) {
+            return route('bids.detail', $bid->id);
+        }
+
+        $proposal = Proposal::where('project_id', $projectId)->first();
+
+        return $proposal ? route('proposals.nq-detail', $proposal->id) : null;
     }
 
     /**
@@ -251,7 +288,11 @@ class BidController extends Controller
         $bid->save();
         $bid->load('proposal');
 
-        return view('_partials.bid-detail', ['bid' => $bid])->render();
+        // Who posted the project. Optional: only projects the crawler or a chat
+        // sync has resolved a client for have a row.
+        $insight = BidInsight::where('project_id', $bid->proposal?->project_id)->first();
+
+        return view('_partials.bid-detail', ['bid' => $bid, 'insight' => $insight])->render();
     }
 
     public function stats()

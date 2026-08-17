@@ -10,6 +10,17 @@ fi
 
 chmod -R ugo+rw /.composer
 
+# Normalize ownership of the writable dirs while we are still root. Anything
+# left root-owned here (a stray `docker exec` without -u sail, a file created by
+# an earlier root-run container) is unwritable by sail forever after, and the
+# failures are silent and remote from the cause: a root-owned dir under
+# storage/framework/cache kills the whole schedule:run tick via the
+# withoutOverlapping mutex, and a root-owned laravel.log stops the bid pipeline.
+# This must run before the gosu below drops privileges — sail cannot chown.
+if [ -d /var/www/html/storage ]; then
+    chown -R sail:sail /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+fi
+
 if [ $# -gt 0 ]; then
     exec gosu $WWWUSER "$@"
 else

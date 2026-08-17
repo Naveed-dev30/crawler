@@ -7,7 +7,9 @@ use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Services\Fake\FakeFreelancerMessenger;
+use App\Services\Fake\FakeFreelancerUserClient;
 use App\Services\FreelancerMessenger;
+use App\Services\FreelancerUserClient;
 use App\Services\ThreadSyncer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -26,6 +28,7 @@ class FakeFreelancerSyncTest extends TestCase
         config(['variables.flFake' => true, 'variables.flUserId' => 55555]);
         // Re-bind now that the flag is on (provider ran before config change).
         $this->app->bind(FreelancerMessenger::class, FakeFreelancerMessenger::class);
+        $this->app->bind(FreelancerUserClient::class, FakeFreelancerUserClient::class);
     }
 
     public function test_fake_messenger_is_bound_when_flag_enabled(): void

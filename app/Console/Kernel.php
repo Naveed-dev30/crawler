@@ -24,6 +24,13 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->withoutOverlapping(25);
 
+        // Time to bid / winning bid never arrive in the crawler payload, so
+        // they are derived and polled here instead.
+        $schedule->command('insights:enrich-bids')
+            ->hourly()
+            ->runInBackground()
+            ->withoutOverlapping(55);
+
         $schedule->command('threads:escalate')
             ->everyTwoMinutes()
             ->runInBackground()

@@ -35,6 +35,21 @@ Route::get('attachments/{attachment}', [AttachmentController::class, 'show'])
     ->name('attachments.show')
     ->middleware('signed');
 
+// Upwork OAuth callback. Unauthenticated on purpose: Upwork redirects the
+// browser here and an auth redirect would strip the ?code= we need. The code
+// is single-use, short-lived, and worthless without the client secret, so
+// echoing it back is safe. Feed it to `php artisan upwork:auth --code=...`.
+Route::get('uw/oauth', function (Request $request) {
+    if (! $code = $request->query('code')) {
+        return response('No authorization code in the callback. Upwork said: '
+            .($request->query('error_description') ?: $request->query('error') ?: 'nothing'), 400)
+            ->header('Content-Type', 'text/plain');
+    }
+
+    return response("Authorization code:\n\n{$code}\n\nNow run:\n  php artisan upwork:auth --code={$code}\n", 200)
+        ->header('Content-Type', 'text/plain');
+})->name('upwork.callback');
+
 Route::post('auth', function (Request $request) {
     // return $request;
     if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
@@ -44,7 +59,7 @@ Route::post('auth', function (Request $request) {
     }
 })->name('auth');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'mobile.chats-only'])->group(function () {
     Route::post('logout', function (Request $request) {
         Auth::logout();
         $request->session()->invalidate();
@@ -72,11 +87,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\UserManagementController::class, 'index'])->name('users');
         Route::post('/users', [\App\Http\Controllers\UserManagementController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [\App\Http\Controllers\UserManagementController::class, 'update'])->name('users.update');
+    });
+    // Chats — admins see every thread, mobile agents only the ones assigned to
+    // them (scoped in ChatController). Outside the admin group on purpose.
+    Route::middleware('chats.access')->group(function () {
         Route::get('/chats', [\App\Http\Controllers\ChatController::class, 'index'])->name('chats');
         Route::get('/chats/rows', [\App\Http\Controllers\ChatController::class, 'rows'])->name('chats.rows');
         Route::get('/chats/{thread}/detail', [\App\Http\Controllers\ChatController::class, 'detail'])->name('chats.detail');
         Route::post('/chats/{thread}/assign', [\App\Http\Controllers\ChatController::class, 'assign'])->name('chats.assign');
         Route::post('/chats/{thread}/unblock', [\App\Http\Controllers\ChatController::class, 'unblock'])->name('chats.unblock');
+        Route::post('/chats/{thread}/message', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chats.message');
     });
     Route::get('/bids', [BidController::class, 'index'])->name('bids');
     Route::get('/bids/data', [BidController::class, 'data'])->name('bids.data');

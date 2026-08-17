@@ -22,9 +22,9 @@ class DatabaseSeeder extends Seeder
     // Admin — full access incl. settings (Filters).
     // firstOrCreate: leaves an existing admin (password/name) untouched, creates only if missing.
     User::firstOrCreate(
-      ['email' => 'admin@crawler.com'],
+      ['email' => 'admin@wolfiz.com'],
       [
-        'name' => 'Staging Crawler Admin',
+        'name' => 'Aladdin Admin',
         'password' => $password,
         'role' => 'admin',
       ]

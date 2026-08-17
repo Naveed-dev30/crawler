@@ -42,6 +42,10 @@ class AuthController extends Controller
             return $this->fail('Not a mobile user.', 403);
         }
 
+        // Signing in is itself a call from the app, and the one the users
+        // page's "Last Login" column is really about.
+        $user->touchApiActivity(force: true);
+
         $deviceName = $validated['device_name'] ?? 'mobile-app';
 
         // Signing in again from the same device supersedes the old token;

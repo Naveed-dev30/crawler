@@ -43,4 +43,16 @@ class FilterProfilesPanelTest extends TestCase
 
         $this->assertNotNull(FreelancerProfile::find(55));
     }
+
+    public function test_sync_button_opts_out_of_form_validation(): void
+    {
+        Filter::factory()->create(['id' => 1]);
+
+        // The button lives inside the filter form's DOM but posts to another
+        // form. Without formnovalidate, FormValidation's SubmitButton plugin
+        // grabs the click, preventDefault()s it, and the sync never fires.
+        $this->actingAs($this->admin())->get('/filters')
+            ->assertOk()
+            ->assertSee('form="syncProfilesForm" formnovalidate', false);
+    }
 }

@@ -666,6 +666,18 @@
             const urlQ = new URLSearchParams(window.location.search).get('q');
             if (urlQ) { el('f-search').value = urlQ; }
 
+            @if (! empty($autoOpenUrl))
+            // ?open=1 (the Chats page's project link): the panel target was
+            // resolved server-side, so open it straight away rather than waiting
+            // for the table and hunting for the row.
+            (async function openDeepLinkedProject() {
+                const res = await fetch(@json($autoOpenUrl), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) return;
+                el('bidOffcanvasContent').innerHTML = await res.text();
+                bootstrap.Offcanvas.getOrCreateInstance(el('bidOffcanvas')).show();
+            })();
+            @endif
+
             // Restore tab + sub-tab from the URL so a refresh keeps the exact view.
             (function initFromUrl() {
                 const sp = new URLSearchParams(window.location.search);

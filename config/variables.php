@@ -39,6 +39,10 @@ return [
     "upworkAccessToken"  => env("UPWORK_ACCESS_TOKEN"),
     "upworkRefreshToken" => env("UPWORK_REFRESH_TOKEN"),
     "upworkTenantId"     => env("UPWORK_TENANT_ID"),
+    // One-time OAuth bootstrap (see `php artisan upwork:auth`). The redirect URI
+    // must match a callback registered on the Upwork API key, character for character.
+    "upworkAuthorizeUrl" => env("UPWORK_OAUTH_AUTHORIZE_URL", "https://www.upwork.com/ab/account-security/oauth2/authorize"),
+    "upworkRedirectUri"  => env("UPWORK_REDIRECT_URI", env("APP_URL")."/uw/oauth"),
     "openAIKey" => env('OPENAI_API_KEY'),
     // Global kill switch for AI auto-replies. Off by default: when false, no
     // thread ever gets an automatic AI answer, whatever the per-user schedule

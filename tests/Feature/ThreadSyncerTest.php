@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Jobs\AssignThreadJob;
+use App\Models\BidInsight;
 use App\Models\Proposal;
 use App\Models\Thread;
 use App\Models\ThreadMessage;
 use App\Models\User;
 use App\Services\ThreadSyncer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -73,6 +75,128 @@ class ThreadSyncerTest extends TestCase
                 'result' => ['messages' => $messages],
             ]),
         ]);
+    }
+
+    /**
+     * The thread's members list is the only durable record of which Freelancer
+     * user we are talking to — the projects API stops returning owner details
+     * once a project closes — so capture it on sync.
+     */
+    public function test_captures_the_clients_freelancer_id_from_thread_members(): void
+    {
+        Queue::fake();
+        $proposal = Proposal::factory()->create(['project_id' => 900]);
+        $this->fakeFreelancer([$this->flThread(70, 900)], []);
+
+        app(ThreadSyncer::class)->run();
+
+        $thread = Thread::where('freelancer_thread_id', 70)->sole();
+        $this->assertSame($proposal->id, (int) $thread->proposal_id);
+        // 111 is the member that is not us.
+        $this->assertSame(111, (int) $thread->client_user_id);
+    }
+
+    public function test_existing_thread_gets_its_client_id_filled_in_on_next_sync(): void
+    {
+        Queue::fake();
+        $proposal = Proposal::factory()->create(['project_id' => 901]);
+        $thread = Thread::factory()->create([
+            'freelancer_thread_id' => 71,
+            'project_id' => 901,
+            'proposal_id' => $proposal->id,
+            'client_user_id' => null,
+            'freelancer_time_updated' => 1700000100,
+        ]);
+
+        $this->fakeFreelancer([$this->flThread(71, 901)], []);
+
+        app(ThreadSyncer::class)->run();
+
+        $this->assertSame(111, (int) $thread->fresh()->client_user_id);
+    }
+
+    /**
+     * The whole point of capturing the client id: a sync pass should leave the
+     * chat able to name the person, which needs the users endpoint because
+     * projects/active never returns a name.
+     */
+    public function test_sync_resolves_the_client_name_from_the_users_endpoint(): void
+    {
+        Queue::fake();
+        Cache::flush();
+        $proposal = Proposal::factory()->create(['project_id' => 902]);
+
+        Http::fake([
+            'https://www.freelancer.com/api/messages/0.1/threads/*' => Http::response([
+                'status' => 'success',
+                'result' => ['threads' => [$this->flThread(72, 902)]],
+            ]),
+            'https://www.freelancer.com/api/messages/0.1/messages/*' => Http::response([
+                'status' => 'success', 'result' => ['messages' => []],
+            ]),
+            'https://www.freelancer.com/api/users/0.1/users*' => Http::response([
+                'result' => ['users' => ['111' => [
+                    'id' => 111, 'username' => 'afk513', 'display_name' => 'MisterJ',
+                    'avatar_cdn' => '//cdn2.f-cdn.com/ppic/a.jpg',
+                ]]],
+            ]),
+        ]);
+
+        app(ThreadSyncer::class)->run();
+
+        $insight = BidInsight::where('project_id', 902)->sole();
+        $this->assertSame('MisterJ', $insight->client_name);
+        $this->assertSame('afk513', $insight->client_username);
+        $this->assertSame('https://cdn2.f-cdn.com/ppic/a.jpg', $insight->client_avatar);
+    }
+
+    public function test_sync_does_not_re_look_up_a_client_it_already_named(): void
+    {
+        Queue::fake();
+        Cache::flush();
+        $proposal = Proposal::factory()->create(['project_id' => 903]);
+        BidInsight::create([
+            'project_id' => 903, 'client_name' => 'Already Known', 'last_scraped_at' => now(),
+        ]);
+
+        $this->fakeFreelancer([$this->flThread(73, 903)], []);
+
+        app(ThreadSyncer::class)->run();
+
+        // fakeFreelancer registers no users route: hitting it would fail the run.
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'users/0.1/users'));
+        $this->assertSame('Already Known', BidInsight::where('project_id', 903)->sole()->client_name);
+    }
+
+    /**
+     * Deleted accounts resolve to nothing. A pass runs every ten seconds, so
+     * without a cooldown we would ask for the same dead id forever.
+     */
+    public function test_unresolvable_client_is_not_retried_next_pass(): void
+    {
+        Queue::fake();
+        Cache::flush();
+        Proposal::factory()->create(['project_id' => 904]);
+
+        Http::fake([
+            'https://www.freelancer.com/api/messages/0.1/threads/*' => Http::response([
+                'status' => 'success',
+                'result' => ['threads' => [$this->flThread(74, 904)]],
+            ]),
+            'https://www.freelancer.com/api/messages/0.1/messages/*' => Http::response([
+                'status' => 'success', 'result' => ['messages' => []],
+            ]),
+            'https://www.freelancer.com/api/users/0.1/users*' => Http::response(['result' => ['users' => []]]),
+        ]);
+
+        app(ThreadSyncer::class)->run();
+        $first = count(Http::recorded(fn ($r) => str_contains($r->url(), 'users/0.1/users')));
+
+        app(ThreadSyncer::class)->run();
+        $second = count(Http::recorded(fn ($r) => str_contains($r->url(), 'users/0.1/users')));
+
+        $this->assertSame(1, $first, 'first pass should try once');
+        $this->assertSame(1, $second, 'second pass should not try again');
     }
 
     public function test_creates_thread_for_bid_project_and_imports_received_messages(): void

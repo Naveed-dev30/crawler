@@ -52,4 +52,38 @@ class FetchUpworkJobsTest extends TestCase
 
         $this->assertSame(1, UpworkJob::count());   // updateOrCreate, no duplicate
     }
+
+    public function test_command_fails_when_credentials_are_missing(): void
+    {
+        config()->set('variables.upworkAccessToken', null);
+        config()->set('variables.upworkRefreshToken', null);
+
+        $this->artisan('upwork:fetch')->assertFailed();
+    }
+
+    public function test_command_fails_when_upwork_returns_an_error(): void
+    {
+        config()->set('variables.upworkAccessToken', 'access-1');
+        config()->set('variables.upworkRefreshToken', 'refresh-1');
+        config()->set('variables.upworkBase', 'https://api.upwork.com/graphql');
+
+        Http::fake(['api.upwork.com/graphql' => Http::response(['errors' => [['message' => 'nope']]], 200)]);
+
+        // A rejected query must not look like a successful empty fetch.
+        $this->artisan('upwork:fetch')->assertFailed();
+        $this->assertSame(0, UpworkJob::count());
+    }
+
+    public function test_command_succeeds_when_search_matches_nothing(): void
+    {
+        config()->set('variables.upworkAccessToken', 'access-1');
+        config()->set('variables.upworkRefreshToken', 'refresh-1');
+        config()->set('variables.upworkBase', 'https://api.upwork.com/graphql');
+
+        Http::fake(['api.upwork.com/graphql' => Http::response([
+            'data' => ['marketplaceJobPostingsSearch' => ['edges' => []]],
+        ], 200)]);
+
+        $this->artisan('upwork:fetch')->assertSuccessful();
+    }
 }
