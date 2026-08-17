@@ -71,7 +71,7 @@ Route::middleware(['auth', 'mobile.chats-only'])->group(function () {
     Route::get('/stats', [StatisticsController::class, 'index'])->name('statistics');
     Route::get('/stats/bids', [StatisticsController::class, 'bids'])->name('stats.bids');
     Route::get('/stats/value', [StatisticsController::class, 'value'])->name('stats.value');
-    Route::get('/stats/last24h', [StatisticsController::class, 'last24h'])->name('stats.last24h');
+    Route::get('/stats/snapshot', [StatisticsController::class, 'snapshot'])->name('stats.snapshot');
     Route::get('/stats/countries', [StatisticsController::class, 'countries'])->name('stats.countries');
     Route::get('/stats/status', [StatisticsController::class, 'statusBreakdown'])->name('stats.status');
     Route::get('/stats/winrate', [StatisticsController::class, 'winRate'])->name('stats.winrate');

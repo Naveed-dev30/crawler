@@ -132,6 +132,9 @@
             @endif
         </td>
         <td>{{ $bid->awarded_price !== null ? $bid->awarded_price . '$' : '—' }}</td>
+        {{-- Same three client-action icons as Bid Insights; only Bids Placed
+             rows have a scraped insight to report them from. --}}
+        <td>@include('_partials.bid-actions-taken', ['insight' => $insight])</td>
     @endif
     <td class="text-nowrap small">
         {{-- Last Bid only exists once a bid actually posts, so hide it on failure

@@ -9,103 +9,8 @@
 @section('content')
     <h4 class="page-title mb-4">Statistics</h4>
 
-    {{-- Lifetime + today overview — not affected by the date range below --}}
-    <div class="row gy-4 mb-4">
-        <div class="col-md-6">
-            <div class="card h-100"><div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <span class="text-muted small text-uppercase fw-semibold">Lifetime</span>
-                    <span class="badge bg-label-primary rounded p-2 lh-1"><i class="bx bx-infinite"></i></span>
-                </div>
-                <div class="row text-center g-0 align-items-start">
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-life-placed">—</h3>
-                            <small class="text-muted d-block mb-1">Bids Placed</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-life-placed-correct">—</span></span>
-                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-life-placed-incorrect">—</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-danger" id="ov-life-failed">—</h3>
-                            <small class="text-muted d-block mb-1">Failed</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-warning" id="ov-life-skills">—</h3>
-                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-life-skills-int">—</span></span>
-                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-life-skills-notint">—</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-info" id="ov-life-nq">—</h3>
-                            <small class="text-muted d-block mb-1">Not Qualified</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div></div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100"><div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <span class="text-muted small text-uppercase fw-semibold">Today</span>
-                    <span class="badge bg-label-success rounded p-2 lh-1"><i class="bx bx-calendar-check"></i></span>
-                </div>
-                <div class="row text-center g-0 align-items-start">
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-day-placed">—</h3>
-                            <small class="text-muted d-block mb-1">Bids Placed</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                                <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-day-placed-correct">—</span></span>
-                                <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-day-placed-incorrect">—</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-danger" id="ov-day-failed">—</h3>
-                            <small class="text-muted d-block mb-1">Failed</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3 border-end">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-warning" id="ov-day-skills">—</h3>
-                            <small class="text-muted d-block mb-1">Skills Not Matched</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                                <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-day-skills-int">—</span></span>
-                                <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-day-skills-notint">—</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div class="px-1">
-                            <h3 class="mb-0 fw-bold text-info" id="ov-day-nq">—</h3>
-                            <small class="text-muted d-block mb-1">Not Qualified</small>
-                            <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div></div>
-        </div>
-    </div>
-
-    {{-- Date range filter (applies to the sections below only) --}}
+    {{-- One shared filter for the whole page: every card, chart and table
+         below reads the range picked here. --}}
     <div class="card mb-4">
         <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <span class="text-muted small text-uppercase fw-semibold d-inline-flex align-items-center">
@@ -121,26 +26,74 @@
                     <input type="date" class="form-control form-control-sm" id="range-to">
                 </div>
                 <div class="btn-group btn-group-sm" role="group" aria-label="Range presets">
+                    <button type="button" class="btn btn-outline-primary" data-preset="0">Today</button>
                     <button type="button" class="btn btn-outline-primary" data-preset="7">7d</button>
                     <button type="button" class="btn btn-outline-primary" data-preset="30">30d</button>
                     <button type="button" class="btn btn-outline-primary" data-preset="90">90d</button>
+                    <button type="button" class="btn btn-outline-primary" data-preset="all">All</button>
                 </div>
                 <button type="button" class="btn btn-sm btn-label-secondary" id="range-reset">Reset</button>
             </div>
         </div>
     </div>
 
-    <!-- 24h snapshot cards -->
+    {{-- Category overview for the selected range --}}
+    <div class="card mb-4"><div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <span class="text-muted small text-uppercase fw-semibold">Overview</span>
+            <span class="badge bg-label-primary" id="ov-range-label">—</span>
+        </div>
+        <div class="row text-center g-0 align-items-start">
+            <div class="col-3 border-end">
+                <div class="px-1">
+                    <h3 class="mb-0 fw-bold" style="color:#696cff" id="ov-placed">—</h3>
+                    <small class="text-muted d-block mb-1">Bids Placed</small>
+                    <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                        <span class="badge rounded-pill bg-label-success" title="Marked Correct"><i class="bx bx-check"></i> <span id="ov-placed-correct">—</span></span>
+                        <span class="badge rounded-pill bg-label-danger" title="Marked Incorrect"><i class="bx bx-x"></i> <span id="ov-placed-incorrect">—</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3 border-end">
+                <div class="px-1">
+                    <h3 class="mb-0 fw-bold text-danger" id="ov-failed">—</h3>
+                    <small class="text-muted d-block mb-1">Failed</small>
+                    <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                    </div>
+                </div>
+            </div>
+            <div class="col-3 border-end">
+                <div class="px-1">
+                    <h3 class="mb-0 fw-bold text-warning" id="ov-skills">—</h3>
+                    <small class="text-muted d-block mb-1">Skills Not Matched</small>
+                    <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                        <span class="badge rounded-pill bg-label-success" title="Interested"><i class="bx bx-check"></i> <span id="ov-skills-int">—</span></span>
+                        <span class="badge rounded-pill bg-label-danger" title="Not Interested"><i class="bx bx-x"></i> <span id="ov-skills-notint">—</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="px-1">
+                    <h3 class="mb-0 fw-bold text-info" id="ov-nq">—</h3>
+                    <small class="text-muted d-block mb-1">Not Qualified</small>
+                    <div class="d-flex justify-content-center gap-1 flex-wrap" style="min-height: 1.4rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+
+    <!-- Value posted vs awarded over the selected range -->
     <div class="row gy-4 mb-4">
         <div class="col-md-6">
             <div class="card"><div class="card-body">
-                <span class="text-muted">Value Posted (24h, USD)</span>
+                <span class="text-muted">Value Posted (USD)</span>
                 <h3 id="stat-posted">—</h3>
             </div></div>
         </div>
         <div class="col-md-6">
             <div class="card"><div class="card-body">
-                <span class="text-muted">Value Awarded (24h, USD)</span>
+                <span class="text-muted">Value Awarded (USD)</span>
                 <h3 id="stat-awarded">—</h3>
             </div></div>
         </div>
@@ -208,7 +161,7 @@
 
     <!-- Project value chart -->
     <div class="card mb-4"><div class="card-body">
-        <h5>Project Value (USD) — Placed vs Failed</h5>
+        <h5>Project Value (USD) by Category</h5>
         <div id="chart-value"></div>
     </div></div>
 
@@ -235,7 +188,7 @@
         </div>
         <div class="col-md-6">
             <div class="card"><div class="card-body">
-                <h5>Skills Awarded (24h)</h5>
+                <h5>Skills Awarded</h5>
                 <div id="chart-skills"></div>
             </div></div>
         </div>
@@ -289,30 +242,9 @@
             const fromEl = document.querySelector('#range-from');
             const toEl = document.querySelector('#range-to');
 
-            // Lifetime/today overview — loaded once, independent of the date range
-            fetch('/stats/overview', { headers: { 'Accept': 'application/json' } })
-                .then(res => res.ok ? res.json() : null)
-                .then(o => {
-                    if (!o) return;
-                    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
-                    set('ov-life-placed', o.lifetime.placed);
-                    set('ov-life-placed-correct', o.lifetime.placedCorrect);
-                    set('ov-life-placed-incorrect', o.lifetime.placedIncorrect);
-                    set('ov-life-skills-int', o.lifetime.skillsInterested);
-                    set('ov-life-skills-notint', o.lifetime.skillsNotInterested);
-                    set('ov-day-placed-correct', o.daily.placedCorrect);
-                    set('ov-day-placed-incorrect', o.daily.placedIncorrect);
-                    set('ov-day-skills-int', o.daily.skillsInterested);
-                    set('ov-day-skills-notint', o.daily.skillsNotInterested);
-                    set('ov-life-failed', o.lifetime.failed);
-                    set('ov-life-skills', o.lifetime.skillNotMatched);
-                    set('ov-life-nq', o.lifetime.notQualified);
-                    set('ov-day-placed', o.daily.placed);
-                    set('ov-day-failed', o.daily.failed);
-                    set('ov-day-skills', o.daily.skillNotMatched);
-                    set('ov-day-nq', o.daily.notQualified);
-                })
-                .catch(() => {});
+            // The All preset has no fixed From/To — it asks the backend for
+            // everything on record instead.
+            let allTime = false;
 
             function ymd(d) {
                 return d.getFullYear() + '-'
@@ -336,15 +268,48 @@
                 toEl.min = fromEl.value || '';
             }
 
-            function rangeParams() {
+            // Every endpoint on this page takes the same window, so build all
+            // their URLs through here — nothing on the dashboard opts out.
+            function statsUrl(path, extra) {
                 const p = new URLSearchParams();
-                if (fromEl.value) { p.set('from', fromEl.value); }
-                if (toEl.value) { p.set('to', toEl.value); }
-                const s = p.toString();
-                return s ? '&' + s : '';
+                if (allTime) {
+                    p.set('all', '1');
+                } else {
+                    if (fromEl.value) { p.set('from', fromEl.value); }
+                    if (toEl.value) { p.set('to', toEl.value); }
+                }
+                Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
+                const q = p.toString();
+                return q ? path + '?' + q : path;
             }
 
-            function renderBar(elId, categories, series, horizontal, colors) {
+            function rangeLabel(from, to) {
+                if (allTime) { return 'All time'; }
+                const fmt = (d) => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                if (!from || !to) { return '—'; }
+                return from === to ? fmt(from) : fmt(from) + ' – ' + fmt(to);
+            }
+
+            async function loadOverview() {
+                try {
+                    const res = await fetch(statsUrl('/stats/overview'), { headers: { Accept: 'application/json' } });
+                    if (!res.ok) { return; }
+                    const o = await res.json();
+                    const c = o.counts || {};
+                    const set = (id, v) => { const n = document.getElementById(id); if (n) { n.textContent = v; } };
+                    set('ov-range-label', rangeLabel(o.from, o.to));
+                    set('ov-placed', c.placed);
+                    set('ov-placed-correct', c.placedCorrect);
+                    set('ov-placed-incorrect', c.placedIncorrect);
+                    set('ov-failed', c.failed);
+                    set('ov-skills', c.skillNotMatched);
+                    set('ov-skills-int', c.skillsInterested);
+                    set('ov-skills-notint', c.skillsNotInterested);
+                    set('ov-nq', c.notQualified);
+                } catch (e) { /* keep last render */ }
+            }
+
+            function renderBar(elId, categories, series, horizontal, colors, extraOpts) {
                 if (charts[elId]) { charts[elId].destroy(); }
                 const el = document.querySelector('#' + elId);
                 if (!el) { return; }
@@ -356,12 +321,14 @@
                     xaxis: { categories: categories },
                 };
                 if (colors) { opts.colors = colors; }
+                Object.assign(opts, extraOpts || {});
                 charts[elId] = new ApexCharts(el, opts);
                 charts[elId].render();
             }
 
-            // Awarded, Placed, Failed
-            const OUTCOME_COLORS = ['#399cff', '#28c76f', '#ea5455'];
+            // Awarded, Placed, Failed, Skills Not Matched, Not Qualified —
+            // the last three share the Bids by Status palette below.
+            const OUTCOME_COLORS = ['#399cff', '#28c76f', '#ea5455', '#ffab00', '#00cfe8'];
 
             const STATUS_COLORS = {
                 'Bids Placed': '#28c76f',
@@ -432,7 +399,7 @@
             }
 
             async function loadWinRate(granularity) {
-                const res = await fetch(`/stats/winrate?granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl('/stats/winrate', { granularity }), { headers: { Accept: 'application/json' } });
                 const data = await res.json();
                 const s = data.summary || {};
                 document.querySelector('#kpi-winrate').textContent = (s.win_rate ?? 0) + '%';
@@ -447,22 +414,34 @@
                     { name: 'Awarded', data: rows.map(r => r.awarded) },
                     { name: 'Placed', data: rows.map(r => r.placed) },
                     { name: 'Failed', data: rows.map(r => r.failed) },
+                    { name: 'Skills Not Matched', data: rows.map(r => r.skills) },
+                    { name: 'Not Qualified', data: rows.map(r => r.nq) },
                 ];
             }
 
             async function loadOutcome(type, elId, granularity) {
-                const res = await fetch(`/stats/bids?type=${type}&granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl('/stats/bids', { type, granularity }), { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
                 renderBar(elId, rows.map(r => r.bucket), outcomeSeries(rows), false, OUTCOME_COLORS);
             }
 
             async function loadValue(granularity) {
-                const res = await fetch(`/stats/value?granularity=${granularity}${rangeParams()}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl('/stats/value', { granularity }), { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
+                // Same four categories, same colours as the Bids by Status donut.
                 renderBar('chart-value', rows.map(r => r.bucket), [
-                    { name: 'Placed (USD)', data: rows.map(r => r.placed_usd) },
-                    { name: 'Failed (USD)', data: rows.map(r => r.failed_usd) },
-                ], false, ['#28c76f', '#ea5455']);
+                    { name: 'Bids Placed', data: rows.map(r => r.placed_usd) },
+                    { name: 'Failed', data: rows.map(r => r.failed_usd) },
+                    { name: 'Skills Not Matched', data: rows.map(r => r.skills_usd) },
+                    { name: 'Not Qualified', data: rows.map(r => r.nq_usd) },
+                ], false, [
+                    STATUS_COLORS['Bids Placed'],
+                    STATUS_COLORS['Failed'],
+                    STATUS_COLORS['Skills Not Matched'],
+                    STATUS_COLORS['Not Qualified'],
+                ], {
+                    tooltip: { y: { formatter: (v) => '$' + Math.round(v || 0).toLocaleString() } },
+                });
             }
 
             function renderStatusList(rows) {
@@ -496,22 +475,34 @@
             }
 
             async function loadStatus() {
-                const res = await fetch(`/stats/status?${rangeParams().replace(/^&/, '')}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl('/stats/status'), { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
                 renderDonut('chart-status', rows);
                 renderStatusList(rows);
             }
 
             async function loadCountries() {
-                const res = await fetch(`/stats/countries?${rangeParams().replace(/^&/, '')}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl('/stats/countries'), { headers: { Accept: 'application/json' } });
                 const rows = await res.json();
+                const amounts = rows.map(r => Number(r.amount_usd) || 0);
                 renderBar('chart-countries', rows.map(r => r.country), [
                     { name: 'Projects', data: rows.map(r => r.count) },
-                ], true);
+                ], true, null, {
+                    // Count alone hides that one country's ten projects can be
+                    // worth more than another's forty.
+                    tooltip: {
+                        y: {
+                            formatter: function (val, opts) {
+                                return val.toLocaleString() + ' projects · $'
+                                    + Math.round(amounts[opts.dataPointIndex] || 0).toLocaleString();
+                            },
+                        },
+                    },
+                });
             }
 
-            async function loadSnapshot() {
-                const res = await fetch('/stats/last24h', { headers: { Accept: 'application/json' } });
+            async function loadValueTotals() {
+                const res = await fetch(statsUrl('/stats/snapshot'), { headers: { Accept: 'application/json' } });
                 const data = await res.json();
                 document.querySelector('#stat-posted').textContent = '$' + Number(data.value_posted_usd).toLocaleString();
                 document.querySelector('#stat-awarded').textContent = '$' + Number(data.value_awarded_usd).toLocaleString();
@@ -528,53 +519,75 @@
                 loadWinRate(granularity);
             }
 
-            // Everything driven by the shared date range (snapshot excluded — fixed 24h).
-            function reloadRangeCharts() {
+            // The whole page hangs off the shared date range — one entry point,
+            // so nothing can quietly keep showing a different window.
+            function reloadAll() {
+                loadOverview();
                 loadAllOutcomes(currentGranularity);
                 loadCountries();
                 loadStatus();
+                loadValueTotals();
                 loadMobileAgents();
+            }
+
+            function markGranularity(g) {
+                currentGranularity = g;
+                document.querySelectorAll('#granularity-group button').forEach(b => {
+                    const on = b.dataset.granularity === g;
+                    b.classList.toggle('btn-primary', on);
+                    b.classList.toggle('btn-outline-primary', !on);
+                });
             }
 
             document.querySelectorAll('#granularity-group button').forEach(btn => {
                 btn.addEventListener('click', function () {
-                    document.querySelectorAll('#granularity-group button').forEach(b => {
-                        b.classList.remove('btn-primary');
-                        b.classList.add('btn-outline-primary');
-                    });
-                    this.classList.remove('btn-outline-primary');
-                    this.classList.add('btn-primary');
-                    currentGranularity = this.dataset.granularity;
+                    markGranularity(this.dataset.granularity);
                     loadAllOutcomes(currentGranularity);
                 });
             });
 
-            function markPreset(days) {
+            function markPreset(preset) {
                 document.querySelectorAll('#date-range [data-preset]').forEach(b => {
-                    b.classList.toggle('btn-primary', Number(b.dataset.preset) === days);
-                    b.classList.toggle('btn-outline-primary', Number(b.dataset.preset) !== days);
+                    const on = b.dataset.preset === String(preset);
+                    b.classList.toggle('btn-primary', on);
+                    b.classList.toggle('btn-outline-primary', !on);
                 });
+            }
+
+            // A day of data is unreadable bucketed daily, and years of it is
+            // unreadable bucketed hourly — pick a granularity that fits.
+            function applyPreset(preset) {
+                if (preset === 'all') {
+                    allTime = true;
+                    fromEl.value = '';
+                    toEl.value = '';
+                    markGranularity('monthly');
+                } else {
+                    allTime = false;
+                    setRange(Number(preset));
+                    if (Number(preset) === 0) { markGranularity('hourly'); }
+                }
+                markPreset(preset);
             }
 
             document.querySelectorAll('#date-range [data-preset]').forEach(btn => {
                 btn.addEventListener('click', function () {
-                    const days = Number(this.dataset.preset);
-                    setRange(days);
-                    markPreset(days);
-                    reloadRangeCharts();
+                    applyPreset(this.dataset.preset);
+                    reloadAll();
                 });
             });
 
             [fromEl, toEl].forEach(el => el.addEventListener('change', function () {
+                allTime = false;
                 markPreset(null);
                 clampBounds();
-                reloadRangeCharts();
+                reloadAll();
             }));
 
             document.querySelector('#range-reset').addEventListener('click', function () {
-                setRange(30);
-                markPreset(30);
-                reloadRangeCharts();
+                applyPreset('30');
+                markGranularity('daily');
+                reloadAll();
             });
 
             // Mobile agent activity table + modal
@@ -591,7 +604,7 @@
             async function loadMobileAgents() {
                 const tbody = document.querySelector('#agent-rows');
                 try {
-                    const res = await fetch(agentRoute + '?' + rangeParams().replace(/^&/, ''), { headers: { Accept: 'application/json' } });
+                    const res = await fetch(statsUrl(agentRoute), { headers: { Accept: 'application/json' } });
                     if (!res.ok) { return; }
                     const data = await res.json();
                     const rows = data.rows || [];
@@ -625,7 +638,7 @@
                 empty.classList.add('d-none');
                 bootstrap.Modal.getOrCreateInstance(document.querySelector('#agentActivityModal')).show();
 
-                const res = await fetch(agentActivityBase + uid + '/activity?' + rangeParams().replace(/^&/, ''), { headers: { Accept: 'application/json' } });
+                const res = await fetch(statsUrl(agentActivityBase + uid + '/activity'), { headers: { Accept: 'application/json' } });
                 if (!res.ok) { return; }
                 const items = (await res.json()).items || [];
                 if (!items.length) { empty.classList.remove('d-none'); return; }
@@ -639,13 +652,8 @@
             });
 
             // Initial load — default last 30 days (matches backend default).
-            setRange(30);
-            markPreset(30);
-            loadAllOutcomes(currentGranularity);
-            loadCountries();
-            loadStatus();
-            loadSnapshot();
-            loadMobileAgents();
+            applyPreset('30');
+            reloadAll();
         })();
     </script>
 @endsection

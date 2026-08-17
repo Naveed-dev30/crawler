@@ -9,7 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class StatisticsLast24hTest extends TestCase
+class StatisticsSnapshotTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -41,16 +41,39 @@ class StatisticsLast24hTest extends TestCase
         ]);
         Bid::factory()->create(['proposal_id' => $placed->id, 'bid_status' => 'completed', 'awarded' => false]);
 
-        // Old proposal (>24h): excluded
+        // Outside the requested range: excluded
         Proposal::factory()->create(['min_budget' => 999, 'created_at' => Carbon::now()->subDays(3)]);
 
-        $res = $this->actingAs(User::factory()->create())->getJson('/stats/last24h')->assertOk();
+        $res = $this->actingAs(User::factory()->create())->getJson('/stats/snapshot?from=2026-07-14&to=2026-07-15')->assertOk();
 
         $this->assertEquals(300, $res->json('value_posted_usd'));  // 100 + 200
         $this->assertEquals(250, $res->json('value_awarded_usd')); // awarded_price * exchange_rate
         $skills = collect($res->json('skills'));
         $this->assertEquals(1, $skills->firstWhere('name', 'php')['count']);
         $this->assertNull($skills->firstWhere('name', 'react')); // not awarded
+    }
+
+    public function test_the_range_drives_the_window(): void
+    {
+        $inside = Proposal::factory()->create([
+            'type' => 'fixed', 'min_budget' => 100, 'exchange_rate' => 1,
+            'skills' => [], 'created_at' => Carbon::now()->subDays(3),
+        ]);
+        Bid::factory()->create(['proposal_id' => $inside->id, 'bid_status' => 'completed', 'awarded' => false]);
+
+        $user = User::factory()->create();
+
+        // Default window is the shared 30 days, so a 3-day-old project counts.
+        $this->assertEquals(100, $this->actingAs($user)->getJson('/stats/snapshot')
+            ->assertOk()->json('value_posted_usd'));
+
+        // Narrow the range past it and it drops out.
+        $this->assertEquals(0, $this->actingAs($user)->getJson('/stats/snapshot?from=2026-07-15&to=2026-07-15')
+            ->assertOk()->json('value_posted_usd'));
+
+        // All time keeps it.
+        $this->assertEquals(100, $this->actingAs($user)->getJson('/stats/snapshot?all=1')
+            ->assertOk()->json('value_posted_usd'));
     }
 
     public function test_awarded_value_falls_back_to_bid_price(): void
@@ -62,7 +85,7 @@ class StatisticsLast24hTest extends TestCase
         ]);
         Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'awarded' => true, 'awarded_price' => null, 'price' => 50]);
 
-        $res = $this->actingAs(User::factory()->create())->getJson('/stats/last24h')->assertOk();
+        $res = $this->actingAs(User::factory()->create())->getJson('/stats/snapshot?from=2026-07-14&to=2026-07-15')->assertOk();
 
         $this->assertEquals(100, $res->json('value_awarded_usd')); // 50 * 2
     }

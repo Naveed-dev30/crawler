@@ -186,7 +186,13 @@
             </div>
             <div class="col-12">
                 <div class="card"><div class="card-body">
-                    <h5 class="mb-3">Earnings History (Snapshots)</h5>
+                    <h5 class="mb-1">Earnings History (Snapshots)</h5>
+                    <p class="text-muted small mb-3">
+                        Bars are what Freelancer reports earned in the trailing 30 days —
+                        the answer to "did we earn anything". The line is the lifetime
+                        total, which also moves with currency revaluation and
+                        adjustments, so small wiggles in it are not new earnings.
+                    </p>
                     <div id="chart-history"></div>
                 </div></div>
             </div>
@@ -353,12 +359,43 @@
             const history = @json($history);
             const el = document.querySelector('#chart-history');
             if (el && history.length) {
+                // Two series on separate axes. Plotting only the lifetime total
+                // was the bug being reported: it is ~$364k and drifts a few
+                // hundred either way between snapshots, so an auto-scaled axis
+                // turned that noise into a dramatic earnings curve while the
+                // real 30-day figure was flat zero.
                 new ApexCharts(el, {
                     chart: { type: 'line', height: 300, toolbar: { show: false } },
-                    stroke: { curve: 'smooth', width: 3 },
-                    colors: ['#28c76f'],
+                    stroke: { curve: ['smooth', 'smooth'], width: [0, 3] },
+                    colors: ['#696cff', '#28c76f'],
                     dataLabels: { enabled: false },
-                    series: [{ name: 'Total Earnings', data: history.map(h => h.earnings_total === null ? null : Number(h.earnings_total)) }],
+                    series: [
+                        {
+                            name: 'Earned (last 30 days)',
+                            type: 'column',
+                            data: history.map(h => h.earnings_30d === null ? null : Number(h.earnings_30d)),
+                        },
+                        {
+                            name: 'Lifetime total',
+                            type: 'line',
+                            data: history.map(h => h.earnings_total === null ? null : Number(h.earnings_total)),
+                        },
+                    ],
+                    yaxis: [
+                        {
+                            // Anchored at zero so a flat month reads as flat.
+                            min: 0,
+                            seriesName: 'Earned (last 30 days)',
+                            title: { text: 'Earned in period' },
+                            labels: { formatter: v => v === null ? '' : '$' + Number(v).toLocaleString() },
+                        },
+                        {
+                            opposite: true,
+                            seriesName: 'Lifetime total',
+                            title: { text: 'Lifetime total' },
+                            labels: { formatter: v => v === null ? '' : '$' + Number(v).toLocaleString() },
+                        },
+                    ],
                     xaxis: { categories: history.map(h => h.date) },
                 }).render();
             }

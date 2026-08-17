@@ -124,13 +124,13 @@ class InsightsPageTest extends TestCase
 
     public function test_profile_views_week_follows_main_filter_and_no_past_year(): void
     {
-        \App\Models\InsightSnapshot::create([
+        InsightSnapshot::create([
             'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 1,
             'profile_views_week' => ['labels' => ['16/7'], 'values' => [39]],
             'profile_views_year' => ['labels' => ['Jul 26'], 'values' => [221]], 'raw' => '{}',
         ]);
 
-        $res = $this->actingAs(\App\Models\User::factory()->create())->get('/insights')->assertOk();
+        $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
         $res->assertSee('Profile Views — week of', false);
         // The card has no picker of its own; it follows the page From/To filter.
         $res->assertDontSee('id="pv-week-date"', false);
@@ -139,18 +139,46 @@ class InsightsPageTest extends TestCase
         $res->assertDontSee('chart-views-year', false);
     }
 
+    /**
+     * earnings_total is a lifetime figure that also moves with currency
+     * revaluation, so on an auto-scaled axis a few-hundred-dollar wobble on
+     * $364k looked like a month of earnings while the real 30-day figure was
+     * zero. The chart must carry the 30-day series, anchored at zero.
+     */
+    public function test_earnings_history_plots_the_thirty_day_figure_not_just_the_lifetime_total(): void
+    {
+        InsightSnapshot::create([
+            'scraped_at' => '2026-08-10 10:00:00',
+            'earnings_total' => 363049.84, 'earnings_30d' => 0, 'raw' => '{}',
+        ]);
+        InsightSnapshot::create([
+            'scraped_at' => '2026-08-13 10:00:00',
+            'earnings_total' => 364633.21, 'earnings_30d' => 0, 'raw' => '{}',
+        ]);
+
+        $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
+
+        $res->assertSee('Earned (last 30 days)', false);
+        $res->assertSee('Lifetime total', false);
+        // The 30-day series must reach the page. It is a decimal cast, so it
+        // serialises as a string.
+        $res->assertSee('"earnings_30d":"0.00"', false);
+        // And the reader must be told the lifetime line is not new earnings.
+        $res->assertSee('not new earnings');
+    }
+
     public function test_profile_views_week_uses_snapshot_from_main_date_filter(): void
     {
-        \App\Models\InsightSnapshot::create([
+        InsightSnapshot::create([
             'scraped_at' => '2026-07-10 10:00:00', 'earnings_total' => 1,
             'profile_views_week' => ['labels' => ['6/7'], 'values' => [11]], 'raw' => '{}',
         ]);
-        \App\Models\InsightSnapshot::create([
+        InsightSnapshot::create([
             'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 2,
             'profile_views_week' => ['labels' => ['16/7'], 'values' => [39]], 'raw' => '{}',
         ]);
 
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         $res = $this->actingAs($user)->get('/insights')->assertOk();
         $res->assertSee('week of <span id="pv-week-label">2026-07-20', false);
@@ -164,13 +192,13 @@ class InsightsPageTest extends TestCase
 
     public function test_total_earnings_is_full_width_trend_box(): void
     {
-        \App\Models\InsightSnapshot::create([
+        InsightSnapshot::create([
             'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 363600.05,
             'bids_remaining' => 203, 'overall_ranking' => '25%',
             'bids_per_milestone' => ['user' => null, 'marketplace' => '19.93'], 'raw' => '{}',
         ]);
 
-        $res = $this->actingAs(\App\Models\User::factory()->create())->get('/insights')->assertOk();
+        $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
         // Total Earnings rendered as a full-width trend box
         $res->assertSee('data-metric="earnings_total"', false);
         $res->assertSee('data-metric-chart="earnings_total"', false);

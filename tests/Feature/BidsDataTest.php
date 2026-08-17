@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Bid;
+use App\Models\BidInsight;
 use App\Models\Proposal;
 use App\Models\User;
 use Carbon\Carbon;
@@ -144,26 +145,33 @@ class BidsDataTest extends TestCase
             ->assertStatus(404);
     }
 
-    public function test_stats_overview_lifetime_and_daily(): void
+    public function test_stats_overview_follows_the_shared_date_range(): void
     {
         $this->seedBids();
         // One bid created "today" (test now frozen at 2026-07-15 12:00)
         $p = Proposal::factory()->create(['project_id' => 999111]);
         Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'created_at' => '2026-07-15 08:00:00']);
 
-        $res = $this->actingAs(User::factory()->create())->getJson('/stats/overview')->assertOk();
+        $user = User::factory()->create();
 
-        $this->assertSame(3, $res->json('lifetime.placed'));          // pending + completed + today's
-        $this->assertSame(1, $res->json('lifetime.failed'));          // expired (non-skill)
-        $this->assertSame(1, $res->json('lifetime.skillNotMatched'));
-        $this->assertIsInt($res->json('lifetime.placedCorrect'));
-        $this->assertIsInt($res->json('lifetime.placedIncorrect'));
-        $this->assertIsInt($res->json('lifetime.skillsInterested'));
-        $this->assertIsInt($res->json('lifetime.skillsNotInterested'));
-        $this->assertIsInt($res->json('lifetime.notQualified'));
-        $this->assertSame(1, $res->json('daily.placed'));             // only today's bid
-        $this->assertSame(0, $res->json('daily.failed'));
-        $this->assertSame(0, $res->json('daily.skillNotMatched'));
+        // All time — everything seeded.
+        $all = $this->actingAs($user)->getJson('/stats/overview?all=1')->assertOk();
+        $this->assertSame(3, $all->json('counts.placed'));          // pending + completed + today's
+        $this->assertSame(1, $all->json('counts.failed'));          // expired (non-skill)
+        $this->assertSame(1, $all->json('counts.skillNotMatched'));
+        $this->assertIsInt($all->json('counts.placedCorrect'));
+        $this->assertIsInt($all->json('counts.placedIncorrect'));
+        $this->assertIsInt($all->json('counts.skillsInterested'));
+        $this->assertIsInt($all->json('counts.skillsNotInterested'));
+        $this->assertIsInt($all->json('counts.notQualified'));
+
+        // Today only — just the 08:00 bid.
+        $today = $this->actingAs($user)->getJson('/stats/overview?from=2026-07-15&to=2026-07-15')->assertOk();
+        $this->assertSame(1, $today->json('counts.placed'));
+        $this->assertSame(0, $today->json('counts.failed'));
+        $this->assertSame(0, $today->json('counts.skillNotMatched'));
+        $this->assertSame('2026-07-15', $today->json('from'));
+        $this->assertSame('2026-07-15', $today->json('to'));
     }
 
     public function test_failed_tab_excludes_skill_errors(): void
@@ -260,5 +268,58 @@ class BidsDataTest extends TestCase
 
         $byId = $this->actingAs($user)->getJson('/bids/data?q=5678')->assertOk();
         $this->assertEquals(2, $byId->json('cards.total')); // both p2 bids
+    }
+
+    public function test_bids_placed_rows_carry_the_actions_taken_icons(): void
+    {
+        $p = Proposal::factory()->create(['type' => 'fixed', 'title' => 'Actions taken', 'project_id' => 9911, 'country' => 'US']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 400]);
+        BidInsight::create([
+            'project_id' => 9911,
+            'actions_taken' => ['client_saw_your_bid' => true, 'client_saw_your_profile' => false],
+            'bid_rating' => 4.5,
+            'last_scraped_at' => now(),
+        ]);
+
+        $html = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=completed')
+            ->assertOk()->json('rowsHtml');
+
+        // Same three icons, same tooltips as the Bid Insights page.
+        $this->assertStringContainsString('bxs-show text-success', $html);
+        $this->assertStringContainsString('Client has seen your bid', $html);
+        $this->assertStringContainsString('bx-user text-muted', $html);
+        $this->assertStringContainsString('Client has not viewed your profile', $html);
+        $this->assertStringContainsString('bxs-check-circle text-success', $html);
+        $this->assertStringContainsString('Client has rated your bid (4.5)', $html);
+    }
+
+    /** No scrape yet means nothing to report, not three hollow icons. */
+    public function test_a_bid_without_an_insight_row_shows_a_dash_for_actions_taken(): void
+    {
+        $p = Proposal::factory()->create(['type' => 'fixed', 'title' => 'No insight', 'project_id' => 9912, 'country' => 'US']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'completed', 'price' => 400]);
+
+        $html = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=completed')
+            ->assertOk()->json('rowsHtml');
+
+        $this->assertStringNotContainsString('data-bs-toggle="tooltip"', $html);
+    }
+
+    /** The column is Bids Placed only, so failure tabs must not grow a cell. */
+    public function test_failure_rows_have_no_actions_taken_cell(): void
+    {
+        $p = Proposal::factory()->create(['type' => 'fixed', 'title' => 'Failed one', 'project_id' => 9913, 'country' => 'US']);
+        Bid::factory()->create(['proposal_id' => $p->id, 'bid_status' => 'failed', 'price' => 400, 'error_message' => 'boom']);
+        BidInsight::create([
+            'project_id' => 9913,
+            'actions_taken' => ['client_saw_your_bid' => true],
+            'last_scraped_at' => now(),
+        ]);
+
+        $html = $this->actingAs(User::factory()->create())->getJson('/bids/data?tab=failed')
+            ->assertOk()->json('rowsHtml');
+
+        $this->assertStringContainsString('9913', $html);
+        $this->assertStringNotContainsString('Client has seen your bid', $html);
     }
 }

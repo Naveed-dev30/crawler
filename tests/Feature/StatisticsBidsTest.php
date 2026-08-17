@@ -86,4 +86,59 @@ class StatisticsBidsTest extends TestCase
         $empty = collect($res->json())->firstWhere('bucket', '2026-07-11');
         $this->assertEquals(0, $empty['awarded']);
     }
+
+    /** The All preset anchors to the oldest row we hold, not to a magic date. */
+    public function test_all_time_covers_rows_older_than_the_default_window(): void
+    {
+        $old = Proposal::factory()->create(['type' => 'fixed', 'created_at' => '2026-01-05 10:00:00']);
+        Bid::factory()->create(['proposal_id' => $old->id, 'bid_status' => 'completed', 'created_at' => '2026-01-05 10:00:00']);
+
+        $rows = $this->actingAs(User::factory()->create())
+            ->getJson('/stats/bids?type=all&granularity=monthly&all=1')
+            ->assertOk()->json();
+
+        $this->assertSame('2026-01', $rows[0]['bucket']);
+        $this->assertSame(1, $rows[0]['placed']);
+    }
+
+    /** The card carries the same five outcomes the donut and value chart do. */
+    public function test_skill_failures_and_not_qualified_get_their_own_series(): void
+    {
+        $fixed = Proposal::factory()->create(['type' => 'fixed']);
+        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'failed', 'error_message' => 'boom', 'created_at' => '2026-07-10 10:00:00']);
+        Bid::factory()->create(['proposal_id' => $fixed->id, 'bid_status' => 'failed', 'error_message' => 'Skill not matched for this project', 'created_at' => '2026-07-10 11:00:00']);
+        // No bid at all — bucketed by the project's own date.
+        Proposal::factory()->create(['type' => 'fixed', 'qualified' => false, 'created_at' => '2026-07-10 09:00:00']);
+        // Different type: excluded from the fixed chart.
+        Proposal::factory()->create(['type' => 'hourly', 'qualified' => false, 'created_at' => '2026-07-10 09:00:00']);
+
+        $day = collect(
+            $this->actingAs(User::factory()->create())
+                ->getJson('/stats/bids?type=fixed&granularity=daily&from=2026-07-10&to=2026-07-10')
+                ->assertOk()->json()
+        )->firstWhere('bucket', '2026-07-10');
+
+        $this->assertEquals(1, $day['failed']);   // skill failure no longer counted here
+        $this->assertEquals(1, $day['skills']);
+        $this->assertEquals(1, $day['nq']);
+
+        $all = collect(
+            $this->actingAs(User::factory()->create())
+                ->getJson('/stats/bids?type=all&granularity=daily&from=2026-07-10&to=2026-07-10')
+                ->assertOk()->json()
+        )->firstWhere('bucket', '2026-07-10');
+
+        $this->assertEquals(2, $all['nq']);       // both types
+    }
+
+    public function test_empty_buckets_carry_every_series(): void
+    {
+        $day = collect(
+            $this->actingAs(User::factory()->create())
+                ->getJson('/stats/bids?granularity=daily&from=2026-07-10&to=2026-07-10')
+                ->assertOk()->json()
+        )->firstWhere('bucket', '2026-07-10');
+
+        $this->assertSame(['bucket', 'awarded', 'placed', 'failed', 'skills', 'nq'], array_keys($day));
+    }
 }

@@ -267,7 +267,7 @@ class BidController extends Controller
             ])->render();
         }
         if ($bids->isEmpty()) {
-            $colspan = $isCompleted ? 9 : 7;
+            $colspan = $isCompleted ? 10 : 7;
             $rowsHtml = '<tr><td colspan="'.$colspan.'" class="text-center text-muted py-4">No bids match these filters.</td></tr>';
         }
 

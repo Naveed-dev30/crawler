@@ -187,10 +187,23 @@
 
         /* Cute slide-out when a row is marked Correct/Incorrect and leaves the
            Remaining view — glides right + fades, then row is removed. */
+        .bids-table tbody tr.bid-row-exit {
+            /* Drop the hover tint immediately, otherwise the highlighted band
+               lingers under the faded-out cells until the refresh lands. */
+            background-color: transparent !important;
+            pointer-events: none;
+        }
+
         .bids-table tbody tr.bid-row-exit td {
-            transform: translateX(90px);
+            transform: translateX(60px);
             opacity: 0;
-            transition: transform .16s cubic-bezier(.4, 0, .2, 1), opacity .16s ease;
+            transition: transform .1s cubic-bezier(.4, 0, .2, 1), opacity .1s ease;
+        }
+
+        /* Collapsed the moment the glide ends, so no empty striped row is left
+           behind while the table refetches. */
+        .bids-table tbody tr.bid-row-gone {
+            display: none;
         }
 
         .tooltip-light .tooltip-inner {
@@ -274,6 +287,7 @@
                         <th>Type</th>
                         <th class="completed-col d-none text-nowrap">Awarded</th>
                         <th class="completed-col d-none text-nowrap">Awarded Price</th>
+                        <th class="completed-col d-none text-nowrap">Actions Taken</th>
                         <th>Time</th>
                         <th>Review</th>
                     </tr>
@@ -513,7 +527,7 @@
                 // Marked row leaves the current Skills-Not-Matched sub-tab — glide out.
                 if (row && currentTab === 'skill-not-matched') {
                     row.classList.add('bid-row-exit');
-                    setTimeout(loadData, 170);
+                    setTimeout(() => { row.classList.add('bid-row-gone'); loadData(); }, 110);
                 } else {
                     loadData();
                 }
@@ -552,7 +566,7 @@
                 // refresh once the animation finishes.
                 if (row && currentTab === 'completed') {
                     row.classList.add('bid-row-exit');
-                    setTimeout(loadData, 170);
+                    setTimeout(() => { row.classList.add('bid-row-gone'); loadData(); }, 110);
                 } else {
                     loadData();
                 }
@@ -581,7 +595,7 @@
                 // Marked row leaves the current Not Qualified sub-tab — glide out.
                 if (row) {
                     row.classList.add('bid-row-exit');
-                    setTimeout(loadData, 170);
+                    setTimeout(() => { row.classList.add('bid-row-gone'); loadData(); }, 110);
                 } else {
                     loadData();
                 }

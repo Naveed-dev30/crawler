@@ -83,24 +83,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    {{-- Mirrors Freelancer's own Actions Taken column: solid green
-                                         once the client takes the action, hollow grey until then. --}}
-                                    @php
-                                        $actions = [
-                                            ['on' => 'bxs-show', 'off' => 'bx-show', 'taken' => $bid->clientSawBid(), 'label' => 'seen your bid'],
-                                            ['on' => 'bxs-user', 'off' => 'bx-user', 'taken' => $bid->clientSawProfile(), 'label' => 'viewed your profile'],
-                                            ['on' => 'bxs-check-circle', 'off' => 'bx-check-circle', 'taken' => $bid->clientRatedBid(), 'label' => 'rated your bid'],
-                                        ];
-                                    @endphp
-                                    <div class="d-flex gap-2 fs-5">
-                                        @foreach ($actions as $action)
-                                            {{-- data-bs-toggle is what main.js scans for to build the styled
-                                                 tooltip; a bare title only gets the native browser one. --}}
-                                            <i class="bx {{ $action['taken'] ? $action['on'] . ' text-success' : $action['off'] . ' text-muted' }}"
-                                               data-bs-toggle="tooltip" data-bs-placement="top"
-                                               title="Client has {{ $action['taken'] ? '' : 'not ' }}{{ $action['label'] }}@if ($action['taken'] && $bid->bid_rating && $loop->last) ({{ number_format($bid->bid_rating, 1) }})@endif"></i>
-                                        @endforeach
-                                    </div>
+                                    @include('_partials.bid-actions-taken', ['insight' => $bid])
                                 </td>
                                 <td>{{ $bid->last_scraped_at?->format('Y-m-d H:i') }}</td>
                                 <td>

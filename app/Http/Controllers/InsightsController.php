@@ -81,12 +81,15 @@ class InsightsController extends Controller
             $historyQuery->whereDate('scraped_at', '<=', $to);
         }
         $history = $historyQuery->limit(365)
-            ->get(['scraped_at', 'earnings_total', 'bids_remaining'])
+            ->get(['scraped_at', 'earnings_total', 'earnings_30d', 'bids_remaining'])
             ->reverse()
             ->values()
             ->map(fn ($s) => [
                 'date' => $s->scraped_at->format('Y-m-d'),
                 'earnings_total' => $s->earnings_total,
+                // What was actually earned recently. earnings_total is a
+                // lifetime figure and a poor answer to "did we earn anything".
+                'earnings_30d' => $s->earnings_30d,
                 'bids_remaining' => $s->bids_remaining,
             ])
             ->all();
