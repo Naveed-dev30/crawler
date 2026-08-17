@@ -19,6 +19,14 @@ class BidInsight extends Model
         'client_country',
         'client_rating',
         'client_reviews',
+        // Identity. The projects API redacts these (verified Aug 2026: owner_id
+        // is null and owner_info carries no id/name), so for a project we have
+        // no conversation on, the browser extension reading the public project
+        // page is the only source. One-time semantics mean an extension value
+        // never overwrites one the users endpoint already resolved.
+        'client_name',
+        'client_username',
+        'client_avatar',
     ];
 
     public const RECURRING_FIELDS = [

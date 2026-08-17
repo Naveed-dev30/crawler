@@ -266,7 +266,10 @@ class BidInsightsController extends Controller
         // crawled project — including ones later marked Not Qualified (no bid).
         // Those show up here as rows with all-dash bid columns. Only surface a
         // row when it carries real bid data, or its project has a qualified
-        // proposal. The row itself is kept (mobile chat may use the client info).
+        // proposal we actually placed a bid on — a qualified proposal whose bid
+        // failed (out of bids, rejected) has no bid data to ever show, and
+        // BidInsightEnricher cannot fill one either. The row itself is kept
+        // (mobile chat may use the client info).
         $bids = BidInsight::where(function ($q) {
             $q->whereNotNull('bid_id')
                 ->orWhereNotNull('bid_amount')
@@ -275,7 +278,9 @@ class BidInsightsController extends Controller
                 ->orWhereNotNull('bid_rank')
                 ->orWhereNotNull('winning_bid_amount')
                 ->orWhere('winning_bid_sealed', true)
-                ->orWhereIn('project_id', Proposal::where('qualified', true)->select('project_id'));
+                ->orWhereIn('project_id', Proposal::where('qualified', true)
+                    ->whereHas('bid', fn ($bid) => $bid->where('bid_status', 'completed'))
+                    ->select('project_id'));
         })
             ->orderByDesc('last_scraped_at')
             ->paginate(20);

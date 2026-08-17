@@ -192,6 +192,46 @@ class ClientIdentityBackfillTest extends TestCase
         $this->assertSame(37, (int) $insight->client_reviews);
     }
 
+    /**
+     * For a project with no conversation, Freelancer gives us no way to learn
+     * the client's identity through the API — the extension reading the public
+     * project page is the only remaining source, so ingest must accept it.
+     */
+    public function test_ingest_accepts_client_identity_from_the_extension(): void
+    {
+        config(['variables.ingestToken' => 'tok']);
+
+        $this->postJson('/api/insights/bids/ingest', [
+            'bids' => [[
+                'id' => 1, 'project_id' => 40652640,
+                'client_name' => 'Wien Studio', 'client_username' => 'wienstudio',
+                'client_avatar' => 'https://cdn.f-cdn.com/a.jpg',
+            ]],
+        ], ['X-Ingest-Token' => 'tok'])->assertOk();
+
+        $insight = BidInsight::where('project_id', 40652640)->sole();
+        $this->assertSame('Wien Studio', $insight->client_name);
+        $this->assertSame('wienstudio', $insight->client_username);
+    }
+
+    /**
+     * One-time semantics: a name the users endpoint already resolved outranks
+     * whatever the extension scrapes later.
+     */
+    public function test_ingest_does_not_overwrite_a_resolved_client_name(): void
+    {
+        config(['variables.ingestToken' => 'tok']);
+        BidInsight::create([
+            'project_id' => 40652640, 'client_name' => 'Resolved Name', 'last_scraped_at' => now(),
+        ]);
+
+        $this->postJson('/api/insights/bids/ingest', [
+            'bids' => [['id' => 1, 'project_id' => 40652640, 'client_name' => 'Scraped Name']],
+        ], ['X-Ingest-Token' => 'tok'])->assertOk();
+
+        $this->assertSame('Resolved Name', BidInsight::where('project_id', 40652640)->sole()->client_name);
+    }
+
     public function test_backfill_also_covers_proposals_that_kept_an_owner_id(): void
     {
         $this->fakeUsers($this->ownerPayload(42));

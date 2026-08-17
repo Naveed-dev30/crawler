@@ -22,6 +22,8 @@ class EnrichBidInsights extends Command
             $limit === null ? null : max(1, (int) $limit),
         );
 
+        $this->info("Own bid filled: {$result['own_bid']}");
+        $this->info("Currency/URL filled: {$result['project_facts']}");
         $this->info("Time to bid filled: {$result['time_to_bid']}");
         $this->info("Winning bid filled: {$result['winning_bid']}");
 
