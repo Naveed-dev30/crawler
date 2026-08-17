@@ -9,8 +9,14 @@
     {
       "url": "/bids",
       "name": "Opportunities",
-      "icon": "menu-icon tf-icons bx bx-briefcase",
+      "icon": "menu-icon tf-icons menu-icon-freelancer",
       "slug": "bids"
+    },
+    {
+      "url": "/bids/upwork",
+      "name": "Opportunities",
+      "icon": "menu-icon tf-icons bx bxl-upwork",
+      "slug": "upwork"
     },
     {
       "url": "/leaderboard",
