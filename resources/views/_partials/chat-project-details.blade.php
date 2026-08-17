@@ -140,7 +140,11 @@
                 <dl class="row mb-0 small">
                     @if ($insight->bid_rank)
                         <dt class="col-5 fw-semibold">Our bid rank</dt>
-                        <dd class="col-7">#{{ $insight->bid_rank }}</dd>
+                        <dd class="col-7">
+                            #{{ $insight->bid_rank }}@if ($insight->total_bids)
+                                <span class="text-muted">of {{ number_format($insight->total_bids) }}</span>
+                            @endif
+                        </dd>
                     @endif
 
                     @if ($insight->winning_bid_amount)

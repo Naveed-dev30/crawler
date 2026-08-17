@@ -64,7 +64,15 @@
                                         · {{ $bid->client_reviews }} reviews
                                     @endif
                                 </td>
-                                <td>{{ $bid->bid_rank !== null ? '#' . $bid->bid_rank : '—' }}</td>
+                                <td>
+                                    @if ($bid->bid_rank !== null)
+                                        #{{ $bid->bid_rank }}@if ($bid->total_bids)
+                                            <span class="text-muted">of {{ number_format($bid->total_bids) }}</span>
+                                        @endif
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>
                                     @if ($bid->winning_bid_sealed)
                                         Sealed

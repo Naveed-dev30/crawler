@@ -7,6 +7,13 @@
      Params:
        $insight        BidInsight|null — name/avatar/reputation, null until the
                        crawler or thread sync has resolved this client
+
+     Freelancer's API returns the client's country, rating, member-since and
+     verification badges for anyone, but not their id or name — `owner_id` has
+     come back null on projects/active, the single-project endpoint and the bids
+     endpoint since Jan 2024. The name is recovered from the message thread's
+     member list (ThreadSyncer) once a conversation exists, so a bid nobody has
+     replied to legitimately has no name to show.
        $ownerId        int|null        — proposals.project_owner
        $fallbackCountry string|null    — proposal country, used when the client
                        profile itself has none
@@ -73,8 +80,14 @@
                 @if ($insight?->client_username)
                     <a href="{{ rtrim(config('variables.flBase'), '/') }}/u/{{ $insight->client_username }}"
                        target="_blank" rel="noopener">{{ $clientName ?: $insight->client_username }}</a>
+                @elseif ($clientName)
+                    {{ $clientName }}
                 @else
-                    {{ $clientName ?: 'Unknown client' }}
+                    {{-- Not missing data: Freelancer's API has withheld the
+                         project owner's id and name since Jan 2024, so the name
+                         only arrives with the message thread once the client
+                         opens a chat. Say that, rather than look broken. --}}
+                    <span class="text-muted">Name withheld by Freelancer</span>
                 @endif
             </div>
             <small class="text-muted">
@@ -83,6 +96,9 @@
                 @endif
                 {{ $insight?->client_country ?: $fallbackCountry ?: 'Country unknown' }}
             </small>
+            @if (! $clientName && ! $insight?->client_username)
+                <small class="d-block text-muted fst-italic">Shown once the client starts a chat</small>
+            @endif
         </div>
     </div>
 

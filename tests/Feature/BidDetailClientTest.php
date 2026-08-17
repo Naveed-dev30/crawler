@@ -85,7 +85,8 @@ class BidDetailClientTest extends TestCase
         $this->actingAs($this->admin())->get("/bids/{$bid->id}/detail")
             ->assertOk()
             ->assertSee('Posted by')
-            ->assertSee('Unknown client')
+            ->assertSee('Name withheld by Freelancer')
+            ->assertSee('Shown once the client starts a chat')
             ->assertSee('42');
     }
 

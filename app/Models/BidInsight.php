@@ -58,6 +58,7 @@ class BidInsight extends Model
         'client_rating',
         'client_reviews',
         'bid_rank',
+        'total_bids',
         'winning_bid_amount',
         'winning_bid_sealed',
         'winning_bid_text',

@@ -66,7 +66,7 @@
         @if ($insight)
             <div class="d-flex flex-wrap gap-2 mt-1 small text-muted">
                 @if ($insight->bid_rank !== null)
-                    <span title="Our bid rank on the project"><i class="bx bx-medal me-1"></i>Rank #{{ $insight->bid_rank }}</span>
+                    <span title="Our bid rank on the project"><i class="bx bx-medal me-1"></i>Rank #{{ $insight->bid_rank }}@if ($insight->total_bids) of {{ number_format($insight->total_bids) }}@endif</span>
                 @endif
                 @if ($insight->winning_bid_sealed)
                     <span title="Winning bid"><i class="bx bx-trophy me-1"></i>Sealed</span>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RefreshBidMarketDataJob;
 use App\Models\BidInsight;
 use App\Models\BidInsightChange;
 use App\Models\Proposal;
@@ -80,6 +81,19 @@ class BidInsightsController extends Controller
                 $updated++;
             }
         });
+
+        // The payload carries our rank but neither the size of the field nor
+        // the winning bid; look both up out of band.
+        RefreshBidMarketDataJob::dispatch(
+            collect($bids)
+                ->filter(fn ($item) => is_array($item))
+                ->pluck('project_id')
+                ->filter(fn ($id) => is_int($id) || (is_string($id) && ctype_digit($id)))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all()
+        );
 
         return response()->json([
             'success' => true,
