@@ -125,6 +125,11 @@ class BidInsightsController extends Controller
         if (array_key_exists('action_taken', $item)) {
             $mapped['actions_taken'] = $item['action_taken'];
         }
+        if (is_numeric($item['rating'] ?? null)) {
+            // The client's rating of our bid — the third "Actions Taken" signal.
+            // Sits outside action_taken because Freelancer sends it as a score.
+            $mapped['bid_rating'] = $item['rating'];
+        }
         if (is_numeric($item['time_submitted'] ?? null)) {
             $mapped['time_submitted'] = Carbon::createFromTimestamp((int) $item['time_submitted']);
         }

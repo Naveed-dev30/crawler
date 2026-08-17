@@ -35,6 +35,7 @@ class BidInsight extends Model
         'winning_bid_sealed',
         'winning_bid_text',
         'actions_taken',
+        'bid_rating',
         'client_engagement',
     ];
 
@@ -63,6 +64,7 @@ class BidInsight extends Model
         'winning_bid_sealed',
         'winning_bid_text',
         'actions_taken',
+        'bid_rating',
         'client_engagement',
         'last_scraped_at',
         'raw',
@@ -72,6 +74,7 @@ class BidInsight extends Model
         'bid_amount' => 'decimal:2',
         'winning_bid_amount' => 'decimal:2',
         'client_rating' => 'decimal:2',
+        'bid_rating' => 'decimal:1',
         'winning_bid_sealed' => 'boolean',
         'actions_taken' => 'array',
         'client_engagement' => 'array',
@@ -86,5 +89,53 @@ class BidInsight extends Model
     public function changes(): HasMany
     {
         return $this->hasMany(BidInsightChange::class);
+    }
+
+    /** Did the client open our bid? First of the three "Actions Taken" icons. */
+    public function clientSawBid(): bool
+    {
+        return $this->actionFlag(['client_saw_your_bid', 'viewed_by_client']);
+    }
+
+    /** Did the client click through to our profile? Second icon. */
+    public function clientSawProfile(): bool
+    {
+        return $this->actionFlag(['client_saw_your_profile', 'viewed_your_profile']);
+    }
+
+    /**
+     * Third icon. Freelancer reports an unrated bid as 0, never as null, so a
+     * row that was captured but not yet rated is false rather than unknown.
+     */
+    public function clientRatedBid(): bool
+    {
+        return (float) ($this->bid_rating ?? 0) > 0;
+    }
+
+    /**
+     * actions_taken arrives from the extension as a boolean map keyed by action
+     * name. The original ingest contract assumed a flat list of the actions that
+     * had been taken, so rows captured back then still hold that shape — read
+     * both rather than rewriting historical JSON.
+     */
+    private function actionFlag(array $aliases): bool
+    {
+        $actions = $this->actions_taken;
+
+        if (! is_array($actions)) {
+            return false;
+        }
+
+        foreach ($aliases as $alias) {
+            if (array_key_exists($alias, $actions)) {
+                return (bool) $actions[$alias];
+            }
+
+            if (in_array($alias, $actions, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

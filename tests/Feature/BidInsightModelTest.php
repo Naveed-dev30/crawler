@@ -61,4 +61,47 @@ class BidInsightModelTest extends TestCase
         $this->assertContains('bid_rank', BidInsight::RECURRING_FIELDS);
         $this->assertEmpty(array_intersect(BidInsight::ONE_TIME_FIELDS, BidInsight::RECURRING_FIELDS));
     }
+
+    public function test_action_flags_read_the_boolean_map_shape(): void
+    {
+        $bid = BidInsight::create([
+            'project_id' => 3,
+            'actions_taken' => ['client_saw_your_bid' => true, 'client_saw_your_profile' => false],
+            'bid_rating' => 4.5,
+            'last_scraped_at' => now(),
+        ]);
+
+        $this->assertTrue($bid->clientSawBid());
+        $this->assertFalse($bid->clientSawProfile());
+        $this->assertTrue($bid->clientRatedBid());
+    }
+
+    public function test_action_flags_read_the_legacy_list_shape(): void
+    {
+        // Rows ingested under the original contract stored only the taken actions.
+        $bid = BidInsight::create([
+            'project_id' => 4,
+            'actions_taken' => ['viewed_by_client'],
+            'last_scraped_at' => now(),
+        ]);
+
+        $this->assertTrue($bid->clientSawBid());
+        $this->assertFalse($bid->clientSawProfile());
+    }
+
+    public function test_action_flags_are_false_when_nothing_was_captured(): void
+    {
+        $bid = BidInsight::create(['project_id' => 5, 'last_scraped_at' => now()]);
+
+        $this->assertFalse($bid->clientSawBid());
+        $this->assertFalse($bid->clientSawProfile());
+        $this->assertFalse($bid->clientRatedBid());
+    }
+
+    public function test_a_zero_rating_means_unrated_not_rated_zero(): void
+    {
+        $bid = BidInsight::create(['project_id' => 6, 'bid_rating' => 0, 'last_scraped_at' => now()]);
+
+        $this->assertFalse($bid->clientRatedBid());
+    }
 }

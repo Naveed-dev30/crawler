@@ -77,6 +77,40 @@ class InsightsBidsPageTest extends TestCase
         $res->assertSee('#3');
     }
 
+    public function test_actions_taken_renders_one_icon_per_action_coloured_by_state(): void
+    {
+        BidInsight::create([
+            'project_id' => 39812345,
+            'bid_rank' => 3,
+            'actions_taken' => ['client_saw_your_bid' => true, 'client_saw_your_profile' => false],
+            'bid_rating' => 0,
+            'last_scraped_at' => now(),
+        ]);
+
+        $res = $this->actingAs(User::factory()->create())->get('/insights/bids')->assertOk();
+        $res->assertSee('bxs-show text-success', false);
+        $res->assertSee('Client has seen your bid');
+        $res->assertSee('bx-user text-muted', false);
+        $res->assertSee('Client has not viewed your profile');
+        $res->assertSee('bx-check-circle text-muted', false);
+        $res->assertSee('Client has not rated your bid');
+    }
+
+    public function test_a_rated_bid_shows_the_score_in_the_icon_tooltip(): void
+    {
+        BidInsight::create([
+            'project_id' => 39812346,
+            'bid_rank' => 1,
+            'bid_rating' => 4.5,
+            'last_scraped_at' => now(),
+        ]);
+
+        $this->actingAs(User::factory()->create())->get('/insights/bids')
+            ->assertOk()
+            ->assertSee('bxs-check-circle text-success', false)
+            ->assertSee('Client has rated your bid (4.5)');
+    }
+
     public function test_sealed_winning_bid_shows_sealed(): void
     {
         BidInsight::create([

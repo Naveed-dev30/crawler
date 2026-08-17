@@ -53,7 +53,7 @@ All JSON access defensive (`?? []` / `?? '—'`) — partial snapshots render wh
 ## View: `resources/views/content/pages/insights-bids.blade.php`
 
 - **Empty state** card when `$bids->isEmpty()`.
-- **Table columns:** Project (id, linked to `project_url` when present, new tab), Time to Bid (seconds humanized: `<60s` as "Ns", else "Nm Ns"), Bid Amount (`bid_amount` + `bid_currency`), Client (country, rating ★, reviews count), Bid Rank (`#N`), Winning Bid (`winning_bid_amount`, or "Sealed" when `winning_bid_sealed` true, else "—"), Actions (count of `actions_taken`), Last Update (`last_scraped_at` formatted `Y-m-d H:i`).
+- **Table columns:** Project (id, linked to `project_url` when present, new tab), Time to Bid (seconds humanized: `<60s` as "Ns", else "Nm Ns"), Bid Amount (`bid_amount` + `bid_currency`), Client (country, rating ★, reviews count), Bid Rank (`#N`), Winning Bid (`winning_bid_amount`, or "Sealed" when `winning_bid_sealed` true, else "—"), Actions Taken (three icons mirroring Freelancer's own column — bid seen / profile viewed / bid rated — solid green when taken, hollow grey when not; the first two read `actions_taken`, the third reads `bid_rating > 0`), Last Update (`last_scraped_at` formatted `Y-m-d H:i`).
 - **Pagination:** `{{ $bids->links() }}`.
 - **Audit modal:** per-row "Changes" button with `data-bid-id`. One shared Bootstrap modal; on open, JS `fetch('/api/insights/bids/{id}/changes')` (existing unauthenticated read API), renders table rows: Field, Old, New, Observed At. States: loading spinner, "No changes recorded" when `data` empty, error message on fetch failure. No new backend endpoints.
 

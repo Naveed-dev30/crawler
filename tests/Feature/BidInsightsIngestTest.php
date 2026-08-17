@@ -160,6 +160,19 @@ class BidInsightsIngestTest extends TestCase
             ['highlighted' => true, 'sealed' => false, 'sponsored' => false],
             $bid->upgrades
         );
+        $this->assertSame('0.0', (string) $bid->bid_rating);
+    }
+
+    public function test_a_client_rating_of_our_bid_is_stored_and_audited(): void
+    {
+        $this->postWithToken(['bids' => [$this->liveBidItem()]])->assertOk();
+
+        $this->postWithToken(['bids' => [$this->liveBidItem(['rating' => 4.5])]])->assertOk();
+
+        $bid = BidInsight::where('project_id', 40595109)->firstOrFail();
+        $this->assertSame('4.5', (string) $bid->bid_rating);
+        $this->assertTrue($bid->clientRatedBid());
+        $this->assertSame(1, $bid->changes()->where('field', 'bid_rating')->count());
     }
 
     public function test_live_payload_recurring_changes_are_audited(): void
