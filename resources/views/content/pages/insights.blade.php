@@ -109,17 +109,6 @@
             </div>
         </div>
 
-        {{-- Total Earnings — full-width trend box --}}
-        <div class="row gy-4 mb-4">
-            <div class="col-12">
-                @include('_partials.insight-trend-box', [
-                    'title' => 'Total Earnings', 'metric' => 'earnings_total',
-                    'value' => $latest->earnings_total !== null ? '$' . number_format($latest->earnings_total, 2) : '—',
-                    'chartType' => 'line', 'reversed' => false, 'min' => $bMin, 'max' => $bMax,
-                ])
-            </div>
-        </div>
-
         {{-- Proficiency + bids per milestone --}}
         <div class="row gy-4 mb-4">
             <div class="col-md-8">

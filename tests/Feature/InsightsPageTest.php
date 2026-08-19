@@ -48,7 +48,6 @@ class InsightsPageTest extends TestCase
         ]);
 
         $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
-        $res->assertSee('363,600.05');
         $res->assertSee('Bids Remaining');
         $res->assertSee('203');
         $res->assertSee('Top 25%');
@@ -190,7 +189,7 @@ class InsightsPageTest extends TestCase
         $res->assertDontSee('"values":[39]', false);
     }
 
-    public function test_total_earnings_is_full_width_trend_box(): void
+    public function test_total_earnings_card_is_not_rendered(): void
     {
         InsightSnapshot::create([
             'scraped_at' => '2026-07-20 10:00:00', 'earnings_total' => 363600.05,
@@ -199,10 +198,11 @@ class InsightsPageTest extends TestCase
         ]);
 
         $res = $this->actingAs(User::factory()->create())->get('/insights')->assertOk();
-        // Total Earnings rendered as a full-width trend box
-        $res->assertSee('data-metric="earnings_total"', false);
-        $res->assertSee('data-metric-chart="earnings_total"', false);
-        // The four trend metrics each expose a picker
+        // Total Earnings box was removed from the page
+        $res->assertDontSee('Total Earnings', false);
+        $res->assertDontSee('data-metric="earnings_total"', false);
+        $res->assertDontSee('data-metric-chart="earnings_total"', false);
+        // The remaining trend metrics each still expose a picker
         $res->assertSee('data-metric="bids_remaining"', false);
         $res->assertSee('data-metric="overall_ranking"', false);
         $res->assertSee('data-metric="bids_per_milestone"', false);
