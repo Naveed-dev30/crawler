@@ -60,6 +60,11 @@ class AiAssistantController extends Controller
             && ($user->ai_manual_until === null || $now->lt($user->ai_manual_until));
 
         return [
+            // The global kill switch (AI_AUTO_REPLY_ENABLED) forces active_now
+            // false while leaving manual_override.state untouched. Without this
+            // flag the app cannot tell "an admin switched AI off" apart from
+            // "you switched it off", and shows the wrong toggle state.
+            'globally_disabled' => ! config('variables.aiAutoReplyEnabled'),
             'active_now' => $user->aiActiveNow($now),
             'schedule_enabled' => (bool) $user->ai_schedule_enabled,
             'window' => $user->ai_schedule_enabled ? [

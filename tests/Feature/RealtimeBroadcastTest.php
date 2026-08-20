@@ -219,5 +219,69 @@ class RealtimeBroadcastTest extends TestCase
         $this->assertSame('Owner', $payload['sender_name']);
         $this->assertTrue($payload['is_sent']);
         $this->assertSame('message.created', $event->broadcastAs());
+        $this->assertFalse($payload['sent_by_ai']);
+        $this->assertSame([], $payload['attachments']);
+    }
+
+    public function test_message_created_payload_carries_sent_by_ai(): void
+    {
+        $thread = Thread::factory()->create();
+        $message = ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'sent',
+            'sent_by_ai' => true,
+        ]);
+
+        $this->assertTrue((new ThreadMessageCreated($message))->broadcastWith()['sent_by_ai']);
+    }
+
+    public function test_message_created_payload_carries_attachments(): void
+    {
+        // An attachment-only reply: no text at all, so the payload's
+        // attachments are the only thing a listener can render.
+        $thread = Thread::factory()->create();
+        $message = ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'sent',
+            'message' => null,
+        ]);
+        $message->attachments()->create([
+            'filename' => 'spec.pdf',
+            'url' => '',
+            'stored_path' => 'thread-attachments/spec.pdf',
+            'stored_disk' => 'local',
+            'mime_type' => 'application/pdf',
+            'size' => 1024,
+        ]);
+
+        $payload = (new ThreadMessageCreated($message))->broadcastWith();
+
+        $this->assertCount(1, $payload['attachments']);
+        $this->assertSame('spec.pdf', $payload['attachments'][0]['filename']);
+        $this->assertTrue($payload['attachments'][0]['is_ready']);
+        $this->assertNotNull($payload['attachments'][0]['view_url']);
+        $this->assertNotNull($payload['attachments'][0]['download_url']);
+    }
+
+    public function test_pending_attachment_broadcasts_without_urls(): void
+    {
+        // Inbound sync queues the mirror job, so the bytes are not on our disk
+        // yet when the event fires. The app must see the file exists but is not
+        // openable rather than a broken link.
+        $thread = Thread::factory()->create();
+        $message = ThreadMessage::factory()->create([
+            'thread_id' => $thread->id,
+            'direction' => 'received',
+        ]);
+        $message->attachments()->create([
+            'filename' => 'brief.docx',
+            'url' => 'https://www.freelancer.com/attachment/brief.docx',
+        ]);
+
+        $attachment = (new ThreadMessageCreated($message))->broadcastWith()['attachments'][0];
+
+        $this->assertFalse($attachment['is_ready']);
+        $this->assertNull($attachment['view_url']);
+        $this->assertNull($attachment['download_url']);
     }
 }

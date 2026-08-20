@@ -48,6 +48,18 @@ class ThreadResource extends JsonResource
                 'member_since' => $this->resource->client_insight->client_member_since?->toIso8601String(),
                 'verification' => $this->resource->client_insight->client_verification,
                 'engagement' => $this->resource->client_insight->client_engagement,
+                // Bid-side context the web panel already shows next to the
+                // client: how crowded the project was, what the client scored
+                // our bid, and Freelancer's "Actions Taken" trio. Read through
+                // the model helpers so the app agrees with the web icons on
+                // rows whose actions_taken JSON is in the older list shape.
+                'total_bids' => $this->resource->client_insight->total_bids,
+                'bid_rating' => $this->resource->client_insight->bid_rating,
+                'actions_taken' => [
+                    'saw_bid' => $this->resource->client_insight->clientSawBid(),
+                    'saw_profile' => $this->resource->client_insight->clientSawProfile(),
+                    'rated_bid' => $this->resource->client_insight->clientRatedBid(),
+                ],
             ] : null,
         ];
     }

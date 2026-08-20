@@ -44,6 +44,65 @@ class MobileThreadClientInfoTest extends TestCase
         $this->assertSame('5.00', (string) $res->json('data.client.rating'));
     }
 
+    public function test_show_includes_bid_stats_and_actions_taken(): void
+    {
+        $thread = Thread::factory()->create(['assigned_user_id' => $this->me->id, 'project_id' => 40597934]);
+        BidInsight::create([
+            'project_id' => 40597934,
+            'total_bids' => 32,
+            'bid_rating' => 4.5,
+            'actions_taken' => [
+                'client_saw_your_bid' => true,
+                'client_saw_your_profile' => false,
+            ],
+            'last_scraped_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v1/mobile/threads/{$thread->id}")->assertOk();
+
+        $res->assertJsonPath('data.client.total_bids', 32);
+        $res->assertJsonPath('data.client.actions_taken.saw_bid', true);
+        $res->assertJsonPath('data.client.actions_taken.saw_profile', false);
+        // Rating > 0 is what makes the third icon solid on the web panel.
+        $res->assertJsonPath('data.client.actions_taken.rated_bid', true);
+        $this->assertSame('4.5', (string) $res->json('data.client.bid_rating'));
+    }
+
+    public function test_unrated_bid_reports_rated_false(): void
+    {
+        $thread = Thread::factory()->create(['assigned_user_id' => $this->me->id, 'project_id' => 40597935]);
+        BidInsight::create([
+            'project_id' => 40597935,
+            // Freelancer reports an unrated bid as 0, never as null.
+            'bid_rating' => 0,
+            'last_scraped_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v1/mobile/threads/{$thread->id}")->assertOk();
+
+        $res->assertJsonPath('data.client.actions_taken.rated_bid', false);
+        $res->assertJsonPath('data.client.actions_taken.saw_bid', false);
+        $res->assertJsonPath('data.client.total_bids', null);
+    }
+
+    public function test_legacy_actions_taken_list_shape_still_reads(): void
+    {
+        // Rows captured under the original ingest contract stored a flat list of
+        // the actions taken rather than a boolean map. The web icons read both,
+        // so the app must agree with them.
+        $thread = Thread::factory()->create(['assigned_user_id' => $this->me->id, 'project_id' => 40597936]);
+        BidInsight::create([
+            'project_id' => 40597936,
+            'actions_taken' => ['viewed_by_client', 'viewed_your_profile'],
+            'last_scraped_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v1/mobile/threads/{$thread->id}")->assertOk();
+
+        $res->assertJsonPath('data.client.actions_taken.saw_bid', true);
+        $res->assertJsonPath('data.client.actions_taken.saw_profile', true);
+    }
+
     public function test_client_is_null_when_there_is_no_insight(): void
     {
         // This used to return a hardcoded client ("Sarah Mitchell", a

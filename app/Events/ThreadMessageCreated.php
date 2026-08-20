@@ -38,6 +38,8 @@ class ThreadMessageCreated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        $this->message->loadMissing('attachments');
+
         return [
             'id' => $this->message->id,
             'thread_id' => $this->message->thread_id,
@@ -51,7 +53,23 @@ class ThreadMessageCreated implements ShouldBroadcastNow
                 ? $this->message->freelancer_message_id !== null
                 : null,
             'is_read' => $this->message->is_read,
+            'sent_by_ai' => (bool) $this->message->sent_by_ai,
             'message_time' => $this->message->message_time?->toIso8601String(),
+            // Attachment-only replies carry no text, so a listener that renders
+            // `message` alone would draw an empty bubble. Same shape as
+            // ThreadMessageResource so the app can reuse one parser; `is_ready`
+            // is false while the mirror job is still fetching the bytes, and the
+            // signed URLs stay null until it lands.
+            'attachments' => $this->message->attachments->map(fn ($a) => [
+                'id' => $a->id,
+                'filename' => $a->filename,
+                'url' => $a->serve_url,
+                'view_url' => $a->serve_url,
+                'download_url' => $a->download_url,
+                'is_ready' => $a->isStored(),
+                'mime_type' => $a->mime_type,
+                'size' => $a->size,
+            ])->all(),
         ];
     }
 }

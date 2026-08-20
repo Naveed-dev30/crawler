@@ -84,6 +84,29 @@ class MobileAiAssistantApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_globally_disabled_is_false_while_the_kill_switch_is_on(): void
+    {
+        $this->getJson('/api/v1/mobile/ai-assistant')
+            ->assertOk()
+            ->assertJsonPath('data.globally_disabled', false);
+    }
+
+    public function test_kill_switch_reports_globally_disabled_without_clearing_the_override(): void
+    {
+        // The user's own toggle stays ON; only the admin switch is off. The app
+        // needs both facts to say "disabled by admin" instead of flipping the
+        // user's own switch to off behind their back.
+        $this->putJson('/api/v1/mobile/ai-assistant', ['enabled' => true])->assertOk();
+
+        config(['variables.aiAutoReplyEnabled' => false]);
+
+        $this->getJson('/api/v1/mobile/ai-assistant')
+            ->assertOk()
+            ->assertJsonPath('data.globally_disabled', true)
+            ->assertJsonPath('data.active_now', false)
+            ->assertJsonPath('data.manual_override.state', true);
+    }
+
     public function test_forbidden_for_non_mobile(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
